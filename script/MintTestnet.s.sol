@@ -7,23 +7,23 @@ import {Controller} from "src/Controller.sol";
 import {IController} from "src/interface/IController.sol";
 
 /// @notice Script to mint tokens on testnet
-/// 1) Ensure MINTER_ADDRESS, MINTER_KEY, and SIGNER_KEY are set in .env
-/// 2) Ensure approval is granted from payer key
-/// cast send 0x7cA0A09271a963EdE5773C219283B36359B12824 "approve(address,uint256)" 0x9660c651D5e1076dF48757839089819700A4c667 1000000000000000000000000000000 --rpc-url $SEPOLIA_RPC_URL --private-key $PAYER_KEY
-/// 3) Run the mint script
-/// forge script script/MintTestnet.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $MINTER_KEY --broadcast
+/// 1) Ensure `COLLATERAL_ADDRESS`, `CONTROLLER_ADDRESS`, `MINTER_ADDRESS`, `MINTER_KEY`, and `SIGNER_KEY` are set in `.env`
+/// 2) Ensure scripts/MintTestnet.s.sol has the correct addresses set as constants
+/// 3) Run `source .env`
+/// 4) Ensure approval is granted from payer key
+/// ```cast send $COLLATERAL_ADDRESS "approve(address,uint256)" $CONTROLLER_ADDRESS 1000000000000000000000000000000 --rpc-url $SEPOLIA_RPC_URL --private-key $SIGNER_KEY```
+/// 5) Run the mint script
+/// ```forge script script/MintTestnet.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $MINTER_KEY --broadcast```
 /// THIS SCRIPT IS NOT SAFE TO RUN ON MAINNET!!
 contract MintTestnetScript is BaseScript {
     /// @notice Sepolia controller
-    address internal constant CONTROLLER_ADDRESS = 0x9660c651D5e1076dF48757839089819700A4c667;
+    address internal constant CONTROLLER_ADDRESS = 0x301351Edf95F7aa505Bd7119a43e40331E2F7E1D;
     /// @notice Testnet signer
-    address internal constant SIGNER_ADDRESS = 0xfB1EE3e318F7cd128b0c8684942e6d96853FaC77;
-    /// @notice Payer account
-    address internal constant PAYER_ADDRESS = 0x20289E3C968bC68C1fF53620AeEa14892a68BAB9;
+    address internal constant SIGNER_ADDRESS = 0xFc8E0e6c28C8f6dD656dE0e9C0b0ecef598Fc9Ce;
     /// @notice Recipient account
-    address internal constant RECIPIENT_ADDRESS = 0x20289E3C968bC68C1fF53620AeEa14892a68BAB9;
+    address internal constant RECIPIENT_ADDRESS = 0xFc8E0e6c28C8f6dD656dE0e9C0b0ecef598Fc9Ce;
     /// @notice Collateral address
-    address internal constant COLLATERAL_ADDRESS = 0x7cA0A09271a963EdE5773C219283B36359B12824;
+    address internal constant COLLATERAL_ADDRESS = 0x81FF19CF5053856c2B9f2A6CB5FFc87b96C1e322;
     /// @notice Minter role
     bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -38,7 +38,7 @@ contract MintTestnetScript is BaseScript {
             order_type: IController.OrderType.Mint,
             nonce: nonce,
             expiry: block.timestamp + 60 minutes,
-            payer: PAYER_ADDRESS,
+            payer: SIGNER_ADDRESS,
             recipient: RECIPIENT_ADDRESS,
             collateral_token: COLLATERAL_ADDRESS,
             collateral_amount: 100_000e6, // 100k usdc

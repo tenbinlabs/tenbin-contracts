@@ -4,7 +4,8 @@ pragma solidity 0.8.30;
 import {AssetSilo} from "src/AssetSilo.sol";
 import {AssetToken} from "src/AssetToken.sol";
 import {CollateralManager} from "src/CollateralManager.sol";
-import {Controller} from "src/Controller.sol";
+import {CollateralManagerHarness} from "test/harness/CollateralManagerHarness.sol";
+import {ControllerHarness} from "test/harness/ControllerHarness.sol";
 import {CustodianModule} from "src/CustodianModule.sol";
 import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IAggregationRouterV6} from "src/external/1inch/IAggregationRouterV6.sol";
@@ -23,7 +24,8 @@ import {OracleAdapter} from "src/OracleAdapter.sol";
 import {RevenueModule} from "src/RevenueModule.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StakedAsset} from "src/StakedAsset.sol";
-import {SwapModule} from "src/SwapModule.sol";
+import {StakedAssetHarness} from "test/harness/StakedAssetHarness.sol";
+import {SwapModuleHarness} from "test/harness/SwapModuleHarness.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract BaseTest is Test {
@@ -50,7 +52,6 @@ contract BaseTest is Test {
     uint256 internal constant ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
     uint256 internal constant ONE_YEAR_BLOCKS = ONE_YEAR_SECONDS / 20;
     uint256 internal constant VAULT_TOLERANCE = 5; // tolerance for vault calculations
-    uint256 internal constant MIN_SHARES = 1e18; // Minimum shares staking contract should hold
     // percentage tolerance for rounding during fuzz testing
     uint256 internal constant FUZZ_TOLERANCE_REL = 0.001e18; // 0.1%
     // max price delta tolerance for controller
@@ -84,19 +85,19 @@ contract BaseTest is Test {
     address internal restricter;
 
     // contracts
-    Controller internal controller;
+    ControllerHarness internal controller;
     MockERC20 internal collateral;
     MockERC20 internal collateral2;
     AssetToken internal asset;
     MockERC1271Signer internal signerContract;
-    CollateralManager internal manager;
+    CollateralManagerHarness internal manager;
     IERC4626 internal vault;
     IERC4626 internal vault2;
     MultiCall internal multicall;
-    SwapModule internal swapModule;
+    SwapModuleHarness internal swapModule;
     IAggregationRouterV6 router;
     RevenueModule internal revenueModule;
-    StakedAsset internal staking;
+    StakedAssetHarness internal staking;
     CustodianModule internal custodianModule;
     MockAggregator internal aggregator;
     OracleAdapter internal oracleAdapter;
@@ -161,15 +162,18 @@ contract BaseTest is Test {
         asset = new AssetToken("AssetToken", "SYN", owner);
         vault = new MockERC4626("Collateral Vault", "vCLT", collateral);
         vault2 = new MockERC4626("Collateral Vault 2", "vCLT2", collateral2);
-        controller = new Controller(address(asset), DEFAULT_RATIO, custodian, owner);
-        address managerImplementation = address(new CollateralManager());
+        controller = new ControllerHarness(address(asset), DEFAULT_RATIO, custodian, owner);
+        address managerImplementation = address(new CollateralManagerHarness());
         bytes memory data = abi.encodeWithSelector(CollateralManager.initialize.selector, address(controller), owner);
         ERC1967Proxy proxy = new ERC1967Proxy(managerImplementation, data);
-        manager = CollateralManager(address(proxy));
+        manager = CollateralManagerHarness(address(proxy));
         router = new Mock1InchRouter();
-        swapModule = new SwapModule(address(manager), address(router));
+        swapModule = new SwapModuleHarness(address(manager), address(router));
         multicall = new MultiCall(owner);
-        staking = new StakedAsset("Staked Asset", "stAST", asset, owner);
+        address stakingImplementation = address(new StakedAssetHarness());
+        data = abi.encodeWithSelector(StakedAsset.initialize.selector, "Staked Asset", "stAST", address(asset), owner);
+        proxy = new ERC1967Proxy(stakingImplementation, data);
+        staking = StakedAssetHarness(address(proxy));
         revenueModule =
             new RevenueModule(address(manager), address(staking), owner, address(controller), address(asset));
         signerContract = new MockERC1271Signer();
@@ -404,7 +408,6 @@ contract BaseTest is Test {
     }
 
     // Helper
-    // TODO: ENG-553: refactor this helper function
     function pullFunds(uint256 amount) internal {
         vm.startPrank(curator);
         collateral.mint(address(manager), amount);

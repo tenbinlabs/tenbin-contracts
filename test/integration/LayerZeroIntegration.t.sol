@@ -269,7 +269,6 @@ contract LayerZeroIntegrationTest is BaseTest {
         assertApproxEqAbs(asset.totalSupply(), amount, ASSET_SLIPPAGE, "insufficient total supply");
     }
 
-    // TODO: ENG-450 This test might be set up incorrectly.
     function test_LayerZero_OVault_Send() public {
         uint256 amount = 10e18;
         mintAsset(user, amount);

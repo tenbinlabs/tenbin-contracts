@@ -14,8 +14,8 @@ contract DeploymentTest is Test, Config {
 
     // default values
     uint256 public constant DEFAULT_RATIO = 1e17;
-    uint128 public constant DEFAULT_COOLDOWN_LENGTH = 180 seconds;
-    uint128 public constant DEFAULT_VESTING_LENGTH = 1200 seconds;
+    uint128 public constant DEFAULT_COOLDOWN_PERIOD = 180 seconds;
+    uint128 public constant DEFAULT_VESTING_PERIOD = 1200 seconds;
 
     // roles
     bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -117,8 +117,8 @@ contract DeploymentTest is Test, Config {
             uint128 length,
             /*uint128 time*/, /*uint256 amount*/
         ) = deployment.staking.vesting();
-        assertEq(length, DEFAULT_VESTING_LENGTH);
-        assertEq(deployment.staking.cooldownLength(), DEFAULT_COOLDOWN_LENGTH);
+        assertEq(length, DEFAULT_VESTING_PERIOD);
+        assertEq(deployment.staking.cooldownPeriod(), DEFAULT_COOLDOWN_PERIOD);
 
         // check revenue manager is correctly configured
         assertEq(deployment.revenueModule.manager(), address(deployment.manager));

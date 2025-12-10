@@ -13,7 +13,7 @@ contract StakedAssetInvariantTest is BaseTest {
         super.setUp();
 
         vm.prank(admin);
-        staking.setVestingLength(7 days); // Ensure this was called at least once
+        staking.setVestingPeriod(7 days); // Ensure this was called at least once
         handler = new StakedAssetHandler(admin, rewarder, user, staking, asset);
 
         targetContract(address(handler));
@@ -24,22 +24,17 @@ contract StakedAssetInvariantTest is BaseTest {
         assertEq(staking.decimals(), 18, "Decimals must always be 18");
     }
 
-    // - `totalSupply` => MIN_SHARES
-    function invariant_minimumSharesAlwaysRemain() public view {
-        assertGe(staking.totalSupply(), 1e18, "Minimum shares restriction violated");
-    }
-
-    // - `cooldownLength > MAX_COOLDOWN_LENGTH` is always true
+    // - `cooldownPeriod > MAX_COOLDOWN_PERIOD` is always true
     function invariant_cooldownWithinBounds() public view {
-        assertLe(staking.cooldownLength(), staking.MAX_COOLDOWN_LENGTH(), "Cooldown length exceeds max");
+        assertLe(staking.cooldownPeriod(), staking.MAX_COOLDOWN_PERIOD(), "Cooldown period exceeds max");
     }
 
-    // - `vestingLength >= MIN_VESTING_LENGTH && vestingLength != 0` is always true
-    // - `vestingLength <= MAX_VESTING_LENGTH` is always true
-    function invariant_vestingLengthBounds() public view {
-        (uint256 length,,) = staking.vesting();
-        assertLe(length, staking.MAX_VESTING_LENGTH(), "Invalid vesting length");
-        assertTrue(length >= staking.MIN_VESTING_LENGTH() || length != 0, "Invalid vesting length");
+    // - `vestingPeriod >= MIN_VESTING_PERIOD && vestingPeriod != 0` is always true
+    // - `vestingPeriod <= MAX_VESTING_PERIOD` is always true
+    function invariant_vestingPeriodBounds() public view {
+        (uint256 period,,) = staking.vesting();
+        assertLe(period, staking.MAX_VESTING_PERIOD(), "Invalid vesting period");
+        assertTrue(period >= staking.MIN_VESTING_PERIOD() || period != 0, "Invalid vesting period");
     }
 
     // - `asset()` is never `address(0)`
@@ -47,11 +42,11 @@ contract StakedAssetInvariantTest is BaseTest {
         assertTrue(address(staking.asset()) != address(0), "Asset address must never be zero");
     }
 
-    // - When `vesting.length == 0` or `block.timestamp >= vesting.time`, `_pendingRewards() == 0` always holds
+    // - When `vesting.period == 0` or `block.timestamp >= vesting.time`, `_pendingRewards() == 0` always holds
     function invariant_pendingRewardsZeroWhenVestingComplete() public view {
-        (uint128 time, uint128 length,) = staking.vesting();
+        (uint128 time, uint128 period,) = staking.vesting();
 
-        if (length != 0 || block.timestamp >= time) {
+        if (period != 0 || block.timestamp >= time) {
             uint256 pending = staking.pendingRewards();
             assertGe(pending, 0, "Pending rewards should be zero after vesting complete or disabled");
         }

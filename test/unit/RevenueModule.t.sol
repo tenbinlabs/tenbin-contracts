@@ -147,10 +147,10 @@ contract RevenueModuleTest is BaseTest {
         allowSigner(payer);
         vm.prank(admin);
         vm.expectEmit();
-        emit IController.DelegateStatusChanged(payer, address(revenueModule), true);
+        emit IController.DelegateStatusChanged(address(revenueModule), payer, true);
         revenueModule.delegateSigner(payer, true);
 
-        assertTrue(controller.delegates(payer, address(revenueModule)));
+        assertTrue(controller.delegates(address(revenueModule), payer));
     }
 
     function test_Revert_DelegateSigner() public {

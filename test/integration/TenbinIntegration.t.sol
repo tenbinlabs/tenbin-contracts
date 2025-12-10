@@ -207,7 +207,6 @@ contract TenbinIntegrationTest is BaseTest {
         amount = bound(amount, 100, 1e40);
         // allow signer
         allowSigner(payer);
-        allowSigner(address(revenueModule));
         vm.prank(payer);
         controller.setRecipientStatus(address(revenueModule), true);
 
@@ -226,8 +225,8 @@ contract TenbinIntegrationTest is BaseTest {
         order.recipient = address(revenueModule);
         IController.Signature memory signature = signOrder(payerKey, controller.hashOrder(order));
 
-        vm.prank(payer);
-        controller.setDelegateStatus(address(revenueModule), true);
+        vm.prank(admin);
+        revenueModule.delegateSigner(payer, true);
         mint(order, signature);
 
         assertEq(asset.balanceOf(address(revenueModule)), assetAmount);

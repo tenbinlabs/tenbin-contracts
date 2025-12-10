@@ -1,15 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {
+    AccessControlUpgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import {AssetSilo} from "src/AssetSilo.sol";
-import {IERC20, ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {IRestrictedRegistry} from "src/interface/IRestrictedRegistry.sol";
 import {IStakedAsset} from "src/interface/IStakedAsset.sol";
-import {ERC20Permit} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {ERC4626} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import {
+    ERC20PermitUpgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {
+    ERC4626Upgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {Math} from "lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {UUPSUpgradeable} from "lib/openzeppelin-contracts/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 /// @title StakedAsset
 /// @notice Allows staking an asset token for a staking token
@@ -17,7 +25,7 @@ import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/
 /// Includes a vesting period over which pending rewards are linearly vested
 /// Whenever a reward is paid to the contract, the vesting period resets
 /// Includes a cooldown period over which a user must wait between cooldown and withdrawing
-/// When cooldownLength > 0, the normal withdraw() and redeem() functions will revert
+/// When cooldownPeriod > 0, the normal withdraw() and redeem() functions will revert
 /// Users call cooldownShares() and cooldownAssets() to initiate cooldown
 /// If a cooldown already exists for a user, initiating cooldown again with additional assets will reset the cooldown time
 /// Users do not earn rewards for assets during the cooldown period
@@ -25,7 +33,15 @@ import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/
 /// After the cooldown is completed, users can call withdraw() to claim their asset tokens
 ///
 /// In order to avoid a first depositor donation attack a minimum stake should be made in the same transaction as the contract deployment
-contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626, AccessControl {
+/// This is a UUPS upgradeable contract meant to be deployed behind an ERC1967 Proxy
+contract StakedAsset is
+    IStakedAsset,
+    IRestrictedRegistry,
+    UUPSUpgradeable,
+    ERC20PermitUpgradeable,
+    ERC4626Upgradeable,
+    AccessControlUpgradeable
+{
     using SafeERC20 for IERC20;
 
     /// @notice Rewarder role transfers asset tokens into the contract
@@ -38,25 +54,22 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
     bytes32 constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
 
     /// @notice Max cooldown period
-    uint256 public constant MAX_COOLDOWN_LENGTH = 90 days;
+    uint256 public constant MAX_COOLDOWN_PERIOD = 90 days;
 
     /// @notice Max vesting period
-    uint256 public constant MAX_VESTING_LENGTH = 90 days;
+    uint256 public constant MAX_VESTING_PERIOD = 90 days;
 
     /// @notice Min vesting period to prevent rounding errors when calculating rewards within 0.1%
-    uint256 public constant MIN_VESTING_LENGTH = 1200 seconds;
-
-    /// @notice Minimum amount of shares allowed
-    uint256 public constant MIN_SHARES = 1e18;
+    uint256 public constant MIN_VESTING_PERIOD = 1200 seconds;
 
     /// @notice AssetSilo holds assets during cooldown
-    AssetSilo public immutable silo;
+    AssetSilo public silo;
 
     /// @notice Amount of shares in cooldown for an account
     mapping(address => Cooldown) public cooldowns;
 
     /// @notice Cooldown period for unstaking in seconds
-    uint256 public cooldownLength;
+    uint256 public cooldownPeriod;
 
     /// @notice Vesting data
     Vesting public vesting;
@@ -76,17 +89,27 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
         _;
     }
 
+    /// @dev Disable initializers for implementation contract
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @dev Initializer for this contract
     /// @param name_ Name of this token
     /// @param symbol_ Symbol for this token
     /// @param asset_ Asset to stake and reward
-    constructor(string memory name_, string memory symbol_, IERC20 asset_, address owner_)
-        ERC20(name_, symbol_)
-        ERC20Permit(name_)
-        ERC4626(asset_)
+    /// @param owner_ Default admin role for this contract
+    function initialize(string memory name_, string memory symbol_, address asset_, address owner_)
+        external
+        initializer
+        nonZeroAddress(asset_)
         nonZeroAddress(owner_)
     {
-        _grantRole(DEFAULT_ADMIN_ROLE, owner_);
+        __ERC20_init(name_, symbol_);
+        __ERC20Permit_init(name_);
+        __ERC4626_init(IERC20(asset_));
         silo = new AssetSilo(address(this), address(asset_));
+        _grantRole(DEFAULT_ADMIN_ROLE, owner_);
     }
 
     /// @notice Get pending rewards for this contract
@@ -97,11 +120,11 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
 
     /// @inheritdoc IStakedAsset
     function reward(uint256 assets) external onlyRole(REWARDER_ROLE) {
-        if (vesting.length > 0) {
+        if (vesting.period > 0) {
             uint256 pending = _pendingRewards();
             vesting.assets = pending + assets;
-            vesting.end = uint128(block.timestamp) + vesting.length;
-            emit VestingStarted(pending + assets, uint128(block.timestamp) + vesting.length);
+            vesting.end = uint128(block.timestamp) + vesting.period;
+            emit VestingStarted(pending + assets, uint128(block.timestamp) + vesting.period);
         }
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), assets);
         emit RewardsReceived(assets);
@@ -114,7 +137,7 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
         // forge-lint: disable-next-line(unsafe-typecast)
         cooldowns[msg.sender].assets += uint160(assets);
         // forge-lint: disable-next-line(unsafe-typecast)
-        cooldowns[msg.sender].end = uint96(block.timestamp + cooldownLength);
+        cooldowns[msg.sender].end = uint96(block.timestamp + cooldownPeriod);
         _withdraw(msg.sender, address(silo), msg.sender, assets, shares);
         emit CooldownStarted(msg.sender, assets);
     }
@@ -126,7 +149,7 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
         // forge-lint: disable-next-line(unsafe-typecast)
         cooldowns[msg.sender].assets += uint160(assets);
         // forge-lint: disable-next-line(unsafe-typecast)
-        cooldowns[msg.sender].end = uint96(block.timestamp + cooldownLength);
+        cooldowns[msg.sender].end = uint96(block.timestamp + cooldownPeriod);
         _withdraw(msg.sender, address(silo), msg.sender, assets, shares);
         emit CooldownStarted(msg.sender, assets);
     }
@@ -142,24 +165,24 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
     }
 
     /// @notice Set a new vesting period
-    /// @param newVestingLength New vesting period
-    /// @dev Note: setting low vesting lengths causes rounding issues
-    function setVestingLength(uint128 newVestingLength) external onlyRole(ADMIN_ROLE) {
-        if (newVestingLength > MAX_VESTING_LENGTH) revert ExceedsMaxVestingLength();
-        if (newVestingLength < MIN_VESTING_LENGTH && newVestingLength != 0) revert SubceedsMinVestingLength();
+    /// @param newVestingPeriod New vesting period
+    /// @dev Note: setting low vesting periods causes rounding issues
+    function setVestingPeriod(uint128 newVestingPeriod) external onlyRole(ADMIN_ROLE) {
+        if (newVestingPeriod > MAX_VESTING_PERIOD) revert ExceedsMaxVestingPeriod();
+        if (newVestingPeriod < MIN_VESTING_PERIOD && newVestingPeriod != 0) revert SubceedsMinVestingPeriod();
         if (vesting.end > block.timestamp) revert VestingNotCompleted();
-        vesting.length = newVestingLength;
+        vesting.period = newVestingPeriod;
 
-        emit VestingLengthUpdated(newVestingLength);
+        emit VestingPeriodUpdated(newVestingPeriod);
     }
 
     /// @notice Set a new cooldown period
-    /// @param newCooldownLength New cooldown period
-    function setCooldownLength(uint256 newCooldownLength) external onlyRole(ADMIN_ROLE) {
-        if (newCooldownLength > MAX_COOLDOWN_LENGTH) revert ExceedsMaxCooldownLength();
-        cooldownLength = newCooldownLength;
+    /// @param newCooldownPeriod New cooldown period
+    function setCooldownPeriod(uint256 newCooldownPeriod) external onlyRole(ADMIN_ROLE) {
+        if (newCooldownPeriod > MAX_COOLDOWN_PERIOD) revert ExceedsMaxCooldownPeriod();
+        cooldownPeriod = newCooldownPeriod;
 
-        emit CooldownLengthUpdated(newCooldownLength);
+        emit CooldownPeriodUpdated(newCooldownPeriod);
     }
 
     /// @inheritdoc IRestrictedRegistry
@@ -199,24 +222,46 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
         returns (uint256 shares)
     {
         shares = super.deposit(assets, receiver);
-        _checkMinShares();
+    }
+
+    /// @dev Overrides the mint function to include restricted address check
+    function mint(uint256 shares, address receiver)
+        public
+        override
+        nonRestricted(msg.sender)
+        nonRestricted(receiver)
+        returns (uint256 assets)
+    {
+        assets = super.mint(shares, receiver);
     }
 
     /// @notice Get number of decimals for this token
     /// @return Decimals for this token
-    function decimals() public pure override(ERC4626, ERC20) returns (uint8) {
-        return 18;
+    function decimals() public view override(ERC4626Upgradeable, ERC20Upgradeable) returns (uint8) {
+        return ERC4626Upgradeable.decimals();
     }
 
     /// @notice Withdraw function which reverts when cooldown is active
-    function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
-        if (cooldownLength > 0) revert RequiresCooldown();
+    function withdraw(uint256 assets, address receiver, address owner)
+        public
+        override
+        nonRestricted(receiver)
+        nonRestricted(owner)
+        returns (uint256)
+    {
+        if (cooldownPeriod > 0) revert RequiresCooldown();
         return super.withdraw(assets, receiver, owner);
     }
 
     /// @notice Redeem function which requires cooldown
-    function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
-        if (cooldownLength > 0) revert RequiresCooldown();
+    function redeem(uint256 shares, address receiver, address owner)
+        public
+        override
+        nonRestricted(receiver)
+        nonRestricted(owner)
+        returns (uint256)
+    {
+        if (cooldownPeriod > 0) revert RequiresCooldown();
         return super.redeem(shares, receiver, owner);
     }
 
@@ -238,7 +283,7 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
     /// @dev Override transfer function to prevent restricted accounts from transferring
     function transfer(address to, uint256 value)
         public
-        override(IERC20, ERC20)
+        override(IERC20, ERC20Upgradeable)
         nonRestricted(msg.sender)
         nonRestricted(to)
         returns (bool)
@@ -248,7 +293,7 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
 
     function transferFrom(address from, address to, uint256 value)
         public
-        override(IERC20, ERC20)
+        override(IERC20, ERC20Upgradeable)
         nonRestricted(from)
         nonRestricted(to)
         returns (bool)
@@ -256,30 +301,19 @@ contract StakedAsset is IStakedAsset, IRestrictedRegistry, ERC20Permit, ERC4626,
         return super.transferFrom(from, to, value);
     }
 
-    /// @dev Override of _withdraw to enforce minimum shares remain
-    function _withdraw(address caller, address receiver, address _owner, uint256 assets, uint256 shares)
-        internal
-        override
-    {
-        super._withdraw(caller, receiver, _owner, assets, shares);
-        _checkMinShares();
-    }
-
-    /// @dev Calculate pending reward based on vesting time and length
+    /// @dev Calculate pending reward based on vesting time and period
     /// @return pending Pending unvested rewards
     function _pendingRewards() internal view returns (uint256 pending) {
         Vesting memory data = vesting;
         uint256 end = data.end;
-        uint256 length = data.length;
+        uint256 period = data.period;
         uint256 assets = data.assets;
-        if (length == 0) return 0;
+        if (period == 0) return 0;
         if (block.timestamp >= end) return 0;
-        pending = Math.mulDiv(assets, end - block.timestamp, length);
+        pending = Math.mulDiv(assets, end - block.timestamp, period);
     }
 
-    /// @dev Ensures a small non-zero amount of shares always remains
-    function _checkMinShares() internal view {
-        uint256 _totalSupply = totalSupply();
-        if (_totalSupply < MIN_SHARES) revert BelowMinimumShare();
-    }
+    /// @dev Override this function to allow only default admin role to perform upgrades
+    /// @param newImplementation New implementation address
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }

@@ -82,10 +82,15 @@ interface ICollateralManager {
     /// @param tolerance tolerance ratio between the tokens
     event SwapToleranceUpdated(address indexed tokenIn, address indexed tokenOut, uint256 tolerance);
 
-    /// @notice Emitted when a new collateral token was added
+    /// @notice Emitted when a new collateral token is added
     /// @param token Collateral token address
     /// @param vault Respective vault for the collateral token
     event CollateralAdded(address indexed token, address indexed vault);
+
+    /// @notice Emitted when an existing collateral token is removed
+    /// @param token Collateral token address
+    /// @param vault Respective vault for the collateral token
+    event CollateralRemoved(address indexed token, address indexed vault);
 
     /// @notice Emitted when aggregation router gets updated
     /// @param swapModule Address of new swap module
@@ -94,6 +99,11 @@ interface ICollateralManager {
     /// @notice Emitted when controller gets updated
     /// @param controller New controller address
     event ControllerUpdated(address indexed controller);
+
+    /// @notice Emitted when legacy shares are redeemed
+    /// @param vault Vault to redeem shares for
+    /// @param shares Amount of shares redeemed
+    event LegacySharesRedeemed(address vault, uint256 shares);
 
     /// @notice Get pending revenue for a collateral type
     /// @param collateral Get revenue for a specific collateral

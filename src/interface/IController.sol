@@ -122,10 +122,10 @@ interface IController {
     event RecipientStatusChanged(address indexed signer, address indexed recipient, bool status);
 
     /// @notice Emitted when an account delegates a signer to sign orders on their behalf
-    /// @param signer Signer which can sign orders on behalf of payer
     /// @param payer Account which allows signer to sign orders on its behalf
+    /// @param signer Signer which can sign orders on behalf of payer
     /// @param status Delegate status: true if a signer can use tokens from payer during order execution
-    event DelegateStatusChanged(address indexed signer, address indexed payer, bool status);
+    event DelegateStatusChanged(address indexed payer, address indexed signer, bool status);
 
     /// @notice Emitted when collateral support status is updated
     /// @param collateral New collateral account

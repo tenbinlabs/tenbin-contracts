@@ -5,11 +5,11 @@ pragma solidity 0.8.30;
 /// @notice Staked asset interface
 interface IStakedAsset {
     /// @notice Vesting data
-    /// @param length Vesting length in seconds
+    /// @param period Vesting period in seconds
     /// @param end Timestamp at which vesting ends
     /// @param assets Amount of assets vesting
     struct Vesting {
-        uint128 length;
+        uint128 period;
         uint128 end;
         uint256 assets;
     }
@@ -22,18 +22,16 @@ interface IStakedAsset {
         uint96 end;
     }
 
-    /// @notice Existing shares fall below minimum shares threshold
-    error BelowMinimumShare();
     /// @notice Cannot withdraw more than max redeem
     error CooldownExceededMaxRedeem();
     /// @notice Cannot withdraw more than max withdraw
     error CooldownExceededMaxWithdraw();
     /// @notice Cooldown has not completed
     error CooldownInProgress();
-    /// @notice Max cooldown length exceeded
-    error ExceedsMaxCooldownLength();
-    /// @notice Max vesting length exceeded
-    error ExceedsMaxVestingLength();
+    /// @notice Max cooldown period exceeded
+    error ExceedsMaxCooldownPeriod();
+    /// @notice Max vesting period exceeded
+    error ExceedsMaxVestingPeriod();
     /// @notice Cannot rescue asset token from staking contract
     error InvalidRescueToken();
     /// @notice Only restricted account
@@ -42,8 +40,8 @@ interface IStakedAsset {
     error NonZeroAddress();
     /// @notice Redeem and withdrawal require cooldown
     error RequiresCooldown();
-    /// @notice Min cooldown length subceeded
-    error SubceedsMinVestingLength();
+    /// @notice Min cooldown period subceeded
+    error SubceedsMinVestingPeriod();
     /// @notice Must not be vesting
     error VestingNotCompleted();
 
@@ -67,13 +65,13 @@ interface IStakedAsset {
     /// @param assets Amount of assets transferred
     event Unstake(address indexed from, address to, uint256 assets);
 
-    /// @notice Emitted when the vesting length gets updated
-    /// @param newVestingLength New vesting length
-    event VestingLengthUpdated(uint128 newVestingLength);
+    /// @notice Emitted when the vesting period gets updated
+    /// @param newVestingPeriod New vesting period
+    event VestingPeriodUpdated(uint128 newVestingPeriod);
 
-    /// @notice Emitted when the cooldown length gets updated
-    /// @param newCooldownLength New cooldown length
-    event CooldownLengthUpdated(uint256 newCooldownLength);
+    /// @notice Emitted when the cooldown period gets updated
+    /// @param newCooldownPeriod New cooldown period
+    event CooldownPeriodUpdated(uint256 newCooldownPeriod);
 
     /// @notice Get pending rewards for this contract
     /// @return pending Pending unvested token reward

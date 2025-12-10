@@ -80,7 +80,7 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
     mapping(address => uint256) public pendingRevenue;
 
     /// @notice Last total amount of collateral tokens in an underlying vault
-    mapping(address => uint256) private lastTotalAssets;
+    mapping(address => uint256) public lastTotalAssets;
 
     /// @notice Maximum amount the rebalancer can withdraw per collateral
     mapping(address => uint256) public rebalanceCap;
@@ -118,21 +118,13 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         _grantRole(DEFAULT_ADMIN_ROLE, owner_);
     }
 
-    /* ------------------------------------ CONFIG --------------------------------------------- */
+    /* ------------------------------------ Owner Config --------------------------------------- */
 
-    /// @dev Gatekeeper role can set pause status
-    /// @param status New pause status
-    function setPauseStatus(ManagerPauseStatus status) external onlyRole(GATEKEEPER_ROLE) {
-        pauseStatus = status;
-        emit PauseStatusChanged(status);
-    }
-
-    /// @dev Add collateral support with an underlying vault and approve the controller and vault
+    /// @dev Add collateral support with an underlying vault
     /// @param collateral Collateral to add support for
     /// @param vault Vault for this collateral
     function addCollateral(address collateral, address vault)
         external
-        notPaused
         nonReentrant
         onlyRole(DEFAULT_ADMIN_ROLE)
         nonZeroAddress(collateral)
@@ -141,45 +133,38 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         if (address(vaults[collateral]) != address(0)) revert CollateralAlreadySupported();
         if (IERC4626(vault).asset() != collateral) revert IncompatibleCollateralVault();
         IERC20(collateral).safeIncreaseAllowance(controller, type(uint256).max);
-        // TODO: This line is potentially dangerous, as it gives the vault the ability to withdraw from manager
         IERC20(collateral).safeIncreaseAllowance(vault, type(uint256).max);
         vaults[collateral] = IERC4626(vault);
         lastTotalAssets[collateral] = IERC4626(vault).totalAssets();
         emit CollateralAdded(collateral, vault);
     }
 
-    /// @notice Set the maximum amount of collateral that can be withdrawn by rebalancer
-    /// @param collateral Collateral to set a new cap for
-    /// @param amount Maximum amount rebalancer can withdraw
-    function setRebalanceCap(address collateral, uint256 amount) external onlyRole(CAP_ADJUSTER_ROLE) {
-        rebalanceCap[collateral] = amount;
-        emit RebalanceCapChanged(collateral, amount);
+    /// @notice Function to remove support for a collateral vault
+    /// This is an emergency function is used in case of vault malfunction
+    /// This function gives up any pending revenue that might have been earned for this collateral
+    /// @param collateral Collateral to remove
+    function removeCollateral(address collateral) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (address(vaults[collateral]) == address(0)) revert CollateralNotSupported();
+        IERC4626 vault = vaults[collateral];
+        uint256 controllerAllowance = IERC20(collateral).allowance(address(this), controller);
+        uint256 vaultAllowance = IERC20(collateral).allowance(address(this), address(vault));
+        IERC20(collateral).safeDecreaseAllowance(controller, controllerAllowance);
+        IERC20(collateral).safeDecreaseAllowance(address(vault), vaultAllowance);
+        lastTotalAssets[collateral] = 0;
+        delete vaults[collateral];
+        emit CollateralRemoved(collateral, address(vault));
     }
 
-    /// @notice Set a new swap module
-    /// @param newSwapModule New swap module
-    function setSwapModule(address newSwapModule) external onlyRole(DEFAULT_ADMIN_ROLE) nonZeroAddress(newSwapModule) {
-        swapModule = newSwapModule;
-        emit SwapModuleUpdated(newSwapModule);
-    }
-
-    /// @notice Set the slippage tolerance between two collateral tokens
-    /// @param tokenIn Token to be swapped
-    /// @param tokenOut Token to be returned from the swap
-    /// @param tolerance Tolerance ratio between the tokens in bps
-    function setSwapTolerance(address tokenIn, address tokenOut, uint256 tolerance) external onlyRole(ADMIN_ROLE) {
-        swapTolerance[tokenIn][tokenOut] = tolerance;
-        emit SwapToleranceUpdated(tokenIn, tokenOut, tolerance);
-    }
-
-    /// @notice Set the swap cap for a collateral token
-    /// When swapping a collateral, the cap will be decreased
-    /// If attempting to perform a swap higher than the swap cap, the swap will fail
-    /// @param collateral Collateral token to set swap cap for
-    /// @param newSwapCap New swap cap
-    function setSwapCap(address collateral, uint256 newSwapCap) external onlyRole(CAP_ADJUSTER_ROLE) {
-        swapCap[collateral] = newSwapCap;
-        emit SwapCapUpdated(collateral, newSwapCap);
+    /// @notice Function to force redeem shares of a legacy vault
+    /// This is an emergency function used in case of vault malfunction
+    // Cannot redeem shares for an existing vault
+    /// @param vault Vault to redeem shares for
+    /// @param shares Amount of shares to redeem
+    function redeemLegacyShares(IERC4626 vault, uint256 shares) external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
+        address collateral = vault.asset();
+        if (address(vaults[collateral]) != address(0)) revert CollateralAlreadySupported();
+        vault.redeem(shares, address(this), address(this));
+        emit LegacySharesRedeemed(address(vault), shares);
     }
 
     /// @notice Set a new controller, remove old approvals, and set new approvals
@@ -192,18 +177,61 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         nonZeroAddress(newController)
     {
         IERC20 token;
-        address pastController = controller;
+        address previousController = controller;
         for (uint16 i = 0; i < collaterals.length; ++i) {
             token = IERC20(collaterals[i]);
             if (address(vaults[address(token)]) == address(0)) revert CollateralNotSupported();
-            uint256 allowance = token.allowance(address(this), pastController);
+            uint256 allowance = token.allowance(address(this), previousController);
             if (allowance > 0) {
-                token.safeDecreaseAllowance(pastController, allowance);
+                token.safeDecreaseAllowance(previousController, allowance);
             }
             token.safeIncreaseAllowance(newController, type(uint256).max);
         }
         controller = newController;
         emit ControllerUpdated(newController);
+    }
+
+    /// @notice Set a new swap module
+    /// @param newSwapModule New swap module
+    function setSwapModule(address newSwapModule) external onlyRole(DEFAULT_ADMIN_ROLE) nonZeroAddress(newSwapModule) {
+        swapModule = newSwapModule;
+        emit SwapModuleUpdated(newSwapModule);
+    }
+
+    /* ------------------------------------ Admin Config --------------------------------------- */
+
+    /// @dev Gatekeeper role can set pause status
+    /// @param status New pause status
+    function setPauseStatus(ManagerPauseStatus status) external onlyRole(GATEKEEPER_ROLE) {
+        pauseStatus = status;
+        emit PauseStatusChanged(status);
+    }
+
+    /// @notice Set the maximum amount of collateral that can be withdrawn by rebalancer
+    /// @param collateral Collateral to set a new cap for
+    /// @param amount Maximum amount rebalancer can withdraw
+    function setRebalanceCap(address collateral, uint256 amount) external onlyRole(CAP_ADJUSTER_ROLE) {
+        rebalanceCap[collateral] = amount;
+        emit RebalanceCapChanged(collateral, amount);
+    }
+
+    /// @notice Set the swap cap for a collateral token
+    /// When swapping a collateral, the cap will be decreased
+    /// If attempting to perform a swap higher than the swap cap, the swap will fail
+    /// @param collateral Collateral token to set swap cap for
+    /// @param newSwapCap New swap cap
+    function setSwapCap(address collateral, uint256 newSwapCap) external onlyRole(CAP_ADJUSTER_ROLE) {
+        swapCap[collateral] = newSwapCap;
+        emit SwapCapUpdated(collateral, newSwapCap);
+    }
+
+    /// @notice Set the slippage tolerance between two collateral tokens
+    /// @param tokenIn Token to be swapped
+    /// @param tokenOut Token to be returned from the swap
+    /// @param tolerance Tolerance ratio between the tokens in bps
+    function setSwapTolerance(address tokenIn, address tokenOut, uint256 tolerance) external onlyRole(ADMIN_ROLE) {
+        swapTolerance[tokenIn][tokenOut] = tolerance;
+        emit SwapToleranceUpdated(tokenIn, tokenOut, tolerance);
     }
 
     /// @notice Rescue ether sent to this contract
@@ -217,6 +245,7 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
 
     /// @inheritdoc ICollateralManager
     function getRevenue(address collateral) external view returns (uint256 revenue) {
+        if (address(vaults[collateral]) == address(0)) revert CollateralNotSupported();
         return pendingRevenue[collateral] + _computeNewRevenue(collateral, vaults[collateral]);
     }
 
@@ -320,7 +349,7 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         uint256 minAmountOut = _normalizeTo18(params.minReturnAmount, IERC20Metadata(params.dstToken).decimals());
 
         // Calculate bps and verify slippage is within tolerance
-        uint256 slippageBps = (expectedAmountOut - minAmountOut) * 10_000 / expectedAmountOut;
+        uint256 slippageBps = (expectedAmountOut - minAmountOut) * BASIS_PRECISION / expectedAmountOut;
         if (slippageBps > swapTolerance[params.srcToken][params.dstToken]) revert InvalidSlippage();
     }
 

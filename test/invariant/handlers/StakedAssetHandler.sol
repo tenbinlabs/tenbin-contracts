@@ -13,7 +13,6 @@ contract StakedAssetHandler is Test {
     uint256 public blockAtCooldown;
     StakedAsset staking;
     AssetToken asset;
-    uint256 constant MIN_SHARES = 1e18;
 
     constructor(address _admin, address _rewarder, address _user, StakedAsset _staking, AssetToken _asset) {
         admin = _admin;
@@ -29,15 +28,6 @@ contract StakedAssetHandler is Test {
 
         vm.prank(rewarder);
         asset.approve(address(this), type(uint256).max);
-
-        // Initial deposit
-        mintAsset(admin, MIN_SHARES);
-
-        // deposit
-        vm.startPrank(admin);
-        asset.approve(address(staking), type(uint256).max);
-        staking.deposit(MIN_SHARES, admin);
-        vm.stopPrank();
     }
 
     function reward(uint256 rewardAmount) public {
@@ -57,7 +47,7 @@ contract StakedAssetHandler is Test {
         shares = bound(shares, 0, 1e40);
         mintAsset(user, shares);
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
+        staking.setCooldownPeriod(7 days);
 
         // deposit
         vm.prank(user);
@@ -86,7 +76,7 @@ contract StakedAssetHandler is Test {
         reward(assets);
 
         vm.prank(admin);
-        staking.setCooldownLength(0);
+        staking.setCooldownPeriod(0);
 
         uint256 amount = staking.maxWithdraw(user); // some times the rounding causes 1 wei difference so we need the actual max amount
 

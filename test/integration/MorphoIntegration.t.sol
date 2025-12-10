@@ -8,6 +8,7 @@ import {ICollateralManager} from "src/CollateralManager.sol";
 import {IController} from "src/interface/IController.sol";
 import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IVaultV2} from "test/external/morpho/interfaces/IVaultV2.sol";
+import {ReceiveSharesGate} from "test/external/morpho/ReceiveSharesGate.sol";
 import {VaultV2} from "test/external/morpho/VaultV2.sol";
 
 contract MorphoIntegrationTest is BaseTest {
@@ -18,6 +19,7 @@ contract MorphoIntegrationTest is BaseTest {
     // contracts
     IAdapter internal adapter;
     VaultV2 internal morpho;
+    ReceiveSharesGate internal gate;
 
     // max rate (from morpho constants)
     uint256 constant MAX_MAX_RATE = 200e16 / uint256(365 days); // 200% APR
@@ -31,6 +33,7 @@ contract MorphoIntegrationTest is BaseTest {
         morpho = new VaultV2(address(this), address(collateral));
         vault = IERC4626(address(vault));
         adapter = new MorphoVaultV1Adapter(address(morpho), address(vault));
+        gate = new ReceiveSharesGate(address(this));
         setUpController();
         setUpManager();
         setUpConfiguration();
@@ -76,6 +79,45 @@ contract MorphoIntegrationTest is BaseTest {
         require(manager.hasRole(CURATOR_ROLE, curator));
         require(controller.hasRole(MINTER_ROLE, address(multicall)));
         require(multicall.hasRole(MULTICALLER_ROLE, multicaller));
+    }
+
+    function test_Revert_Morpho() public {
+        //assign vault gate
+        vm.startPrank(curator);
+        morpho.submit(abi.encodeCall(IVaultV2.setReceiveSharesGate, (address(gate))));
+        morpho.setReceiveSharesGate(address(gate));
+        vm.stopPrank();
+
+        // mint funds for depositor and approve
+        collateral.mint(depositor, 1000e6);
+        vm.prank(depositor);
+        collateral.approve(address(morpho), type(uint256).max);
+
+        // add adapter
+        vm.startPrank(curator);
+        morpho.submit(abi.encodeCall(IVaultV2.addAdapter, address(adapter)));
+        morpho.addAdapter(address(adapter));
+
+        // set caps
+        bytes memory adapterId = abi.encode("this", address(adapter));
+        morpho.submit(abi.encodeCall(IVaultV2.increaseAbsoluteCap, (adapterId, 100000000e6)));
+        morpho.submit(abi.encodeCall(IVaultV2.increaseRelativeCap, (adapterId, 1e18)));
+        morpho.increaseAbsoluteCap(adapterId, 100000000e6);
+        morpho.increaseRelativeCap(adapterId, 1e18);
+        vm.stopPrank();
+
+        // deposit funds into morpho vault fails because not whitelisted
+        resetPrank(depositor);
+        vm.expectRevert();
+        morpho.deposit(1000e6, depositor);
+        vm.stopPrank();
+
+        // whitelist the depositor inside the gate
+        gate.setIsWhitelisted(depositor, true);
+
+        // Now deposit works
+        vm.prank(depositor);
+        morpho.deposit(1000e6, depositor);
     }
 
     function test_Morpho() public {

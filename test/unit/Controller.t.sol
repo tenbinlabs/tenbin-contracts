@@ -79,7 +79,7 @@ contract ControllerTest is BaseTest {
     function test_EncodeOrder() public view {
         IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
         bytes32 orderTypeHash = keccak256(
-            "OrderType order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount"
+            "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount)"
         );
         bytes memory expected = abi.encode(
             orderTypeHash,
@@ -530,11 +530,19 @@ contract ControllerTest is BaseTest {
         allowSigner(payer);
         vm.prank(account);
         vm.expectEmit();
-        emit IController.DelegateStatusChanged(payer, account, true);
+        emit IController.DelegateStatusChanged(account, payer, true);
         controller.setDelegateStatus(payer, true);
 
-        bool isDelegate = controller.delegates(payer, account);
+        bool isDelegate = controller.delegates(account, payer);
         assertEq(isDelegate, true);
+
+        vm.prank(account);
+        vm.expectEmit();
+        emit IController.DelegateStatusChanged(account, payer, false);
+        controller.setDelegateStatus(payer, false);
+
+        isDelegate = controller.delegates(account, payer);
+        assertEq(isDelegate, false);
     }
 
     function test_Revert_SetDelegateStatus(address account) public {
@@ -1123,8 +1131,50 @@ contract ControllerTest is BaseTest {
         controller.redeem(redeemOrder, orderSignature);
     }
 
+    function test_ExposedVerifyNonce() public {
+        try controller.exposedVerifyNonce(payer, 0) {}
+        catch (bytes memory) {
+            /*lowLevelData*/
+            fail("Invalid nonce");
+        }
+    }
+
+    function test_Revert_ExposedVerifyNonce() public {
+        uint256 collateralAmount = 10000e6;
+        uint256 assetAmount = 3e18;
+        performPayerMint(collateralAmount, assetAmount);
+
+        vm.expectRevert(IController.InvalidNonce.selector);
+        controller.exposedVerifyNonce(payer, 0);
+    }
+
+    function test_Revert_Multi_Signers_Delegates(uint256 collateralAmount, uint256 assetAmount) public {
+        uint256 signer2Key = 0xC000;
+        address signer2Address = vm.addr(signer2Key);
+        // Set up scenario
+        collateralAmount = bound(collateralAmount, 1, 1e40);
+        assetAmount = bound(assetAmount, 1, 1e40);
+
+        // Have a second delegate signer
+        allowSigner(payer);
+        allowSigner(signer2Address);
+        vm.prank(signer2Address);
+        controller.setDelegateStatus(payer, true);
+
+        // signer 1 can submit an order
+        IController.Order memory order = performPayerMint(collateralAmount, assetAmount);
+        IController.Signature memory signature = signOrder(signer2Key, hashOrder(order));
+
+        // signer 2 can't replay the same order
+        vm.expectRevert(IController.InvalidNonce.selector);
+        mint(order, signature);
+    }
+
     // helper function to mint assets for the payer account
-    function performPayerMint(uint256 collateralAmount, uint256 assetAmount) internal {
+    function performPayerMint(uint256 collateralAmount, uint256 assetAmount)
+        internal
+        returns (IController.Order memory)
+    {
         // mint collateral, approve controller, and allow payer to sign order
         collateral.mint(payer, collateralAmount);
         approveController(collateral, payer, collateralAmount);
@@ -1147,5 +1197,7 @@ contract ControllerTest is BaseTest {
             order.asset_amount
         );
         mint(order, signature);
+
+        return order;
     }
 }

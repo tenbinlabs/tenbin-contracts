@@ -2,12 +2,13 @@
 pragma solidity 0.8.30;
 
 import {CollateralManager} from "src/CollateralManager.sol";
+import {CollateralManagerHarness} from "test/harness/CollateralManagerHarness.sol";
 import {ForkBaseTest} from "test/fork/ForkBaseTest.sol";
 import {IAggregationRouterV6} from "src/external/1inch/IAggregationRouterV6.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ISwapModule} from "src/interface/ISwapModule.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SwapModule} from "src/SwapModule.sol";
+import {SwapModuleHarness} from "test/harness/SwapModuleHarness.sol";
 
 contract OneInchForkTest is ForkBaseTest {
     using SafeERC20 for IERC20;
@@ -28,9 +29,9 @@ contract OneInchForkTest is ForkBaseTest {
         deployCodeTo("ERC1967Proxy.sol", abi.encode(managerImplementation, data), managerFork);
 
         // create swap module using new manager and 1inch mainnet router
-        manager = CollateralManager(managerFork);
+        manager = CollateralManagerHarness(managerFork);
         router = router1Inch;
-        swapModule = new SwapModule(address(manager), address(router));
+        swapModule = new SwapModuleHarness(address(manager), address(router));
 
         // set up manager again using the new manager contract
         setUpManager();

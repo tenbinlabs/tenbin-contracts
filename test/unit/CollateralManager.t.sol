@@ -30,7 +30,12 @@ contract CollateralManagerTest is BaseTest {
         etherReceiver = new MockEtherReceiver();
     }
 
-    function test_Revert_Initialize() public {
+    function test_CollateralManager_Initialize() public view {
+        assertEq(manager.controller(), address(controller));
+        assertEq(manager.hasRole(DEFAULT_ADMIN_ROLE, owner), true);
+    }
+
+    function test_Revert_CollateralManager_Initialize() public {
         CollateralManager managerImplementation = new CollateralManager();
         // cannot initialize again
         vm.expectRevert(Initializable.InvalidInitialization.selector);
@@ -46,12 +51,7 @@ contract CollateralManagerTest is BaseTest {
         CollateralManager(address(new ERC1967Proxy(address(managerImplementation), data)));
     }
 
-    function test_Initialize() public view {
-        assertEq(manager.controller(), address(controller));
-        assertEq(manager.hasRole(DEFAULT_ADMIN_ROLE, owner), true);
-    }
-
-    function test_Revert_UpgradeToAndCall() public {
+    function test_Revert_CollateralManager_UpgradeToAndCall() public {
         address newImplementation = address(new CollateralManagerPause());
         address badImplementation = address(new MockERC20("mock", "mock", 18));
 
@@ -65,7 +65,7 @@ contract CollateralManagerTest is BaseTest {
         manager.upgradeToAndCall(badImplementation, new bytes(0));
     }
 
-    function test_UpgradeToAndCall() public {
+    function test_CollateralManager_UpgradeToAndCall() public {
         address newImplementation = address(new CollateralManagerPause());
         vm.prank(owner);
         manager.upgradeToAndCall(newImplementation, new bytes(0));
@@ -135,6 +135,12 @@ contract CollateralManagerTest is BaseTest {
         manager.addCollateral(address(0), address(0));
 
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        manager.removeCollateral(address(0));
+
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        manager.redeemLegacyShares(ERC4626(address(0)), 0);
+
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         manager.deposit(address(0), 0);
 
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
@@ -162,9 +168,6 @@ contract CollateralManagerTest is BaseTest {
     function test_Revert_FMLPause() public {
         vm.prank(gatekeeper);
         manager.setPauseStatus(ICollateralManager.ManagerPauseStatus.FMLPause);
-
-        vm.expectRevert(ICollateralManager.FMLPause.selector);
-        manager.addCollateral(address(0), address(0));
 
         vm.expectRevert(ICollateralManager.FMLPause.selector);
         manager.deposit(address(0), 0);
@@ -259,6 +262,69 @@ contract CollateralManagerTest is BaseTest {
         manager.addCollateral(address(newCollateral), address(newVault));
         assertEq(address(manager.vaults(address(newCollateral))), address(newVault));
         assertEq(manager.pendingRevenue(address(newCollateral)), 0);
+    }
+
+    function test_Revert_RemoveCollateral() public {
+        // only owner can call this function
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        manager.removeCollateral(address(collateral));
+
+        /// cannot remove a collateral if there is no collateral set
+        vm.prank(owner);
+        vm.expectRevert(ICollateralManager.CollateralNotSupported.selector);
+        manager.removeCollateral(address(0));
+    }
+
+    function test_RemoveCollateral() public {
+        vm.prank(owner);
+        vm.expectEmit();
+        emit ICollateralManager.CollateralRemoved(address(collateral), address(vault));
+        manager.removeCollateral(address(collateral));
+        assertEq(manager.lastTotalAssets(address(collateral)), 0);
+        assertEq(address(manager.vaults(address(collateral))), address(0));
+    }
+
+    function test_Revert_RedeemLegacyShares() public {
+        // only owner can call this function
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        manager.redeemLegacyShares(vault, 0);
+
+        // can't redeem shares for a vault that is currently being used
+        vm.prank(owner);
+        vm.expectRevert(ICollateralManager.CollateralAlreadySupported.selector);
+        manager.redeemLegacyShares(vault, 0);
+    }
+
+    function test_RedeemLegacyShares() public {
+        // deposit collateral into vault
+        collateral.mint(address(manager), 1000e6);
+        vm.prank(curator);
+        manager.deposit(address(collateral), 1000e6);
+
+        // simulate earning interest
+        collateral.mint(address(vault), 1000e6);
+        assertEq(manager.getRevenue(address(collateral)), 1000e6);
+
+        // remove collateral vault
+        vm.prank(owner);
+        manager.removeCollateral(address(collateral));
+        assertEq(manager.lastTotalAssets(address(collateral)), 0);
+
+        // redeem legacy shares
+        vm.expectEmit();
+        emit ICollateralManager.LegacySharesRedeemed(address(vault), 500e6);
+        vm.prank(owner);
+        manager.redeemLegacyShares(vault, 500e6);
+        assertEq(vault.balanceOf(address(manager)), 500e6);
+        assertApproxEqAbs(collateral.balanceOf(address(manager)), 1000e6, VAULT_TOLERANCE);
+
+        // redeem legacy shares again
+        vm.expectEmit();
+        emit ICollateralManager.LegacySharesRedeemed(address(vault), 500e6);
+        vm.prank(owner);
+        manager.redeemLegacyShares(vault, 500e6);
+        assertEq(vault.balanceOf(address(manager)), 0);
+        assertApproxEqAbs(collateral.balanceOf(address(manager)), 2000e6, VAULT_TOLERANCE);
     }
 
     function test_Revert_Deposit() public {
@@ -930,5 +996,48 @@ contract CollateralManagerTest is BaseTest {
         vm.prank(curator);
         vm.expectRevert(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector);
         manager.swap(parameters, swapData);
+    }
+
+    function test_ExposedComputeNewRevenue() public {
+        assertEq(manager.exposedComputeNewRevenue(address(collateral), vault), 0);
+
+        // simulate earning interest
+        collateral.mint(address(vault), 1000e6);
+
+        assertEq(manager.exposedComputeNewRevenue(address(collateral), vault), 1000e6);
+    }
+
+    function test_ExposedNormalizeTo18() public view {
+        assertEq(manager.exposedNormalizeTo18(1e6, 6), 1e18);
+        assertEq(manager.exposedNormalizeTo18(1e18, 18), 1e18);
+        assertEq(manager.exposedNormalizeTo18(1e20, 20), 1e18);
+    }
+
+    function test_ExposedVerifySlippage() public {
+        SwapContext memory ctx;
+        ctx.executor = vm.addr(0x1111);
+        ctx.token1 = collateral;
+        ctx.token2 = collateral2;
+        ctx.srcToken = address(collateral);
+        ctx.dstToken = address(collateral2);
+        ctx.amount = 1000e6;
+        ctx.minReturnAmount = 1000e18;
+
+        (,,, ISwapModule.SwapParameters memory params) = makeSwapData(ctx);
+
+        try manager.exposedVerifySlippage(params) {}
+        catch (bytes memory) {
+            /*lowLevelData*/
+            fail("Invalid Slippage check");
+        }
+    }
+
+    function test_ExposedRealizeRevenue() public {
+        assertEq(manager.pendingRevenue(address(collateral)), 0);
+        // simulate earning interest
+        collateral.mint(address(vault), 1000e6);
+        manager.exposedRealizeRevenue(address(collateral), vault);
+
+        assertEq(manager.pendingRevenue(address(collateral)), 1000e6);
     }
 }

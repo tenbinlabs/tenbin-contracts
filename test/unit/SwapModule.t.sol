@@ -6,7 +6,7 @@ import {IERC20Errors} from "lib/openzeppelin-contracts/contracts/interfaces/draf
 import {ISwapModule} from "src/interface/ISwapModule.sol";
 import {Mock1InchRouter, Mock1InchRouterWithInsufficientReturnAmount} from "test/mocks/Mock1InchRouter.sol";
 import {MockERC20} from "test/mocks/MockERC20.sol";
-import {SwapModule} from "src/SwapModule.sol";
+import {SwapModuleHarness} from "test/harness/SwapModuleHarness.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract SwapModuleTest is Test {
@@ -22,14 +22,14 @@ contract SwapModuleTest is Test {
     IAggregationRouterV6 router;
     MockERC20 internal token0;
     MockERC20 internal token1;
-    SwapModule internal swapModule;
+    SwapModuleHarness internal swapModule;
 
     function setUp() public {
         curator = vm.addr(0xA000);
         manager = vm.addr(0xA001);
         executor = vm.addr(0xA002);
         router = new Mock1InchRouter();
-        swapModule = new SwapModule(manager, address(router));
+        swapModule = new SwapModuleHarness(manager, address(router));
         token0 = new MockERC20("Token 0", "TK0", 18);
         token1 = new MockERC20("Token 1", "TK1", 18);
         vm.label({account: curator, newLabel: "curator"});
@@ -205,5 +205,41 @@ contract SwapModuleTest is Test {
         // check balances
         assertEq(token0.balanceOf(address(swapModule)), 0);
         assertEq(token1.balanceOf(address(manager)), amount);
+    }
+
+    function test_ExposedSwap1Inch() public {
+        // create input data
+        ISwapModule.SwapParameters memory params = ISwapModule.SwapParameters({
+            swapType: 0,
+            router: address(router),
+            srcToken: address(token0),
+            dstToken: address(token1),
+            amount: 1000e18,
+            minReturnAmount: 1000e18
+        });
+        IAggregationRouterV6.SwapDescription memory desc = IAggregationRouterV6.SwapDescription({
+            srcToken: token0,
+            dstToken: token1,
+            srcReceiver: payable(address(router)),
+            dstReceiver: payable(address(manager)),
+            amount: 1000e18,
+            minReturnAmount: 1000e18,
+            flags: uint256(0)
+        });
+        //bytes memory parameters = abi.encode(params);
+        bytes memory data = new bytes(0);
+        bytes memory swapData = abi.encode(executor, desc, data);
+
+        // mint tokens
+        token0.mint(address(swapModule), 1000e18);
+        token1.mint(address(router), 1000e18);
+
+        // perform swap
+        vm.prank(manager);
+        swapModule.exposedSwap1Inch(params, swapData);
+
+        // check balances
+        assertEq(token0.balanceOf(address(swapModule)), 0);
+        assertEq(token1.balanceOf(address(manager)), 1000e18);
     }
 }

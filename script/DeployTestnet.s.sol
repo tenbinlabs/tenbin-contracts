@@ -24,9 +24,9 @@ contract DeployTestnet is BaseScript, Config {
     /// @notice Default ratio is 10%
     uint256 public constant DEFAULT_RATIO = 1e17;
     /// @notice Default cooldown length for testnet is 180 seconds
-    uint128 public constant DEFAULT_COOLDOWN_LENGTH = 180 seconds;
+    uint128 public constant DEFAULT_COOLDOWN_PERIOD = 180 seconds;
     /// @notice Default vesting length for testnet is 1200 seconds
-    uint128 public constant DEFAULT_VESTING_LENGTH = 1200 seconds;
+    uint128 public constant DEFAULT_VESTING_PERIOD = 1200 seconds;
     /// @notice USDC address
     address public constant COLLATERAL_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     /// @notice Steakhouse USDC Vault address
@@ -119,14 +119,25 @@ contract DeployTestnet is BaseScript, Config {
         deployment.controller = new Controller{salt: SALT}(
             address(deployment.asset), DEFAULT_RATIO, address(deployment.custodianModule), broadcaster
         );
+        deployment.multicall = new MultiCall{salt: SALT}(broadcaster);
+
+        // deploy manager behind a proxy
         address managerImplementation = address(new CollateralManager{salt: SALT}());
         bytes memory data =
             abi.encodeWithSelector(CollateralManager.initialize.selector, address(deployment.controller), broadcaster);
         ERC1967Proxy proxy = new ERC1967Proxy{salt: SALT}(managerImplementation, data);
         deployment.manager = CollateralManager(address(proxy));
-        deployment.multicall = new MultiCall{salt: SALT}(broadcaster);
-        deployment.staking = new StakedAsset{salt: SALT}("Staked Tenbin Gold", "stGOLD", deployment.asset, broadcaster);
+
+        // deploy staking behind a proxy
+        address stakingImplementation = address(new StakedAsset{salt: SALT}());
+        data = abi.encodeWithSelector(
+            StakedAsset.initialize.selector, "Staked Tenbin Gold", "stGOLD", deployment.asset, broadcaster
+        );
+        proxy = new ERC1967Proxy{salt: SALT}(stakingImplementation, data);
+        deployment.staking = StakedAsset(address(proxy));
         deployment.silo = deployment.staking.silo();
+
+        // deploy remaining contracts
         deployment.router = new Mock1InchRouter();
         deployment.swapModule = new SwapModule{salt: SALT}(address(deployment.manager), address(deployment.router));
         deployment.collateral = new MockERC20{salt: SALT}("Mock USDC", "USDC", 6);
@@ -182,8 +193,8 @@ contract DeployTestnet is BaseScript, Config {
         deployment.controller.setIsCollateral(address(deployment.collateral), true);
         deployment.controller.setManager(address(deployment.manager));
         deployment.staking.grantRole(ADMIN_ROLE, broadcaster);
-        deployment.staking.setCooldownLength(DEFAULT_COOLDOWN_LENGTH);
-        deployment.staking.setVestingLength(DEFAULT_VESTING_LENGTH);
+        deployment.staking.setCooldownPeriod(DEFAULT_COOLDOWN_PERIOD);
+        deployment.staking.setVestingPeriod(DEFAULT_VESTING_PERIOD);
         deployment.custodianModule.setCustodianStatus(CUSTODIAN_ADDRESS, true);
 
         // transfer ownership
@@ -227,7 +238,7 @@ contract DeployTestnet is BaseScript, Config {
         console.log("order typehash: ");
         console.logBytes32(
             keccak256(
-                "OrderType order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount"
+                "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount)"
             )
         );
         console.log("\n========================= Contracts =========================\n");

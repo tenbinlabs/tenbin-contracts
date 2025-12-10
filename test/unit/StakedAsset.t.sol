@@ -2,16 +2,149 @@
 pragma solidity 0.8.30;
 
 import {BaseTest} from "test/BaseTest.sol";
+import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1967Utils} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {IRestrictedRegistry} from "src/interface/IRestrictedRegistry.sol";
 import {IStakedAsset} from "src/interface/IStakedAsset.sol";
+import {MockERC20} from "test/mocks/MockERC20.sol";
+import {StakedAsset} from "src/StakedAsset.sol";
+import {StakedAssetPause} from "test/mocks/StakedAssetPause.sol";
 
 contract StakedAssetTest is BaseTest {
-    function test_Constructor() public view {
+    function test_StakedAsset_Initialize() public view {
         assertEq(staking.name(), "Staked Asset");
         assertEq(staking.symbol(), "stAST");
         assertEq(staking.asset(), address(asset));
-        assertEq(staking.MIN_SHARES(), MIN_SHARES);
+        assertEq(manager.hasRole(DEFAULT_ADMIN_ROLE, owner), true);
+    }
+
+    function test_Revert_StakedAsset_Initialize() public {
+        StakedAsset stakingImplementation = new StakedAsset();
+
+        // cannot initialize again
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        manager.initialize(address(controller), address(this));
+
+        // cannot initialize implementation
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        stakingImplementation.initialize("Staked Asset", "stAST", address(asset), owner);
+
+        // test failed initialization cases
+        bytes memory data = abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(0), address(this));
+        vm.expectRevert(IStakedAsset.NonZeroAddress.selector);
+        StakedAsset(address(new ERC1967Proxy(address(stakingImplementation), data)));
+
+        data = abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(asset), address(0));
+        vm.expectRevert(IStakedAsset.NonZeroAddress.selector);
+        StakedAsset(address(new ERC1967Proxy(address(stakingImplementation), data)));
+    }
+
+    function test_Revert_StakedAsset_UpgradeToAndCall() public {
+        address newImplementation = address(new StakedAssetPause());
+        address badImplementation = address(new MockERC20("mock", "mock", 18));
+
+        // revert if not default admin role
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        manager.upgradeToAndCall(newImplementation, new bytes(0));
+
+        // revert if implementation is not UUPS
+        vm.expectPartialRevert(ERC1967Utils.ERC1967InvalidImplementation.selector);
+        vm.prank(owner);
+        manager.upgradeToAndCall(badImplementation, new bytes(0));
+    }
+
+    function test_StakedAsset_UpgradeToAndCall() public {
+        address newImplementation = address(new StakedAssetPause());
+        vm.prank(owner);
+        staking.upgradeToAndCall(newImplementation, new bytes(0));
+
+        // check implementation slot to ensure new implementation is correct
+        bytes32 slot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        assertEq(abi.encode(vm.load(address(staking), slot)), abi.encode(newImplementation));
+
+        // ensure roles are still valid after upgrade
+        assertEq(staking.hasRole(DEFAULT_ADMIN_ROLE, owner), true);
+        assertEq(staking.hasRole(ADMIN_ROLE, admin), true);
+        assertEq(staking.hasRole(REWARDER_ROLE, rewarder), true);
+        assertEq(staking.hasRole(RESTRICTER_ROLE, restricter), true);
+
+        // expect all interface functions to revert based on the new implementation
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.decimals();
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.name();
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.symbol();
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.totalSupply();
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.balanceOf(address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        staking.transfer(address(0), uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        staking.transferFrom(address(0), address(0), uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.approve(address(0), uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.allowance(address(0), address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.asset();
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.totalAssets();
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.convertToAssets(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.convertToShares(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.deposit(uint256(0), address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.mint(uint256(0), address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.withdraw(uint256(0), address(0), address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.redeem(uint256(0), address(0), address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.previewDeposit(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.previewMint(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.previewWithdraw(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.previewRedeem(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.maxDeposit(address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.maxMint(address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.maxWithdraw(address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.maxRedeem(address(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.pendingRewards();
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.reward(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.cooldownShares(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.cooldownAssets(uint256(0));
+        vm.expectRevert(StakedAssetPause.ContractPaused.selector);
+        staking.unstake(address(0));
+
+        // upgrade back to original implementation
+        newImplementation = address(new StakedAsset());
+        vm.prank(owner);
+        staking.upgradeToAndCall(newImplementation, new bytes(0));
+
+        // check implementation slot to ensure new implementation is correct
+        slot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        assertEq(abi.encode(vm.load(address(staking), slot)), abi.encode(newImplementation));
+
+        // check some functions return correct values
+        assertEq(staking.asset(), address(asset));
     }
 
     function test_Decimals() public view {
@@ -37,12 +170,6 @@ contract StakedAssetTest is BaseTest {
         staking.deposit(1000e18, user);
 
         assertEq(staking.balanceOf(user), 0);
-
-        // minimum shares
-        mintAsset(user, 0.9e18);
-        vm.prank(user);
-        vm.expectRevert(IStakedAsset.BelowMinimumShare.selector);
-        staking.deposit(0.9e18, user);
     }
 
     function test_Deposit() public {
@@ -54,11 +181,39 @@ contract StakedAssetTest is BaseTest {
         assertEq(shares, 1000e18);
     }
 
+    function test_Revert_Mint() public {
+        address restrictedAddress = address(1);
+        vm.prank(restricter);
+        staking.setIsRestricted(restrictedAddress, true);
+
+        // restricted receiver
+        vm.prank(user);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.mint(1000e18, restrictedAddress);
+
+        assertEq(staking.balanceOf(restrictedAddress), 0);
+
+        // restricted sender
+        vm.prank(restrictedAddress);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.mint(1000e18, user);
+
+        assertEq(staking.balanceOf(user), 0);
+    }
+
+    function test_Mint() public {
+        mintAsset(user, 1000e18);
+        vm.prank(user);
+        uint256 assets = staking.mint(1000e18, user);
+
+        assertEq(assets, 1000e18);
+    }
+
     function test_Revert_Unstake_Access() public {
         // setup
         mintAsset(user, 1000e18);
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
+        staking.setCooldownPeriod(7 days);
 
         // deposit
         vm.prank(user);
@@ -66,10 +221,10 @@ contract StakedAssetTest is BaseTest {
 
         // initiate cooldown
         vm.prank(user);
-        staking.cooldownShares(999e18); // Avoid falling below MIN_SHARES
+        staking.cooldownShares(1000e18); // Avoid falling below 0
         (uint256 assets, uint256 end) = staking.cooldowns(user);
         assertEq(end, block.timestamp + 7 days);
-        assertEq(assets, 999e18);
+        assertEq(assets, 1000e18);
 
         // fast forward to end of cooldown
         vm.warp(block.timestamp + 7 days);
@@ -82,8 +237,8 @@ contract StakedAssetTest is BaseTest {
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
         staking.unstake(user);
 
-        assertEq(staking.balanceOf(user), MIN_SHARES);
-        assertEq(asset.balanceOf(address(silo)), 999e18);
+        assertEq(staking.balanceOf(user), 0);
+        assertEq(asset.balanceOf(address(silo)), 1000e18);
 
         // Removing restriction allows interaction
         vm.prank(restricter);
@@ -92,8 +247,8 @@ contract StakedAssetTest is BaseTest {
         vm.prank(user);
         staking.unstake(user);
 
-        assertEq(staking.balanceOf(user), MIN_SHARES);
-        assertEq(asset.balanceOf(user), 999e18);
+        assertEq(staking.balanceOf(user), 0);
+        assertEq(asset.balanceOf(user), 1000e18);
     }
 
     function test_Revert_RestrictedRegistry_Transfer() public {
@@ -170,7 +325,7 @@ contract StakedAssetTest is BaseTest {
         // setup
         mintAsset(user, 1000e18);
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
+        staking.setCooldownPeriod(7 days);
 
         // deposit
         vm.prank(user);
@@ -200,7 +355,7 @@ contract StakedAssetTest is BaseTest {
         vm.prank(restricted);
         asset.approve(address(staking), 1000e18);
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
+        staking.setCooldownPeriod(7 days);
 
         // deposit
         vm.prank(restricted);
@@ -227,7 +382,7 @@ contract StakedAssetTest is BaseTest {
         vm.prank(restricted);
         asset.approve(address(staking), 1000e18);
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
+        staking.setCooldownPeriod(7 days);
 
         // deposit
         vm.prank(restricted);
@@ -251,6 +406,40 @@ contract StakedAssetTest is BaseTest {
         assertEq(asset.balanceOf(address(this)), 1000e18);
     }
 
+    function test_Revert_Withdraw() public {
+        // setup
+        address restrictedAddress = address(1);
+        vm.prank(restricter);
+        staking.setIsRestricted(restrictedAddress, true);
+
+        // ensure withdrawal reverts for receiver
+        vm.startPrank(user);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.withdraw(1000e18, restrictedAddress, user);
+
+        // ensure withdrawal reverts for owner
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.withdraw(1000e18, user, restrictedAddress);
+        vm.stopPrank();
+    }
+
+    function test_Revert_Redeem() public {
+        // setup
+        address restrictedAddress = address(1);
+        vm.prank(restricter);
+        staking.setIsRestricted(restrictedAddress, true);
+
+        // ensure redeem reverts for receiver
+        vm.startPrank(user);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.redeem(1000e18, restrictedAddress, user);
+
+        // ensure redeem reverts for owner
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.redeem(1000e18, user, restrictedAddress);
+        vm.stopPrank();
+    }
+
     function test_Revert_Reward() public {
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         staking.reward(1000e18);
@@ -265,7 +454,7 @@ contract StakedAssetTest is BaseTest {
         vm.prank(user);
         staking.deposit(1000e18, user);
 
-        // reward with no vesting length
+        // reward with no vesting period
         vm.prank(rewarder);
         staking.reward(1000e18);
         (,, uint256 amountVesting) = staking.vesting();
@@ -294,9 +483,9 @@ contract StakedAssetTest is BaseTest {
         mintAsset(rewarder, 2000e18);
         mintAsset(user, 1000e18);
 
-        // set vesting length
+        // set vesting period
         vm.prank(admin);
-        staking.setVestingLength(7 days);
+        staking.setVestingPeriod(7 days);
 
         // mint some staking tokens
         vm.prank(user);
@@ -314,8 +503,8 @@ contract StakedAssetTest is BaseTest {
         // reward the contract again
         vm.prank(rewarder);
         staking.reward(1000e18);
-        (uint256 length, uint256 time, uint256 amountVesting) = staking.vesting();
-        assertEq(length, 7 days);
+        (uint256 period, uint256 time, uint256 amountVesting) = staking.vesting();
+        assertEq(period, 7 days);
         assertEq(time, block.timestamp + 7 days);
         assertEq(amountVesting, 1750e18);
         assertEq(staking.totalAssets(), 1250e18);
@@ -329,38 +518,38 @@ contract StakedAssetTest is BaseTest {
 
         // make a withdrawal
         vm.prank(user);
-        staking.redeem(1000e18 - MIN_SHARES, user, user);
-        assertApproxEqAbs(staking.totalAssets(), 3e18, VAULT_TOLERANCE);
-        assertApproxEqAbs(asset.balanceOf(user), 2997e18, VAULT_TOLERANCE);
+        staking.redeem(1000e18, user, user);
+        assertApproxEqAbs(staking.totalAssets(), 0, VAULT_TOLERANCE);
+        assertApproxEqAbs(asset.balanceOf(user), 3000e18, VAULT_TOLERANCE);
     }
 
     function test_Revert_Vesting() public {
-        // only admin can set vesting length
+        // only admin can set vesting period
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        staking.setVestingLength(7 days);
+        staking.setVestingPeriod(7 days);
 
-        // cannot exceed max vesting length
+        // cannot exceed max vesting period
         vm.prank(admin);
-        vm.expectRevert(IStakedAsset.ExceedsMaxVestingLength.selector);
-        staking.setVestingLength(91 days);
+        vm.expectRevert(IStakedAsset.ExceedsMaxVestingPeriod.selector);
+        staking.setVestingPeriod(91 days);
 
         vm.prank(admin);
-        vm.expectRevert(IStakedAsset.SubceedsMinVestingLength.selector);
-        staking.setVestingLength(800 seconds);
+        vm.expectRevert(IStakedAsset.SubceedsMinVestingPeriod.selector);
+        staking.setVestingPeriod(800 seconds);
 
         // set vesting
         vm.prank(admin);
-        staking.setVestingLength(7 days);
+        staking.setVestingPeriod(7 days);
 
         // start vesting
         mintAsset(rewarder, 1000e18);
         vm.prank(rewarder);
         staking.reward(1000e18);
 
-        // cannot set new vesting length while vesting in progress
+        // cannot set new vesting period while vesting in progress
         vm.prank(admin);
         vm.expectRevert(IStakedAsset.VestingNotCompleted.selector);
-        staking.setVestingLength(7 days);
+        staking.setVestingPeriod(7 days);
     }
 
     function test_Vesting() public {
@@ -374,7 +563,7 @@ contract StakedAssetTest is BaseTest {
 
         // set vesting
         vm.prank(admin);
-        staking.setVestingLength(7 days);
+        staking.setVestingPeriod(7 days);
 
         // reward contract
         vm.prank(rewarder);
@@ -382,8 +571,8 @@ contract StakedAssetTest is BaseTest {
         emit IStakedAsset.VestingStarted(1000e18, block.timestamp + 7 days);
         emit IStakedAsset.RewardsReceived(1000e18);
         staking.reward(1000e18);
-        (uint256 length, uint256 time, uint256 amountVesting) = staking.vesting();
-        assertEq(length, 7 days);
+        (uint256 period, uint256 time, uint256 amountVesting) = staking.vesting();
+        assertEq(period, 7 days);
         assertEq(time, block.timestamp + 7 days);
         assertEq(amountVesting, 1000e18);
         assertEq(staking.pendingRewards(), 1000e18);
@@ -417,17 +606,15 @@ contract StakedAssetTest is BaseTest {
 
         // redeem 50% after vesting
         vm.startPrank(user);
-        uint256 redeemAmount = 500e18 - MIN_SHARES;
-
-        staking.redeem(redeemAmount, user, user);
-        assertEq(staking.balanceOf(address(user)), MIN_SHARES);
-        assertApproxEqAbs(asset.balanceOf(address(user)), 1997.5e18, VAULT_TOLERANCE);
+        staking.redeem(500e18, user, user);
+        assertEq(staking.balanceOf(address(user)), 0);
+        assertApproxEqAbs(asset.balanceOf(address(user)), 2000e18, VAULT_TOLERANCE);
     }
 
-    function test_fuzz_Vesting(uint256 depositAmount, uint256 rewardAmount, uint32 vestingLength) public {
+    function test_fuzz_Vesting(uint256 depositAmount, uint256 rewardAmount, uint32 vestingPeriod) public {
         depositAmount = bound(depositAmount, 4e18, 1e30);
         rewardAmount = bound(rewardAmount, 4e18, 1e30);
-        uint256 vestingTime = bound(uint256(vestingLength), 1200 seconds, staking.MAX_VESTING_LENGTH());
+        uint256 vestingTime = bound(uint256(vestingPeriod), 1200 seconds, staking.MAX_VESTING_PERIOD());
         uint256 startTimestamp = block.timestamp;
         uint256 redeemCounter;
         // setup
@@ -441,13 +628,13 @@ contract StakedAssetTest is BaseTest {
         // set vesting
         vm.prank(admin);
         // forge-lint: disable-next-line(unsafe-typecast)
-        staking.setVestingLength(uint128(vestingTime));
+        staking.setVestingPeriod(uint128(vestingTime));
 
         // reward contract
         vm.prank(rewarder);
         staking.reward(rewardAmount);
-        (uint256 length, uint256 time, uint256 amountVesting) = staking.vesting();
-        assertEq(length, vestingTime);
+        (uint256 period, uint256 time, uint256 amountVesting) = staking.vesting();
+        assertEq(period, vestingTime);
         assertEq(time, block.timestamp + vestingTime);
         assertEq(amountVesting, rewardAmount);
         assertEq(staking.pendingRewards(), rewardAmount);
@@ -487,32 +674,32 @@ contract StakedAssetTest is BaseTest {
         );
 
         // redeem 50% after vesting
-        redeemCounter += staking.redeem(staking.balanceOf(address(user)) - MIN_SHARES, user, user);
-        assertEq(staking.balanceOf(address(user)), MIN_SHARES);
+        redeemCounter += staking.redeem(staking.balanceOf(address(user)), user, user);
+        assertEq(staking.balanceOf(address(user)), 0);
         assertApproxEqRel(asset.balanceOf(address(user)), redeemCounter, FUZZ_TOLERANCE_REL);
         vm.stopPrank();
     }
 
-    function test_Revert_SetCooldownLength() public {
+    function test_Revert_SetCooldownPeriod() public {
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        staking.setCooldownLength(91 days);
+        staking.setCooldownPeriod(91 days);
 
         vm.prank(admin);
-        vm.expectRevert(IStakedAsset.ExceedsMaxCooldownLength.selector);
-        staking.setCooldownLength(91 days);
+        vm.expectRevert(IStakedAsset.ExceedsMaxCooldownPeriod.selector);
+        staking.setCooldownPeriod(91 days);
     }
 
-    function test_SetCooldownLength() public {
+    function test_SetCooldownPeriod() public {
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
-        assertEq(staking.cooldownLength(), 7 days);
+        staking.setCooldownPeriod(7 days);
+        assertEq(staking.cooldownPeriod(), 7 days);
     }
 
     function test_Revert_Cooldown() public {
         // setup
         mintAsset(user, 1000e18);
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
+        staking.setCooldownPeriod(7 days);
 
         vm.startPrank(user);
 
@@ -541,7 +728,7 @@ contract StakedAssetTest is BaseTest {
         // setup
         mintAsset(user, 1000e18);
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
+        staking.setCooldownPeriod(7 days);
 
         // deposit
         vm.prank(user);
@@ -599,7 +786,7 @@ contract StakedAssetTest is BaseTest {
         // setup
         mintAsset(user, 1000e18);
         vm.prank(admin);
-        staking.setCooldownLength(7 days);
+        staking.setCooldownPeriod(7 days);
 
         // deposit
         vm.prank(user);
@@ -644,15 +831,15 @@ contract StakedAssetTest is BaseTest {
         assertEq(staking.balanceOf(user), 100e18);
     }
 
-    function test_fuzz_CooldownShares(uint256 amount, uint32 cooldownLength) public {
-        uint256 cooldownTime = bound(uint256(cooldownLength), 20 seconds, staking.MAX_COOLDOWN_LENGTH());
+    function test_fuzz_CooldownShares(uint256 amount, uint32 cooldownPeriod) public {
+        uint256 cooldownTime = bound(uint256(cooldownPeriod), 20 seconds, staking.MAX_COOLDOWN_PERIOD());
         amount = bound(amount, 4e18, 1e40);
         uint256 startTime = block.timestamp;
 
         // setup
         mintAsset(user, amount);
         vm.prank(admin);
-        staking.setCooldownLength(cooldownTime);
+        staking.setCooldownPeriod(cooldownTime);
 
         // deposit
         vm.prank(user);
@@ -700,15 +887,15 @@ contract StakedAssetTest is BaseTest {
         assertApproxEqAbs(staking.balanceOf(user), amount - coolDownCounter, VAULT_TOLERANCE);
     }
 
-    function test_fuzz_CooldownAssets(uint256 amount, uint32 cooldownLength) public {
-        uint256 cooldownTime = bound(uint256(cooldownLength), 20 seconds, staking.MAX_COOLDOWN_LENGTH());
+    function test_fuzz_CooldownAssets(uint256 amount, uint32 cooldownPeriod) public {
+        uint256 cooldownTime = bound(uint256(cooldownPeriod), 20 seconds, staking.MAX_COOLDOWN_PERIOD());
         amount = bound(amount, 4e18, 1e40);
         uint256 startTime = block.timestamp;
 
         // setup
         mintAsset(user, amount);
         vm.prank(admin);
-        staking.setCooldownLength(cooldownTime);
+        staking.setCooldownPeriod(cooldownTime);
 
         // deposit
         vm.prank(user);
@@ -815,5 +1002,24 @@ contract StakedAssetTest is BaseTest {
         staking.rescueToken(address(collateral2), to);
         assertEq(collateral2.balanceOf(to), 1e18);
         assertEq(collateral2.balanceOf(address(staking)), 0);
+    }
+
+    function test_ExposedPendingRewards() public {
+        // mint some asset tokens
+        mintAsset(rewarder, 2000e18);
+        mintAsset(user, 1000e18);
+
+        // set vesting period
+        vm.prank(admin);
+        staking.setVestingPeriod(7 days);
+
+        // mint some staking tokens
+        vm.prank(user);
+        staking.deposit(1000e18, user);
+
+        // start vesting
+        vm.prank(rewarder);
+        staking.reward(1000e18);
+        assertEq(staking.exposedPendingRewards(), 1000e18);
     }
 }

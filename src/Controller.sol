@@ -72,7 +72,7 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
 
     /// @notice Order typehash
     bytes32 private constant ORDER_TYPEHASH = keccak256(
-        "OrderType order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount"
+        "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount)"
     );
 
     /// @notice MAGICVALUE to be used in ERC1271 verification
@@ -98,13 +98,13 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     /// @notice Whitelist for signer accounts
     mapping(address => bool) public signers;
 
-    /// @notice Keeps track of which nonces a signer has used
+    /// @notice Keeps track of which nonces a payer has used
     mapping(address => mapping(uint256 => bool)) nonces;
 
     /// @notice Approved recipients are accounts set by a whitelisted signer to receive tokens
     mapping(address => mapping(address => bool)) public recipients;
 
-    /// @notice Accounts which have delegated a signer to sign orders on their behalf
+    /// @notice Payer accounts which have delegated a signer to sign orders on their behalf
     mapping(address => mapping(address => bool)) public delegates;
 
     /// @notice Percentage of collateral to transfer to custodian
@@ -137,7 +137,9 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     /// @param ratio_ Ratio of collateral transferred to custodian during mints
     /// @param custodian_ Custodian account
     /// @param owner_ Account to set as the DEFAULT_ADMIN_ROLE
-    constructor(address asset_, uint256 ratio_, address custodian_, address owner_) EIP712("TenbinController", "1") {
+    constructor(address asset_, uint256 ratio_, address custodian_, address owner_)
+        EIP712("TenbinController", VERSION)
+    {
         asset = asset_;
         ratio = ratio_;
         custodian = custodian_;
@@ -167,10 +169,11 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
 
     /// @notice Allow an account to delegate a signer to sign orders on their behalf
     /// @param signer Signer account to delegate to
+    /// @param status Status for delegate signer
     function setDelegateStatus(address signer, bool status) external {
         if (!signers[signer]) revert InvalidSigner();
-        delegates[signer][msg.sender] = status;
-        emit DelegateStatusChanged(signer, msg.sender, status);
+        delegates[msg.sender][signer] = status;
+        emit DelegateStatusChanged(msg.sender, signer, status);
     }
 
     /// @dev Gatekeeper role can set pause status
@@ -269,7 +272,7 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
 
         // verify order and invalidate nonce
         (address signer,) = verifyOrder(order, signature);
-        nonces[signer][order.nonce] = true;
+        nonces[order.payer][order.nonce] = true;
 
         // calculate custodian and manager amounts
         uint256 custodianAmount = 0;
@@ -301,7 +304,7 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
 
         // verify order and invalidate nonce
         (address signer,) = verifyOrder(order, signature);
-        nonces[signer][order.nonce] = true;
+        nonces[order.payer][order.nonce] = true;
 
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(order.collateral_token).safeTransferFrom(manager, order.recipient, order.collateral_amount);
@@ -318,8 +321,8 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     }
 
     /// @inheritdoc IController
-    function verifyNonce(address signer, uint256 nonce) external view override {
-        _verifyNonce(signer, nonce);
+    function verifyNonce(address payer, uint256 nonce) external view override {
+        _verifyNonce(payer, nonce);
     }
 
     /* -------------------------------- PUBLIC --------------------------------- */
@@ -348,8 +351,8 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
 
         // validate order details
         if (!isSigner) revert InvalidSigner();
-        _verifyNonce(signer, order.nonce);
-        if (signer != order.payer && !delegates[order.payer][signer]) revert InvalidPayer();
+        _verifyNonce(order.payer, order.nonce);
+        if (order.payer != signer && !delegates[order.payer][signer]) revert InvalidPayer();
         if (!isRecipient) revert InvalidRecipient();
         if (isRestricted[order.payer] || isRestricted[order.recipient]) revert AccountRestricted();
         if (!isCollateral[order.collateral_token]) revert CollateralNotSupported();
@@ -412,11 +415,11 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
 
     /* ------------------------------------ INTERNAL ------------------------------------------- */
 
-    /// @dev Reverts if nonce was previously used by a signer
-    /// @param signer Signer to verify nonce for
+    /// @dev Reverts if nonce was previously used by a payer
+    /// @param payer Payer to verify nonce for
     /// @param nonce Nonce to be verified
-    function _verifyNonce(address signer, uint256 nonce) internal view {
+    function _verifyNonce(address payer, uint256 nonce) internal view {
         // forge-lint: disable-next-line(unsafe-typecast)
-        if (nonces[signer][nonce] != false) revert InvalidNonce();
+        if (nonces[payer][nonce] != false) revert InvalidNonce();
     }
 }
