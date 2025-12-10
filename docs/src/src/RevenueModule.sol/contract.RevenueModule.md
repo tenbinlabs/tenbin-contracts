@@ -1,8 +1,8 @@
 # RevenueModule
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/RevenueModule.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/RevenueModule.sol)
 
 **Inherits:**
-[IRevenueModule](/Users/tenbin/code/monorepo/packages/contracts/docs/src/src/interface/IRevenueModule.sol/interface.IRevenueModule.md), AccessControl
+[IRevenueModule](/Users/tenbin/code/contracts/docs/src/src/interface/IRevenueModule.sol/interface.IRevenueModule.md), AccessControl
 
 Manages revenue earned by the Tenbin protocol
 Revenue is frequently used to offset the cost of off-chain hedging.

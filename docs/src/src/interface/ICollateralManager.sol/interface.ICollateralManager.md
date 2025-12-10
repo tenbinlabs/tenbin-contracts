@@ -1,5 +1,5 @@
 # ICollateralManager
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/interface/ICollateralManager.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/interface/ICollateralManager.sol)
 
 The collateral manager manages onchain yield and liquidity for the Tenbin protocol
 
@@ -239,11 +239,26 @@ event SwapToleranceUpdated(address indexed tokenIn, address indexed tokenOut, ui
 |`tolerance`|`uint256`|tolerance ratio between the tokens|
 
 ### CollateralAdded
-Emitted when a new collateral token was added
+Emitted when a new collateral token is added
 
 
 ```solidity
 event CollateralAdded(address indexed token, address indexed vault);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`token`|`address`|Collateral token address|
+|`vault`|`address`|Respective vault for the collateral token|
+
+### CollateralRemoved
+Emitted when an existing collateral token is removed
+
+
+```solidity
+event CollateralRemoved(address indexed token, address indexed vault);
 ```
 
 **Parameters**
@@ -280,6 +295,21 @@ event ControllerUpdated(address indexed controller);
 |Name|Type|Description|
 |----|----|-----------|
 |`controller`|`address`|New controller address|
+
+### LegacySharesRedeemed
+Emitted when legacy shares are redeemed
+
+
+```solidity
+event LegacySharesRedeemed(address vault, uint256 shares);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`vault`|`address`|Vault to redeem shares for|
+|`shares`|`uint256`|Amount of shares redeemed|
 
 ## Errors
 ### CollateralAlreadySupported

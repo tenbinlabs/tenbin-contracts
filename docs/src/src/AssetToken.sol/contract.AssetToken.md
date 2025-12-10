@@ -1,8 +1,8 @@
 # AssetToken
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/AssetToken.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/AssetToken.sol)
 
 **Inherits:**
-[IMintableBurnable](/Users/tenbin/code/monorepo/packages/contracts/docs/src/src/interface/IMintableBurnable.sol/interface.IMintableBurnable.md), ERC20Permit, Ownable2Step
+[IMintableBurnable](/Users/tenbin/code/contracts/docs/src/src/interface/IMintableBurnable.sol/interface.IMintableBurnable.md), ERC20Permit, Ownable2Step
 
 A token to represent assets as part of the Tenbin protocol
 Implemented as an ERC20 with added mint() and burn() functions

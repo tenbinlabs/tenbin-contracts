@@ -1,8 +1,8 @@
 # CollateralManager
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/CollateralManager.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/CollateralManager.sol)
 
 **Inherits:**
-[ICollateralManager](/Users/tenbin/code/monorepo/packages/contracts/docs/src/src/interface/ICollateralManager.sol/interface.ICollateralManager.md), UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuardTransient
+[ICollateralManager](/Users/tenbin/code/contracts/docs/src/src/interface/ICollateralManager.sol/interface.ICollateralManager.md), UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuardTransient
 
 The collateral manager holds collateral backing assets in the Tenbin protocol
 The purpose of the manager is to earn yield on collateral and provide liquidity for orders
@@ -135,7 +135,7 @@ Last total amount of collateral tokens in an underlying vault
 
 
 ```solidity
-mapping(address => uint256) private lastTotalAssets
+mapping(address => uint256) public lastTotalAssets
 ```
 
 
@@ -210,30 +210,14 @@ function initialize(address controller_, address owner_) external initializer no
 |`owner_`|`address`|Initial owner for default admin role|
 
 
-### setPauseStatus
-
-Gatekeeper role can set pause status
-
-
-```solidity
-function setPauseStatus(ManagerPauseStatus status) external onlyRole(GATEKEEPER_ROLE);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`status`|`ManagerPauseStatus`|New pause status|
-
-
 ### addCollateral
 
-Add collateral support with an underlying vault and approve the controller and vault
+Add collateral support with an underlying vault
 
 
 ```solidity
 function addCollateral(address collateral, address vault)
     external
-    notPaused
     nonReentrant
     onlyRole(DEFAULT_ADMIN_ROLE)
     nonZeroAddress(collateral)
@@ -247,70 +231,38 @@ function addCollateral(address collateral, address vault)
 |`vault`|`address`|Vault for this collateral|
 
 
-### setRebalanceCap
+### removeCollateral
 
-Set the maximum amount of collateral that can be withdrawn by rebalancer
+Function to remove support for a collateral vault
+This is an emergency function is used in case of vault malfunction
+This function gives up any pending revenue that might have been earned for this collateral
 
 
 ```solidity
-function setRebalanceCap(address collateral, uint256 amount) external onlyRole(CAP_ADJUSTER_ROLE);
+function removeCollateral(address collateral) external onlyRole(DEFAULT_ADMIN_ROLE);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`collateral`|`address`|Collateral to set a new cap for|
-|`amount`|`uint256`|Maximum amount rebalancer can withdraw|
+|`collateral`|`address`|Collateral to remove|
 
 
-### setSwapModule
+### redeemLegacyShares
 
-Set a new swap module
+Function to force redeem shares of a legacy vault
+This is an emergency function used in case of vault malfunction
 
 
 ```solidity
-function setSwapModule(address newSwapModule) external onlyRole(DEFAULT_ADMIN_ROLE) nonZeroAddress(newSwapModule);
+function redeemLegacyShares(IERC4626 vault, uint256 shares) external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`newSwapModule`|`address`|New swap module|
-
-
-### setSwapTolerance
-
-Set the slippage tolerance between two collateral tokens
-
-
-```solidity
-function setSwapTolerance(address tokenIn, address tokenOut, uint256 tolerance) external onlyRole(ADMIN_ROLE);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`tokenIn`|`address`|Token to be swapped|
-|`tokenOut`|`address`|Token to be returned from the swap|
-|`tolerance`|`uint256`|Tolerance ratio between the tokens in bps|
-
-
-### setSwapCap
-
-Set the swap cap for a collateral token
-When swapping a collateral, the cap will be decreased
-If attempting to perform a swap higher than the swap cap, the swap will fail
-
-
-```solidity
-function setSwapCap(address collateral, uint256 newSwapCap) external onlyRole(CAP_ADJUSTER_ROLE);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`collateral`|`address`|Collateral token to set swap cap for|
-|`newSwapCap`|`uint256`|New swap cap|
+|`vault`|`IERC4626`|Vault to redeem shares for|
+|`shares`|`uint256`|Amount of shares to redeem|
 
 
 ### updateController
@@ -331,6 +283,87 @@ function updateController(address newController, address[] calldata collaterals)
 |----|----|-----------|
 |`newController`|`address`|New controller address|
 |`collaterals`|`address[]`|Collateral addresses for this contract|
+
+
+### setSwapModule
+
+Set a new swap module
+
+
+```solidity
+function setSwapModule(address newSwapModule) external onlyRole(DEFAULT_ADMIN_ROLE) nonZeroAddress(newSwapModule);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newSwapModule`|`address`|New swap module|
+
+
+### setPauseStatus
+
+Gatekeeper role can set pause status
+
+
+```solidity
+function setPauseStatus(ManagerPauseStatus status) external onlyRole(GATEKEEPER_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`status`|`ManagerPauseStatus`|New pause status|
+
+
+### setRebalanceCap
+
+Set the maximum amount of collateral that can be withdrawn by rebalancer
+
+
+```solidity
+function setRebalanceCap(address collateral, uint256 amount) external onlyRole(CAP_ADJUSTER_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`collateral`|`address`|Collateral to set a new cap for|
+|`amount`|`uint256`|Maximum amount rebalancer can withdraw|
+
+
+### setSwapCap
+
+Set the swap cap for a collateral token
+When swapping a collateral, the cap will be decreased
+If attempting to perform a swap higher than the swap cap, the swap will fail
+
+
+```solidity
+function setSwapCap(address collateral, uint256 newSwapCap) external onlyRole(CAP_ADJUSTER_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`collateral`|`address`|Collateral token to set swap cap for|
+|`newSwapCap`|`uint256`|New swap cap|
+
+
+### setSwapTolerance
+
+Set the slippage tolerance between two collateral tokens
+
+
+```solidity
+function setSwapTolerance(address tokenIn, address tokenOut, uint256 tolerance) external onlyRole(ADMIN_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`tokenIn`|`address`|Token to be swapped|
+|`tokenOut`|`address`|Token to be returned from the swap|
+|`tolerance`|`uint256`|Tolerance ratio between the tokens in bps|
 
 
 ### rescueEther

@@ -1,5 +1,5 @@
 # IController
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/interface/IController.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/interface/IController.sol)
 
 The Controller handles mint and redemption orders for the Tenbin protocol.
 
@@ -266,15 +266,15 @@ Emitted when an account delegates a signer to sign orders on their behalf
 
 
 ```solidity
-event DelegateStatusChanged(address indexed signer, address indexed payer, bool status);
+event DelegateStatusChanged(address indexed payer, address indexed signer, bool status);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`signer`|`address`|Signer which can sign orders on behalf of payer|
 |`payer`|`address`|Account which allows signer to sign orders on its behalf|
+|`signer`|`address`|Signer which can sign orders on behalf of payer|
 |`status`|`bool`|Delegate status: true if a signer can use tokens from payer during order execution|
 
 ### CollateralStatusChanged

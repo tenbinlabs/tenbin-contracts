@@ -1,5 +1,5 @@
 # IRestrictedRegistry
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/interface/IRestrictedRegistry.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/interface/IRestrictedRegistry.sol)
 
 Interface for contract managing the restricted registry
 

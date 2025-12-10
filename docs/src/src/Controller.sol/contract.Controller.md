@@ -1,8 +1,8 @@
 # Controller
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/Controller.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/Controller.sol)
 
 **Inherits:**
-[IController](/Users/tenbin/code/monorepo/packages/contracts/docs/src/src/interface/IController.sol/interface.IController.md), [IRestrictedRegistry](/Users/tenbin/code/monorepo/packages/contracts/docs/src/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), AccessControl, EIP712
+[IController](/Users/tenbin/code/contracts/docs/src/src/interface/IController.sol/interface.IController.md), [IRestrictedRegistry](/Users/tenbin/code/contracts/docs/src/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), AccessControl, EIP712
 
 The Controller handles mint and redemption orders for the Tenbin protocol
 Tenbin is an asset token issuance platform with the goal of creating liquid, composable financial assets.
@@ -95,7 +95,7 @@ Order typehash
 
 ```solidity
 bytes32 private constant ORDER_TYPEHASH = keccak256(
-    "OrderType order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount"
+    "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount)"
 )
 ```
 
@@ -114,7 +114,7 @@ Semantic version
 
 
 ```solidity
-string public constant VERSION = "1.0"
+string public constant VERSION = "1.0.5"
 ```
 
 
@@ -164,7 +164,7 @@ mapping(address => bool) public signers
 
 
 ### nonces
-Keeps track of which nonces a signer has used
+Keeps track of which nonces a payer has used
 
 
 ```solidity
@@ -182,7 +182,7 @@ mapping(address => mapping(address => bool)) public recipients
 
 
 ### delegates
-Accounts which have delegated a signer to sign orders on their behalf
+Payer accounts which have delegated a signer to sign orders on their behalf
 
 
 ```solidity
@@ -245,7 +245,8 @@ Constructor
 
 
 ```solidity
-constructor(address asset_, uint256 ratio_, address custodian_, address owner_) EIP712("TenbinController", "1");
+constructor(address asset_, uint256 ratio_, address custodian_, address owner_)
+    EIP712("TenbinController", VERSION);
 ```
 **Parameters**
 
@@ -303,7 +304,7 @@ function setDelegateStatus(address signer, bool status) external;
 |Name|Type|Description|
 |----|----|-----------|
 |`signer`|`address`|Signer account to delegate to|
-|`status`|`bool`||
+|`status`|`bool`|Status for delegate signer|
 
 
 ### setPauseStatus
@@ -503,13 +504,13 @@ Verify a signer nonce.
 
 
 ```solidity
-function verifyNonce(address signer, uint256 nonce) external view override;
+function verifyNonce(address payer, uint256 nonce) external view override;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`signer`|`address`||
+|`payer`|`address`||
 |`nonce`|`uint256`|Nonce to check|
 
 
@@ -614,17 +615,17 @@ function version() public pure returns (string memory);
 
 ### _verifyNonce
 
-Reverts if nonce was previously used by a signer
+Reverts if nonce was previously used by a payer
 
 
 ```solidity
-function _verifyNonce(address signer, uint256 nonce) internal view;
+function _verifyNonce(address payer, uint256 nonce) internal view;
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`signer`|`address`|Signer to verify nonce for|
+|`payer`|`address`|Payer to verify nonce for|
 |`nonce`|`uint256`|Nonce to be verified|
 
 

@@ -1,5 +1,5 @@
 # IStakedAsset
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/interface/IStakedAsset.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/interface/IStakedAsset.sol)
 
 Staked asset interface
 
@@ -158,43 +158,35 @@ event Unstake(address indexed from, address to, uint256 assets);
 |`to`|`address`|Account to receive assets|
 |`assets`|`uint256`|Amount of assets transferred|
 
-### VestingLengthUpdated
-Emitted when the vesting length gets updated
+### VestingPeriodUpdated
+Emitted when the vesting period gets updated
 
 
 ```solidity
-event VestingLengthUpdated(uint128 newVestingLength);
+event VestingPeriodUpdated(uint128 newVestingPeriod);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`newVestingLength`|`uint128`|New vesting length|
+|`newVestingPeriod`|`uint128`|New vesting period|
 
-### CooldownLengthUpdated
-Emitted when the cooldown length gets updated
+### CooldownPeriodUpdated
+Emitted when the cooldown period gets updated
 
 
 ```solidity
-event CooldownLengthUpdated(uint256 newCooldownLength);
+event CooldownPeriodUpdated(uint256 newCooldownPeriod);
 ```
 
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`newCooldownLength`|`uint256`|New cooldown length|
+|`newCooldownPeriod`|`uint256`|New cooldown period|
 
 ## Errors
-### BelowMinimumShare
-Existing shares fall below minimum shares threshold
-
-
-```solidity
-error BelowMinimumShare();
-```
-
 ### CooldownExceededMaxRedeem
 Cannot withdraw more than max redeem
 
@@ -219,20 +211,20 @@ Cooldown has not completed
 error CooldownInProgress();
 ```
 
-### ExceedsMaxCooldownLength
-Max cooldown length exceeded
+### ExceedsMaxCooldownPeriod
+Max cooldown period exceeded
 
 
 ```solidity
-error ExceedsMaxCooldownLength();
+error ExceedsMaxCooldownPeriod();
 ```
 
-### ExceedsMaxVestingLength
-Max vesting length exceeded
+### ExceedsMaxVestingPeriod
+Max vesting period exceeded
 
 
 ```solidity
-error ExceedsMaxVestingLength();
+error ExceedsMaxVestingPeriod();
 ```
 
 ### InvalidRescueToken
@@ -267,12 +259,12 @@ Redeem and withdrawal require cooldown
 error RequiresCooldown();
 ```
 
-### SubceedsMinVestingLength
-Min cooldown length subceeded
+### SubceedsMinVestingPeriod
+Min cooldown period subceeded
 
 
 ```solidity
-error SubceedsMinVestingLength();
+error SubceedsMinVestingPeriod();
 ```
 
 ### VestingNotCompleted
@@ -290,7 +282,7 @@ Vesting data
 
 ```solidity
 struct Vesting {
-    uint128 length;
+    uint128 period;
     uint128 end;
     uint256 assets;
 }
@@ -300,7 +292,7 @@ struct Vesting {
 
 |Name|Type|Description|
 |----|----|-----------|
-|`length`|`uint128`|Vesting length in seconds|
+|`period`|`uint128`|Vesting period in seconds|
 |`end`|`uint128`|Timestamp at which vesting ends|
 |`assets`|`uint256`|Amount of assets vesting|
 

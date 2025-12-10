@@ -104,10 +104,12 @@ Use `--broadcast` to broadcast
 
 #### Minting tokens on testnet
 
-1) Ensure `MINTER_ADDRESS`, `MINTER_KEY`, and `SIGNER_KEY` are set in `.env`
-2) Ensure approval is granted from payer key
-```cast send 0x7cA0A09271a963EdE5773C219283B36359B12824 "approve(address,uint256)" 0x9660c651D5e1076dF48757839089819700A4c667 1000000000000000000000000000000 --rpc-url $SEPOLIA_RPC_URL --private-key $SIGNER_KEY```
-3) Run the mint script
+1) Ensure `COLLATERAL_ADDRESS`, `CONTROLLER_ADDRESS`, `MINTER_ADDRESS`, `MINTER_KEY`, and `SIGNER_KEY` are set in `.env`
+2) Ensure scripts/MintTestnet.s.sol has the correct addresses set as constants
+3) Run `source .env`
+4) Ensure approval is granted from payer key
+```cast send $COLLATERAL_ADDRESS "approve(address,uint256)" $CONTROLLER_ADDRESS 1000000000000000000000000000000 --rpc-url $SEPOLIA_RPC_URL --private-key $SIGNER_KEY```
+5) Run the mint script
 ```forge script script/MintTestnet.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $MINTER_KEY --broadcast```
 THIS SCRIPT IS NOT SAFE TO RUN ON MAINNET!!
 
@@ -132,7 +134,7 @@ The controller contract is responsible for minting and redeeming assets. Mint an
 ```
     struct Order {
         OrderType order_type;       // Order type (MINT or REDEEM)
-        uint256 nonce;              // Signer unique nonce
+        uint256 nonce;              // Payer unique nonce
         uint256 expiry;             // Order expiration timestamp
         address payer;              // Account to transfer tokens from
         address recipient;          // Account to receive tokens
@@ -147,7 +149,7 @@ The controller contract is responsible for minting and redeeming assets. Mint an
 1. Order signer goes through KYC and is added to the allowed signers list.
 2. An order signer submits a signed order to the Tenbin backend.
 3. The backend processes the order and calls the `mint` or `redeem` function.
-4. Token are transferred accordingly and signer nonce is marked as used.
+4. Token are transferred accordingly and payer nonce is marked as used.
 
 ### Allowed Signers
 
@@ -225,6 +227,10 @@ The swap module is used to perform on-chain swaps between collateral types. The 
 
 It is possible to bundle swaps as part of a multicall. For example, if there is insufficient USDT in the manager and a redemption order is placed requesting USDT, the following bundle can be created: `[swap(), redeem()]`.
 
+### Upgradeability 
+
+The manager is a UUPS upgradeable smart contract. The intention of upgradeability is to support new on-chain yield structures in the future. In the case the design is considered stable and immutability is desired, the upgrade feature can be permanently disabled.
+
 # StakedAsset
 
 The staking contract allows accounts to stake asset tokens in exchange for a staking token. If the protocol is profitable, revenue can be used to mint new asset tokens and reward them to the staking pool. Staking allows for the creation of compounding, yield-bearing assets in the Tenbin protocol. The staking contract is implemented as a custom ERC4626 vault.
@@ -251,3 +257,7 @@ Each staker can only have one cooldown at a time, and the cooldown will be reset
 
 Due to legal restrictions, yield cannot be paid to stakers without regulatory compliance. For this reason, a restricted registry is present in the staking contract. Accounts added to this registry cannot stake, unstake, or transfer staked tokens. If an account is restricted, the contract default admin can burn the account’s staking tokens and withdraw the underlying assets.
 
+
+### Upgradeability 
+
+The manager is a UUPS upgradeable smart contract. The intention of upgradeability is to support new staking models in the future. In the case the design is considered stable and immutability is desired, the upgrade feature can be permanently disabled.

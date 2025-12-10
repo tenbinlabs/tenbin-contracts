@@ -1,8 +1,8 @@
 # OracleAdapter
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/OracleAdapter.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/OracleAdapter.sol)
 
 **Inherits:**
-[IOracleAdapter](/Users/tenbin/code/monorepo/packages/contracts/docs/src/src/interface/IOracleAdapter.sol/interface.IOracleAdapter.md)
+[IOracleAdapter](/Users/tenbin/code/contracts/docs/src/src/interface/IOracleAdapter.sol/interface.IOracleAdapter.md)
 
 Normalize oracle data from a Chainlink aggregator into a standard representation
 

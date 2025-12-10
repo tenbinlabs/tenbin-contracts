@@ -1,5 +1,5 @@
 # ISwapModule
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/4fdd65603a4c48b6527407c6f86f93c378ffa140/src/interface/ISwapModule.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/aca92cae688bdb3da3dd7de958cb87e2d6cc5d0e/src/interface/ISwapModule.sol)
 
 The Swap Module is responsible for handling swaps using external protocols
 This contract is permissioned so only a manager can call the swap function
