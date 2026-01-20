@@ -24,4 +24,17 @@ contract AssetSiloTest is BaseTest {
         assertEq(asset.balanceOf(address(silo)), 0);
         assertEq(asset.balanceOf(address(this)), 1e18);
     }
+
+    function test_Cancel() public {
+        mintAsset(address(silo), 1e18);
+        vm.prank(address(staking));
+        silo.cancel(user, 1e18);
+        assertEq(staking.balanceOf(user), 1e18);
+    }
+
+    function test_Revert_Cancel() public {
+        vm.prank(address(user));
+        vm.expectRevert(AssetSilo.OnlyStaking.selector);
+        silo.cancel(user, 1e18);
+    }
 }

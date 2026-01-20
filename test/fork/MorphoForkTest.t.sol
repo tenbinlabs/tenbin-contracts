@@ -138,8 +138,8 @@ contract MorphoForkTest is ForkBaseTest {
 
         // deposit collateral in vaults
         resetPrank(curator);
-        manager.deposit(address(usdc), 3240e6);
-        manager.deposit(address(usdt), 3240e6);
+        manager.deposit(address(usdc), 3240e6, 0);
+        manager.deposit(address(usdt), 3240e6, 0);
 
         assertEq(manager.getRevenue(address(usdc)), 0);
         assertEq(manager.getRevenue(address(usdt)), 0);
@@ -195,8 +195,8 @@ contract MorphoForkTest is ForkBaseTest {
         targets[1] = address(manager);
         targets[2] = address(controller);
         targets[3] = address(controller);
-        batch[0] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(usdc), 3600e6);
-        batch[1] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(usdt), 3600e6);
+        batch[0] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(usdc), 3600e6, UINT256_MAX);
+        batch[1] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(usdt), 3600e6, UINT256_MAX);
         batch[2] = abi.encodeWithSelector(IController.redeem.selector, order1, signature1);
         batch[3] = abi.encodeWithSelector(IController.redeem.selector, order2, signature2);
 

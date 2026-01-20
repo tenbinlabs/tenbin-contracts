@@ -11,7 +11,7 @@ contract ForkBaseTest is BaseTest {
     using SafeERC20 for IERC20;
 
     // fork block
-    uint256 internal constant FORK_BLOCK = 23_363_843;
+    uint256 internal constant FORK_BLOCK = 24_235_159;
 
     // mainnet contracts
     IERC20 internal usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);

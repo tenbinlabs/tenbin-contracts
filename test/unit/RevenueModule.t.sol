@@ -45,10 +45,10 @@ contract RevenueModuleTest is BaseTest {
         uint256 amount = 1e18 - 1;
         vm.startPrank(curator);
         collateral.mint(address(manager), amount);
-        manager.deposit(address(collateral), amount);
+        manager.deposit(address(collateral), amount, 0);
 
         collateral.mint(address(vault), amount);
-        manager.withdraw(address(collateral), amount);
+        manager.withdraw(address(collateral), amount, UINT256_MAX);
         vm.stopPrank();
 
         vm.startPrank(revenueKeeper);
@@ -65,10 +65,10 @@ contract RevenueModuleTest is BaseTest {
         uint256 amount = 1e18 - 1;
         vm.startPrank(curator);
         collateral.mint(address(manager), amount);
-        manager.deposit(address(collateral), amount);
+        manager.deposit(address(collateral), amount, 0);
 
         collateral.mint(address(vault), amount);
-        manager.withdraw(address(collateral), amount);
+        manager.withdraw(address(collateral), amount, UINT256_MAX);
         vm.stopPrank();
 
         vm.startPrank(revenueKeeper);
@@ -93,9 +93,9 @@ contract RevenueModuleTest is BaseTest {
 
         // deposit, simulate earning interest, and withdraw
         vm.startPrank(curator);
-        manager.deposit(address(collateral), 2000e18);
+        manager.deposit(address(collateral), 2000e18, 0);
         collateral.mint(address(vault), 1000e18);
-        manager.withdraw(address(collateral), 1000e18);
+        manager.withdraw(address(collateral), 1000e18, UINT256_MAX);
         vm.stopPrank();
 
         // collect revenue
@@ -122,9 +122,9 @@ contract RevenueModuleTest is BaseTest {
 
         // deposit, simulate earning interest, and withdraw
         vm.startPrank(curator);
-        manager.deposit(address(collateral), 2000e18);
+        manager.deposit(address(collateral), 2000e18, 0);
         collateral.mint(address(vault), 1000e18);
-        manager.withdraw(address(collateral), 1000e18);
+        manager.withdraw(address(collateral), 1000e18, UINT256_MAX);
         vm.stopPrank();
 
         // collect revenue

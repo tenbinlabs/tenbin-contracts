@@ -7,13 +7,16 @@ optimizer_runs = 100000
 dynamic_test_linking = true
 isolate = true
 gas_reports = [
+  "AssetSilo",
+  "AssetToken",
   "CollateralManager",
   "Controller",
+  "CustodianModule",
+  "GoldOracleAdapter",
   "MultiCall",
+  "RevenueModule",
   "StakedAsset",
-  "SwapModule",
-  "AssetToken",
-  "RevenueModule"
+  "SwapModule"
 ]
 fs_permissions = [{ access = "read-write", path = "./" }]
 

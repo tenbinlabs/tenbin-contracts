@@ -72,7 +72,7 @@ contract CollateralManagerHandler is Test {
 
         // perform deposit
         vm.prank(curator);
-        manager.deposit(address(collateral), amount);
+        manager.deposit(address(collateral), amount, 0);
 
         totalCollateral += amount;
     }
@@ -167,13 +167,13 @@ contract CollateralManagerHandler is Test {
         collateral.mint(address(manager), amount);
         // deposit into underlying
         vm.prank(curator);
-        manager.deposit(address(collateral), amount);
+        manager.deposit(address(collateral), amount, 0);
 
         totalCollateral += amount;
 
         // withdraw from underlying
         vm.prank(curator);
-        manager.withdraw(address(collateral), amount);
+        manager.withdraw(address(collateral), amount, UINT256_MAX);
         totalWithdraw += amount;
     }
 
@@ -184,7 +184,7 @@ contract CollateralManagerHandler is Test {
         vm.prank(curator);
         collateral.mint(address(manager), amount);
         vm.prank(curator);
-        manager.deposit(address(collateral), amount);
+        manager.deposit(address(collateral), amount, 0);
         totalCollateral += amount;
 
         address vault = address(manager.vaults(address(collateral)));
@@ -195,7 +195,7 @@ contract CollateralManagerHandler is Test {
         uint256 withdrawAmount = amount / 2;
 
         vm.prank(curator);
-        manager.withdraw(address(collateral), withdrawAmount);
+        manager.withdraw(address(collateral), withdrawAmount, UINT256_MAX);
 
         totalWithdraw += withdrawAmount;
 

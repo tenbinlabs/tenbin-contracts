@@ -81,9 +81,9 @@ contract CollateralManagerTest is BaseTest {
         vm.expectRevert(CollateralManagerPause.ContractPaused.selector);
         manager.getRevenue(address(0));
         vm.expectRevert(CollateralManagerPause.ContractPaused.selector);
-        manager.deposit(address(0), uint256(0));
+        manager.deposit(address(0), uint256(0), 0);
         vm.expectRevert(CollateralManagerPause.ContractPaused.selector);
-        manager.withdraw(address(0), uint256(0));
+        manager.withdraw(address(0), uint256(0), UINT256_MAX);
         vm.expectRevert(CollateralManagerPause.ContractPaused.selector);
         manager.withdrawRevenue(address(0), uint256(0));
         vm.expectRevert(CollateralManagerPause.ContractPaused.selector);
@@ -111,13 +111,13 @@ contract CollateralManagerTest is BaseTest {
         collateral.mint(address(manager), 10000e6);
         // deposit into underlying
         vm.prank(curator);
-        manager.deposit(address(collateral), 10000e6);
+        manager.deposit(address(collateral), 10000e6, 0);
         assertEq(manager.vaults(address(collateral)).totalAssets(), 10000e6);
         // simulate earning interest
         collateral.mint(address(vault), 1000e6);
         // withdraw from underlying
         vm.prank(curator);
-        manager.withdraw(address(collateral), 10000e6);
+        manager.withdraw(address(collateral), 10000e6, UINT256_MAX);
         assertEq(manager.vaults(address(collateral)).totalAssets(), 1000e6);
         // get revenue
         assertApproxEqAbs(manager.getRevenue(address(collateral)), 1000e6, VAULT_TOLERANCE);
@@ -137,10 +137,10 @@ contract CollateralManagerTest is BaseTest {
         manager.redeemLegacyShares(ERC4626(address(0)), 0);
 
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        manager.deposit(address(0), 0);
+        manager.deposit(address(0), 0, 0);
 
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        manager.withdraw(address(0), 0);
+        manager.withdraw(address(0), 0, UINT256_MAX);
 
         vm.expectPartialRevert(ICollateralManager.OnlyRevenueModule.selector);
         manager.withdrawRevenue(address(0), 0);
@@ -166,10 +166,10 @@ contract CollateralManagerTest is BaseTest {
         manager.setPauseStatus(ICollateralManager.ManagerPauseStatus.FMLPause);
 
         vm.expectRevert(ICollateralManager.FMLPause.selector);
-        manager.deposit(address(0), 0);
+        manager.deposit(address(0), 0, 0);
 
         vm.expectRevert(ICollateralManager.FMLPause.selector);
-        manager.withdraw(address(0), 0);
+        manager.withdraw(address(0), 0, UINT256_MAX);
 
         vm.expectRevert(ICollateralManager.FMLPause.selector);
         manager.withdrawRevenue(address(0), 0);
@@ -192,7 +192,7 @@ contract CollateralManagerTest is BaseTest {
         // deposit
         collateral.mint(address(manager), 10000e18 * 2);
         vm.prank(curator);
-        manager.deposit(address(collateral), 10000e18);
+        manager.deposit(address(collateral), 10000e18, 0);
 
         // assert no revenue because lastTotalAssets == vault total assets
         assertEq(manager.lastTotalAssets(address(collateral)), vault.totalAssets());
@@ -206,7 +206,7 @@ contract CollateralManagerTest is BaseTest {
 
         // make new deposit so pending Revenue its updated
         vm.prank(curator);
-        manager.deposit(address(collateral), 10000e18);
+        manager.deposit(address(collateral), 10000e18, 0);
 
         // mock decreased assets inside the vault
         collateral.burn(address(vault), 10000e6);
@@ -219,59 +219,59 @@ contract CollateralManagerTest is BaseTest {
     function test_GetRevenue_NegativeTotalValue() public {
         vm.startPrank(curator);
         collateral.mint(address(manager), 10000e6);
-        manager.deposit(address(collateral), 10000e6);
+        manager.deposit(address(collateral), 10000e6, 0);
         assertEq(manager.getRevenue(address(collateral)), 0);
 
         collateral.mint(address(vault), 10000e6);
         assertApproxEqAbs(manager.getRevenue(address(collateral)), 10000e6, VAULT_TOLERANCE);
 
         collateral.mint(address(manager), 10000e6);
-        manager.deposit(address(collateral), 10000e6);
+        manager.deposit(address(collateral), 10000e6, 0);
         assertApproxEqAbs(manager.getRevenue(address(collateral)), 10000e6, VAULT_TOLERANCE);
 
         // simulate a loss in the vault by burning some tokens
         collateral.burn(address(vault), 5000e6);
-        manager.withdraw(address(collateral), 5000e6);
+        manager.withdraw(address(collateral), 5000e6, UINT256_MAX);
 
         // revenue decreases when a loss is incurred
         assertApproxEqAbs(manager.getRevenue(address(collateral)), 5000e6, VAULT_TOLERANCE);
     }
 
-    function test_GetAssets() public {
-        // assets in collateral manager are included in assets
+    function test_GetVaultAssets() public {
+        // assets in collateral manager are NOT included in vault assets
         collateral.mint(address(manager), 1000e18);
-        assertEq(manager.getAssets(address(collateral)), 1000e18);
+        assertEq(manager.getVaultAssets(address(collateral)), 0);
 
         // assets in vault are included in assets
         vm.prank(curator);
-        manager.deposit(address(collateral), 1000e18);
-        assertApproxEqAbs(manager.getAssets(address(collateral)), 1000e18, VAULT_TOLERANCE);
+        manager.deposit(address(collateral), 1000e18, 0);
+        assertApproxEqAbs(manager.getVaultAssets(address(collateral)), 1000e18, VAULT_TOLERANCE);
 
-        // assets + vault value are included in assets
+        // assets in collateral manager are NOT included in vault assets
         collateral.mint(address(manager), 1000e18);
-        assertApproxEqAbs(manager.getAssets(address(collateral)), 2000e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(manager.getVaultAssets(address(collateral)), 1000e18, VAULT_TOLERANCE);
 
-        // interest is not included in calculation
+        // interest is included in calculation
         collateral.mint(address(vault), 1000e18);
-        assertApproxEqAbs(manager.getAssets(address(collateral)), 2000e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(manager.getVaultAssets(address(collateral)), 2000e18, VAULT_TOLERANCE);
 
-        // deposited interest results in correct calculation
+        // deposited amount results in correct calculation
         vm.prank(curator);
-        manager.deposit(address(collateral), 1000e18);
-        assertApproxEqAbs(manager.getAssets(address(collateral)), 2000e18, VAULT_TOLERANCE);
+        manager.deposit(address(collateral), 1000e18, 0);
+        assertApproxEqAbs(manager.getVaultAssets(address(collateral)), 3000e18, VAULT_TOLERANCE);
 
         // simulate earning more interest
         collateral.mint(address(vault), 1000e18);
-        assertApproxEqAbs(manager.getAssets(address(collateral)), 2000e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(manager.getVaultAssets(address(collateral)), 4000e18, VAULT_TOLERANCE);
 
-        // additional assets in collateral manager are included in assets
+        // additional assets in collateral manager are not included in vault assets
         collateral.mint(address(manager), 1000e18);
-        assertApproxEqAbs(manager.getAssets(address(collateral)), 3000e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(manager.getVaultAssets(address(collateral)), 4000e18, VAULT_TOLERANCE);
     }
 
     function test_Revert_GetAssets() public {
         vm.expectRevert(ICollateralManager.CollateralNotSupported.selector);
-        manager.getAssets(address(this));
+        manager.getVaultAssets(address(this));
     }
 
     function test_Revert_SetPauseStatus() public {
@@ -356,7 +356,7 @@ contract CollateralManagerTest is BaseTest {
         // deposit collateral into vault
         collateral.mint(address(manager), 1000e6);
         vm.prank(curator);
-        manager.deposit(address(collateral), 1000e6);
+        manager.deposit(address(collateral), 1000e6, 0);
 
         // simulate earning interest
         collateral.mint(address(vault), 1000e6);
@@ -386,14 +386,20 @@ contract CollateralManagerTest is BaseTest {
 
     function test_Revert_Deposit() public {
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        manager.deposit(address(collateral), 1000e6);
+        manager.deposit(address(collateral), 1000e6, 0);
 
         vm.startPrank(curator);
         vm.expectRevert(ICollateralManager.CollateralNotSupported.selector);
-        manager.deposit(address(0), 1000e6);
+        manager.deposit(address(0), 1000e6, 0);
 
         vm.expectPartialRevert(IERC20Errors.ERC20InsufficientBalance.selector);
-        manager.deposit(address(collateral), 1000e6);
+        manager.deposit(address(collateral), 1000e6, 0);
+
+        // revert if min shares too high
+        collateral.mint(address(manager), 2000e6);
+        manager.deposit(address(collateral), 1000e6, 0);
+        vm.expectRevert(ICollateralManager.InsufficientSharesReceived.selector);
+        manager.deposit(address(collateral), 1000e6, 1000e6 + 1);
     }
 
     function test_Deposit(uint256 amount, uint8 decimals) public {
@@ -410,7 +416,7 @@ contract CollateralManagerTest is BaseTest {
         vm.startPrank(curator);
         vm.expectEmit();
         emit ICollateralManager.Deposit(address(token), amount);
-        manager.deposit(address(token), amount);
+        manager.deposit(address(token), amount, 0);
 
         assertEq(token.balanceOf(address(manager)), 0);
         assertEq(token.balanceOf(address(tokenVault)), amount);
@@ -421,18 +427,21 @@ contract CollateralManagerTest is BaseTest {
 
     function test_Revert_Withdraw() public {
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        manager.withdraw(address(collateral), 1000e6);
+        manager.withdraw(address(collateral), 1000e6, UINT256_MAX);
 
         vm.startPrank(curator);
         vm.expectRevert(ICollateralManager.CollateralNotSupported.selector);
-        manager.withdraw(address(0), 1000e6);
+        manager.withdraw(address(0), 1000e6, UINT256_MAX);
 
         vm.expectPartialRevert(ERC4626.ERC4626ExceededMaxWithdraw.selector);
-        manager.withdraw(address(collateral), 1000e6);
+        manager.withdraw(address(collateral), 1000e6, UINT256_MAX);
 
+        // revert if redeeming too many shares during withdraw
         collateral.mint(address(manager), 1000e6);
-        manager.deposit(address(collateral), 1000e6);
-        collateral.mint(address(vault), 500e6);
+        manager.deposit(address(collateral), 1000e6, 0);
+        collateral.burn(address(vault), 500e6);
+        vm.expectRevert(ICollateralManager.ExcessiveSharesRedeemed.selector);
+        manager.withdraw(address(collateral), 500e6, 1000e6 - 1);
     }
 
     function test_Withdraw(uint256 amount, uint8 decimals) public {
@@ -446,12 +455,12 @@ contract CollateralManagerTest is BaseTest {
 
         // deposit some tokens
         vm.startPrank(curator);
-        manager.deposit(address(token), amount);
+        manager.deposit(address(token), amount, 0);
 
         // withdraw tokens
         vm.expectEmit();
         emit ICollateralManager.Withdraw(address(token), amount);
-        manager.withdraw(address(token), amount);
+        manager.withdraw(address(token), amount, UINT256_MAX);
 
         assertEq(tokenVault.balanceOf(address(manager)), 0);
         assertEq(token.balanceOf(address(manager)), amount);
@@ -476,7 +485,7 @@ contract CollateralManagerTest is BaseTest {
         // test withdrawal when manager has insufficient funds
         collateral.mint(address(manager), 1000e6);
         resetPrank(curator);
-        manager.deposit(address(collateral), 1000e6);
+        manager.deposit(address(collateral), 1000e6, 0);
 
         // can't withdraw revenue unless curator withdraws from vault
         collateral.mint(address(vault), 100e6 + VAULT_TOLERANCE); // account for vault rounding
@@ -489,11 +498,11 @@ contract CollateralManagerTest is BaseTest {
         // deposit 200
         vm.startPrank(curator);
         collateral.mint(address(manager), 2000e6);
-        manager.deposit(address(collateral), 2000e6);
+        manager.deposit(address(collateral), 2000e6, 0);
 
         // simulate earning 2000 interest and withdraw 500
         collateral.mint(address(vault), 2000e6);
-        manager.withdraw(address(collateral), 500e6);
+        manager.withdraw(address(collateral), 500e6, UINT256_MAX);
 
         // withdraw 500 as revenue
         resetPrank(address(revenueModule));
@@ -508,7 +517,7 @@ contract CollateralManagerTest is BaseTest {
 
         // withdraw 500 from vault and withdraw 500 revenue
         resetPrank(curator);
-        manager.withdraw(address(collateral), 500e6);
+        manager.withdraw(address(collateral), 500e6, UINT256_MAX);
         resetPrank(address(revenueModule));
         manager.withdrawRevenue(address(collateral), 500e6);
 
@@ -680,7 +689,7 @@ contract CollateralManagerTest is BaseTest {
         manager.swap(abi.encode(params), swapData);
         vm.stopPrank();
 
-        // received destination token surpases cap
+        // received destination token surpasses cap
         vm.etch(address(router), address(new Mock1InchRouterWithExtraAmountSent()).code);
         collateral2.mint(address(router), 1000e18);
         vm.prank(capAdjuster);
@@ -989,7 +998,7 @@ contract CollateralManagerTest is BaseTest {
         badCollateral.mint(address(manager), 10000e6);
         vm.startPrank(curator);
         vm.expectRevert(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector);
-        manager.deposit(address(badCollateral), 10000e6);
+        manager.deposit(address(badCollateral), 10000e6, 0);
         vm.stopPrank();
     }
 
@@ -1004,11 +1013,11 @@ contract CollateralManagerTest is BaseTest {
         badCollateral.mint(address(manager), 10000e6);
         badVault.setTriggerReentrancy(false);
         vm.prank(curator);
-        manager.deposit(address(badCollateral), 10000e6);
+        manager.deposit(address(badCollateral), 10000e6, 0);
         badVault.setTriggerReentrancy(true);
         vm.prank(curator);
         vm.expectRevert(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector);
-        manager.withdraw(address(badCollateral), 10000e6);
+        manager.withdraw(address(badCollateral), 10000e6, UINT256_MAX);
     }
 
     function test_WithdrawRevenueReentrancy() public {
@@ -1022,11 +1031,11 @@ contract CollateralManagerTest is BaseTest {
         badVault.setTriggerReentrancy(false);
         vm.startPrank(curator);
         badCollateral.mint(address(manager), 1000e6);
-        manager.deposit(address(badCollateral), 1000e6);
+        manager.deposit(address(badCollateral), 1000e6, 0);
 
         resetPrank(curator);
         badCollateral.mint(address(badVault), 1000e6);
-        manager.withdraw(address(badCollateral), 500e6);
+        manager.withdraw(address(badCollateral), 500e6, UINT256_MAX);
 
         badCollateral.setTriggerReentrancy(true);
         resetPrank(address(revenueModule));
@@ -1079,7 +1088,7 @@ contract CollateralManagerTest is BaseTest {
         // deposit some collateral into vault
         collateral.mint(address(manager), 1000e6);
         vm.prank(curator);
-        manager.deposit(address(collateral), 1000e6);
+        manager.deposit(address(collateral), 1000e6, 0);
 
         // check internal function
         assertEq(manager.exposedGetRevenue(address(collateral), vault), 0);
@@ -1097,7 +1106,7 @@ contract CollateralManagerTest is BaseTest {
         // assets in collateral manager are included in assets
         collateral.mint(address(manager), 1000e18);
         vm.prank(curator);
-        manager.deposit(address(collateral), 1000e18);
+        manager.deposit(address(collateral), 1000e18, 0);
         assertApproxEqAbs(manager.exposedTotalAssets(vault), 1000e18, VAULT_TOLERANCE);
     }
 
@@ -1179,7 +1188,7 @@ contract CollateralManagerTest is BaseTest {
 
         // deposit into vault
         vm.prank(curator);
-        manager.deposit(address(collateral), 1000e6);
+        manager.deposit(address(collateral), 1000e6, 0);
 
         // simulate vault earning interest
         collateral.mint(address(vault), 1000e6);

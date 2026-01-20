@@ -33,7 +33,7 @@ contract TenbinIntegrationTest is BaseTest {
     function setUpMockVaultWithCollateral(MockERC20 token, uint256 amount) public {
         token.mint(address(manager), amount);
         vm.prank(curator);
-        manager.deposit(address(token), amount);
+        manager.deposit(address(token), amount, 0);
     }
 
     function test_SetUpTenbinIntegrationTest() public view {
@@ -54,7 +54,7 @@ contract TenbinIntegrationTest is BaseTest {
         batchTargets[1] = address(manager);
         bytes[] memory batchOrders = new bytes[](2);
         batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature);
-        batchOrders[1] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral), 9000e6);
+        batchOrders[1] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral), 9000e6, 0);
         vm.prank(multicaller);
         multicall.multicall(batchTargets, batchOrders);
         assertEq(collateral.balanceOf(custodian), 1000e6);
@@ -75,7 +75,8 @@ contract TenbinIntegrationTest is BaseTest {
         batchTargets[0] = address(manager);
         batchTargets[1] = address(controller);
         bytes[] memory batchOrders = new bytes[](2);
-        batchOrders[0] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral), 10000e6);
+        batchOrders[0] =
+            abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral), 10000e6, UINT256_MAX);
         batchOrders[1] = abi.encodeWithSelector(IController.redeem.selector, order, signature);
         vm.prank(multicaller);
         multicall.multicall(batchTargets, batchOrders);
@@ -124,7 +125,7 @@ contract TenbinIntegrationTest is BaseTest {
         bytes[] memory batchOrders = new bytes[](3);
         batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature);
         batchOrders[1] = abi.encodeWithSelector(ICollateralManager.swap.selector, parameters, swapData);
-        batchOrders[2] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral2), 9000e18);
+        batchOrders[2] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral2), 9000e18, 0);
 
         // multicall and catch events
         vm.prank(multicaller);
@@ -181,7 +182,8 @@ contract TenbinIntegrationTest is BaseTest {
         batchTargets[1] = address(manager);
         batchTargets[2] = address(controller);
         bytes[] memory batchOrders = new bytes[](3);
-        batchOrders[0] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral2), 18000e18);
+        batchOrders[0] =
+            abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral2), 18000e18, UINT256_MAX);
         batchOrders[1] = abi.encodeWithSelector(ICollateralManager.swap.selector, parameters, swapData);
         batchOrders[2] = abi.encodeWithSelector(IController.redeem.selector, order, signature);
 
@@ -210,9 +212,9 @@ contract TenbinIntegrationTest is BaseTest {
         // simulate revenue and collect funds to RevenueModule
         collateral.mint(address(manager), 10000e6);
         vm.startPrank(curator);
-        manager.deposit(address(collateral), 10000e6);
+        manager.deposit(address(collateral), 10000e6, 0);
         collateral.mint(address(vault), 11000e6);
-        manager.withdraw(address(collateral), 11000e6);
+        manager.withdraw(address(collateral), 11000e6, UINT256_MAX);
         vm.stopPrank();
 
         // collect revenue from manager

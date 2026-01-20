@@ -58,7 +58,7 @@ contract BaseScript is Script {
 
     /// @dev The version for this deployment
     function getVersion() internal pure returns (string memory) {
-        return "1.0.6";
+        return "1.1.0";
     }
 
     // mark this as a test contract

@@ -46,6 +46,8 @@ contract StakedAsset is
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
+    /* ------------------------------------ CONSTANTS ------------------------------------------ */
+
     /// @notice Rewarder role transfers asset tokens into the contract
     bytes32 constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
 
@@ -64,6 +66,8 @@ contract StakedAsset is
     /// @notice Min vesting period to prevent rounding errors when calculating rewards within 0.1%
     uint256 public constant MIN_VESTING_PERIOD = 1200 seconds;
 
+    /* ------------------------------------ STATE VARIABLES ------------------------------------ */
+
     /// @notice AssetSilo holds assets during cooldown
     AssetSilo public silo;
 
@@ -78,6 +82,8 @@ contract StakedAsset is
 
     /// @notice Keep track of restricted addresses
     mapping(address => bool) public isRestricted;
+
+    /* ------------------------------------ MODIFIERS ------------------------------------------ */
 
     /// @dev Revert if zero address
     modifier nonZeroAddress(address addr) {
@@ -115,6 +121,8 @@ contract StakedAsset is
         _grantRole(DEFAULT_ADMIN_ROLE, owner_);
     }
 
+    /* ------------------------------------ EXTERNAL ------------------------------------------- */
+
     /// @notice Get pending rewards for this contract
     /// @return amount Pending unvested rewards
     function pendingRewards() external view returns (uint256 amount) {
@@ -122,19 +130,13 @@ contract StakedAsset is
     }
 
     /// @inheritdoc IStakedAsset
-    function reward(uint256 assets) external onlyRole(REWARDER_ROLE) {
-        if (vesting.period > 0) {
-            uint256 pending = _pendingRewards();
-            vesting.assets = pending + assets;
-            vesting.end = uint128(block.timestamp) + vesting.period;
-            emit VestingStarted(pending + assets, uint128(block.timestamp) + vesting.period);
-        }
-        IERC20(asset()).safeTransferFrom(msg.sender, address(this), assets);
-        emit RewardsReceived(assets);
-    }
-
-    /// @inheritdoc IStakedAsset
-    function cooldownShares(address owner, uint256 shares) external nonRestricted(owner) returns (uint256 assets) {
+    function cooldownShares(address owner, uint256 shares)
+        external
+        nonRestricted(msg.sender)
+        nonRestricted(owner)
+        returns (uint256 assets)
+    {
+        if (shares == 0) revert InvalidCooldownAmount();
         if (shares > maxRedeem(owner)) revert CooldownExceededMaxRedeem();
         assets = previewRedeem(shares);
         cooldowns[owner].assets += assets.toUint160();
@@ -144,7 +146,13 @@ contract StakedAsset is
     }
 
     /// @inheritdoc IStakedAsset
-    function cooldownAssets(address owner, uint256 assets) external nonRestricted(owner) returns (uint256 shares) {
+    function cooldownAssets(address owner, uint256 assets)
+        external
+        nonRestricted(msg.sender)
+        nonRestricted(owner)
+        returns (uint256 shares)
+    {
+        if (assets == 0) revert InvalidCooldownAmount();
         if (assets > maxWithdraw(owner)) revert CooldownExceededMaxWithdraw();
         shares = previewWithdraw(assets);
         cooldowns[owner].assets += assets.toUint160();
@@ -163,15 +171,46 @@ contract StakedAsset is
         emit Unstake(msg.sender, to, cooldown.assets);
     }
 
+    /// @notice Cancel a cooldown for an account
+    /// @dev This will mint new shares using assets in the silo
+    /// An account can only cancel its entire cooldown amount
+    function cancelCooldown() external nonRestricted(msg.sender) {
+        Cooldown memory cooldown = cooldowns[msg.sender];
+        uint256 assets = uint256(cooldown.assets);
+        if (assets == 0) revert RequiresCooldown();
+        delete cooldowns[msg.sender];
+        silo.cancel(msg.sender, assets);
+        emit CooldownCancelled(msg.sender, assets);
+    }
+
+    /// @inheritdoc IStakedAsset
+    function reward(uint256 assets) external onlyRole(REWARDER_ROLE) {
+        if (vesting.period > 0) {
+            uint256 pending = _pendingRewards();
+            vesting.assets = pending + assets;
+            vesting.end = uint128(block.timestamp) + vesting.period;
+            emit VestingStarted(pending + assets, uint128(block.timestamp) + vesting.period);
+        }
+        IERC20(asset()).safeTransferFrom(msg.sender, address(this), assets);
+        emit RewardsReceived(assets);
+    }
+
     /// @notice Set a new vesting period
     /// @param newVestingPeriod New vesting period
     /// @dev Note: setting low vesting periods causes rounding issues
+    /// Warning: Setting a new vesting period will cause the current vesting period to reset
+    /// with the remaining rewards vested over the new vesting period
     function setVestingPeriod(uint128 newVestingPeriod) external onlyRole(ADMIN_ROLE) {
         if (newVestingPeriod > MAX_VESTING_PERIOD) revert ExceedsMaxVestingPeriod();
         if (newVestingPeriod < MIN_VESTING_PERIOD && newVestingPeriod != 0) revert SubceedsMinVestingPeriod();
-        if (vesting.end > block.timestamp) revert VestingNotCompleted();
+        // get pending rewards and reset vesting if pending rewards > 0
+        uint256 pending = _pendingRewards();
+        if (pending > 0) {
+            vesting.assets = pending;
+            vesting.end = uint128(block.timestamp) + newVestingPeriod;
+            emit VestingStarted(pending, uint128(block.timestamp) + newVestingPeriod);
+        }
         vesting.period = newVestingPeriod;
-
         emit VestingPeriodUpdated(newVestingPeriod);
     }
 
@@ -212,6 +251,8 @@ contract StakedAsset is
         }
     }
 
+    /* ------------------------------------ PUBLIC --------------------------------------------- */
+
     /// @dev Overrides the deposit function to include restricted address check.
     function deposit(uint256 assets, address receiver)
         public
@@ -244,6 +285,7 @@ contract StakedAsset is
     function withdraw(uint256 assets, address receiver, address owner)
         public
         override
+        nonRestricted(msg.sender)
         nonRestricted(receiver)
         nonRestricted(owner)
         returns (uint256)
@@ -256,6 +298,7 @@ contract StakedAsset is
     function redeem(uint256 shares, address receiver, address owner)
         public
         override
+        nonRestricted(msg.sender)
         nonRestricted(receiver)
         nonRestricted(owner)
         returns (uint256)
@@ -301,6 +344,8 @@ contract StakedAsset is
         return super.transferFrom(from, to, value);
     }
 
+    /* ------------------------------------ INTERNAL ------------------------------------------- */
+
     /// @dev Calculate pending reward based on vesting time and period
     /// @return pending Pending unvested rewards
     function _pendingRewards() internal view returns (uint256 pending) {
@@ -308,6 +353,7 @@ contract StakedAsset is
         uint256 end = data.end;
         uint256 period = data.period;
         uint256 assets = data.assets;
+        // slither-disable-next-line incorrect-equality
         if (period == 0) return 0;
         if (block.timestamp >= end) return 0;
         pending = Math.mulDiv(assets, end - block.timestamp, period);

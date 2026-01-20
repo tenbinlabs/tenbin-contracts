@@ -18,19 +18,19 @@ contract DeploymentTest is Test, Config {
     uint128 public constant DEFAULT_VESTING_PERIOD = 1200 seconds;
 
     // roles
-    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 internal constant GATEKEEPER_ROLE = keccak256("GATEKEEPER_ROLE");
     bytes32 internal constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 internal constant CURATOR_ROLE = keccak256("CURATOR_ROLE");
-    bytes32 internal constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
-    bytes32 internal constant MULTICALLER_ROLE = keccak256("MULTICALLER_ROLE");
-    bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
     bytes32 internal constant CAP_ADJUSTER_ROLE = keccak256("CAP_ADJUSTER_ROLE");
-    bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
-    bytes32 internal constant REVENUE_KEEPER_ROLE = keccak256("REVENUE_KEEPER_ROLE");
+    bytes32 internal constant CURATOR_ROLE = keccak256("CURATOR_ROLE");
     bytes32 internal constant CUSTODIAN_KEEPER_ROLE = keccak256("CUSTODIAN_KEEPER_ROLE");
-    bytes32 internal constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
     bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
+    bytes32 internal constant GATEKEEPER_ROLE = keccak256("GATEKEEPER_ROLE");
+    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 internal constant MULTICALLER_ROLE = keccak256("MULTICALLER_ROLE");
+    bytes32 internal constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
+    bytes32 internal constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
+    bytes32 internal constant REVENUE_KEEPER_ROLE = keccak256("REVENUE_KEEPER_ROLE");
+    bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
+    bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
 
     // variables
     DeployTestnet.DeploymentResult deployment;
@@ -49,6 +49,7 @@ contract DeploymentTest is Test, Config {
         assertEq(deployment.multicall.hasRole(DEFAULT_ADMIN_ROLE, config.get("owner").toAddress()), true);
         assertEq(deployment.staking.hasRole(DEFAULT_ADMIN_ROLE, config.get("owner").toAddress()), true);
         assertEq(deployment.revenueModule.hasRole(DEFAULT_ADMIN_ROLE, config.get("owner").toAddress()), true);
+        assertEq(deployment.custodianModule.hasRole(DEFAULT_ADMIN_ROLE, config.get("owner").toAddress()), true);
 
         // check controller roles
         assertEq(deployment.controller.hasRole(MINTER_ROLE, config.get("minter").toAddress()), true);
@@ -76,7 +77,12 @@ contract DeploymentTest is Test, Config {
 
         // check revenue manager roles
         assertEq(deployment.revenueModule.hasRole(DEFAULT_ADMIN_ROLE, config.get("owner").toAddress()), true);
-        assertEq(deployment.revenueModule.hasRole(REVENUE_KEEPER_ROLE, config.get("keeper").toAddress()), true);
+        assertEq(deployment.revenueModule.hasRole(REVENUE_KEEPER_ROLE, config.get("revenue_keeper").toAddress()), true);
+
+        // check custodian module roles
+        assertEq(
+            deployment.custodianModule.hasRole(CUSTODIAN_KEEPER_ROLE, config.get("custodian_keeper").toAddress()), true
+        );
 
         // ensure roles are renounced by deployer (except local dev)
         if (block.chainid != 31337) {
@@ -118,7 +124,7 @@ contract DeploymentTest is Test, Config {
         assertEq(length, DEFAULT_VESTING_PERIOD);
         assertEq(deployment.staking.cooldownPeriod(), DEFAULT_COOLDOWN_PERIOD);
 
-        // check revenue manager is correctly configured
+        // check revenue module is correctly configured
         assertEq(deployment.revenueModule.manager(), address(deployment.manager));
         assertEq(deployment.revenueModule.staking(), address(deployment.staking));
         assertEq(deployment.revenueModule.asset(), address(deployment.asset));

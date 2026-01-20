@@ -18,7 +18,7 @@ contract MockReentrantERC4626 is ERC4626 {
         // Assume the CM is calling
         address manager = msg.sender;
         if (triggerReentrancy) {
-            ICollateralManager(manager).deposit(address(this), 0); //We just want to test reentracy s not possible
+            ICollateralManager(manager).deposit(address(this), 0, 0); // We just want to test reentrancy is not possible
             return 0;
         } else {
             return super.deposit(assets, to);
@@ -28,7 +28,7 @@ contract MockReentrantERC4626 is ERC4626 {
     function withdraw(uint256 amount, address recipient, address owner) public override returns (uint256) {
         address manager = msg.sender;
         if (triggerReentrancy) {
-            ICollateralManager(manager).withdraw(address(2), 1); //We just want to test reentracy s not possible
+            ICollateralManager(manager).withdraw(address(2), 1, type(uint256).max); // We just want to test reentrancy is not possible
             return 0;
         } else {
             return super.withdraw(amount, recipient, owner);

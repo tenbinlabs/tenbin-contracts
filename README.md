@@ -100,7 +100,7 @@ Use `config.toml` to configure roles and parameters when running deploy scripts.
 
 1) Ensure BROADCASTER_KEY is not set in .env
 
-2) Run anvil: `anvil --mnemonic $TEST_MNEMONIC
+2) Run anvil: `anvil --mnemonic $TEST_MNEMONIC`
 
 3) Run `FOUNDRY_PROFILE=production forge script script/DeployTestnet.s.sol --rpc-url ws:/localhost:8545 --broadcast`
 

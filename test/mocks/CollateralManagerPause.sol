@@ -18,15 +18,15 @@ contract CollateralManagerPause is ICollateralManager, UUPSUpgradeable, AccessCo
         revert ContractPaused();
     }
 
-    function getAssets(address) external pure returns (uint256) {
+    function getVaultAssets(address) external pure returns (uint256) {
         revert ContractPaused();
     }
 
-    function deposit(address, uint256) external pure {
+    function deposit(address, uint256, uint256) external pure {
         revert ContractPaused();
     }
 
-    function withdraw(address, uint256) external pure {
+    function withdraw(address, uint256, uint256) external pure {
         revert ContractPaused();
     }
 

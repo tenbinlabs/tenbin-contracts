@@ -425,6 +425,11 @@ contract StakedAssetTest is BaseTest {
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
         staking.withdraw(1000e18, user, restrictedAddress);
         vm.stopPrank();
+
+        // ensure withdrawal reverts for caller
+        vm.prank(restrictedAddress);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.withdraw(1000e18, user, user);
     }
 
     function test_Revert_Redeem() public {
@@ -442,6 +447,11 @@ contract StakedAssetTest is BaseTest {
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
         staking.redeem(1000e18, user, restrictedAddress);
         vm.stopPrank();
+
+        // ensure redeem reverts for caller
+        vm.prank(restrictedAddress);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.redeem(1000e18, user, user);
     }
 
     function test_Revert_Reward() public {
@@ -527,7 +537,51 @@ contract StakedAssetTest is BaseTest {
         assertApproxEqAbs(asset.balanceOf(user), 3000e18, VAULT_TOLERANCE);
     }
 
-    function test_Revert_Vesting() public {
+    function test_SetVestingPeriod() public {
+        // setup
+        mintAsset(user, 1000e18);
+        mintAsset(rewarder, 2000e18);
+
+        // deposit
+        vm.prank(user);
+        staking.deposit(1000e18, user);
+
+        // set vesting
+        vm.expectEmit();
+        emit IStakedAsset.VestingPeriodUpdated(2 days);
+        vm.prank(admin);
+        staking.setVestingPeriod(2 days);
+
+        // reward contract (starts vesting period)
+        vm.prank(rewarder);
+        staking.reward(1000e18);
+
+        // allow one day to pass
+        vm.warp(block.timestamp + 1 days);
+
+        // set new vesting period
+        vm.expectEmit();
+        emit IStakedAsset.VestingStarted(500e18, block.timestamp + 4 days);
+        vm.expectEmit();
+        emit IStakedAsset.VestingPeriodUpdated(4 days);
+        vm.prank(admin);
+        staking.setVestingPeriod(4 days);
+
+        // ensure correct state
+        (uint256 period, uint256 time, uint256 amountVesting) = staking.vesting();
+        assertEq(staking.pendingRewards(), 500e18);
+        assertEq(period, 4 days);
+        assertEq(time, block.timestamp + 4 days);
+        assertEq(amountVesting, 500e18);
+
+        // rewards are correctly vested after period ends
+        vm.warp(block.timestamp + 4 days);
+        (period, time, amountVesting) = staking.vesting();
+        assertEq(staking.pendingRewards(), 0);
+        assertEq(time, block.timestamp);
+    }
+
+    function test_Revert_SetVestingPeriod() public {
         // only admin can set vesting period
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         staking.setVestingPeriod(7 days);
@@ -543,16 +597,6 @@ contract StakedAssetTest is BaseTest {
 
         // set vesting
         vm.prank(admin);
-        staking.setVestingPeriod(7 days);
-
-        // start vesting
-        mintAsset(rewarder, 1000e18);
-        vm.prank(rewarder);
-        staking.reward(1000e18);
-
-        // cannot set new vesting period while vesting in progress
-        vm.prank(admin);
-        vm.expectRevert(IStakedAsset.VestingNotCompleted.selector);
         staking.setVestingPeriod(7 days);
     }
 
@@ -699,13 +743,25 @@ contract StakedAssetTest is BaseTest {
         assertEq(staking.cooldownPeriod(), 7 days);
     }
 
-    function test_Revert_Cooldown() public {
+    function test_Revert_CooldownShares() public {
         // setup
+        address restrictedAddress = address(1);
+        vm.prank(restricter);
+        staking.setIsRestricted(restrictedAddress, true);
         mintAsset(user, 1000e18);
         vm.prank(admin);
         staking.setCooldownPeriod(7 days);
 
+        // ensure cooldown reverts for restricted caller
+        vm.prank(restrictedAddress);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.cooldownShares(user, 500e18);
+
         vm.startPrank(user);
+
+        // cannot cooldown zero shares
+        vm.expectRevert(IStakedAsset.InvalidCooldownAmount.selector);
+        staking.cooldownShares(user, 0);
 
         // deposit and initiate cooldown
         staking.deposit(1000e18, user);
@@ -788,9 +844,21 @@ contract StakedAssetTest is BaseTest {
 
     function test_Revert_CooldownAssets() public {
         uint256 max = staking.maxWithdraw(user) + 1;
+        address restrictedAddress = address(1);
+        vm.prank(restricter);
+        staking.setIsRestricted(restrictedAddress, true);
+
+        // cannot cooldown zero assets
+        vm.expectRevert(IStakedAsset.InvalidCooldownAmount.selector);
+        staking.cooldownAssets(user, 0);
 
         vm.expectRevert(IStakedAsset.CooldownExceededMaxWithdraw.selector);
         vm.prank(user);
+        staking.cooldownAssets(user, max);
+
+        // ensure cooldown reverts for restricted caller
+        vm.prank(restrictedAddress);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
         staking.cooldownAssets(user, max);
     }
 
@@ -961,6 +1029,77 @@ contract StakedAssetTest is BaseTest {
         assertEq(assets, 0);
         assertApproxEqAbs(asset.balanceOf(user), totalCooldownAmount, VAULT_TOLERANCE);
         assertApproxEqAbs(staking.balanceOf(user), amount - totalCooldownAmount, VAULT_TOLERANCE);
+    }
+
+    function test_Revert_CancelCooldown() public {
+        mintAsset(user, 1e18);
+
+        vm.prank(user);
+        staking.deposit(1e18, user);
+
+        // set vesting
+        vm.prank(admin);
+        staking.setVestingPeriod(7 days);
+
+        // set cooldown
+        vm.prank(admin);
+        staking.setCooldownPeriod(3 days);
+
+        // can't cancel if no cooldown exists
+        vm.expectRevert(IStakedAsset.RequiresCooldown.selector);
+        vm.prank(user);
+        staking.cancelCooldown();
+
+        // start cooldown
+        vm.prank(user);
+        staking.cooldownAssets(user, 1e18);
+
+        // set restricted
+        vm.prank(restricter);
+        staking.setIsRestricted(user, true);
+
+        // restricted user can't cancel cooldown
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        vm.prank(user);
+        staking.cancelCooldown();
+    }
+
+    function test_fuzz_CancelCooldown(uint256 amount) public {
+        // setup
+        amount = bound(amount, 100, 10e18);
+        mintAsset(user, amount);
+        mintAsset(rewarder, amount);
+
+        vm.prank(user);
+        staking.deposit(amount, user);
+
+        // set vesting
+        vm.prank(admin);
+        staking.setVestingPeriod(7 days);
+
+        // set cooldown
+        vm.prank(admin);
+        staking.setCooldownPeriod(3 days);
+
+        // start cooldown
+        vm.prank(user);
+        staking.cooldownAssets(user, amount);
+
+        // cancel cooldown
+        vm.expectEmit();
+        emit IStakedAsset.CooldownCancelled(user, amount);
+        vm.prank(user);
+        staking.cancelCooldown();
+
+        // ensure balances are correct
+        assertEq(staking.balanceOf(user), amount);
+        assertEq(asset.balanceOf(user), 0);
+        assertEq(asset.balanceOf(address(silo)), 0);
+
+        // ensure cooldown is cancelled
+        (uint256 assets, uint256 end) = staking.cooldowns(user);
+        assertEq(assets, 0);
+        assertEq(end, 0);
     }
 
     function test_Donation() public {

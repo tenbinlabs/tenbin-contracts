@@ -37,37 +37,38 @@ contract DeployTestnet is BaseScript, Config {
     address constant ROUTER_1INCH = 0x111111125421cA6dc452d289314280a0f8842A65;
 
     // Default accounts
-    address internal immutable CUSTODIAN_ADDRESS;
-    address internal immutable MINTER_ADDRESS;
-    address internal immutable GATEKEEPER_ADDRESS;
     address internal immutable ADMIN_ADDRESS;
-    address internal immutable CURATOR_ADDRESS;
-    address internal immutable REBALANCE_ADDRESS;
-    address internal immutable MULTICALLER_ADDRESS;
-    address internal immutable OWNER_ADDRESS;
-    address internal immutable SIGNER_MANAGER_ADDRESS;
     address internal immutable CAP_ADJUSTER_ADDRESS;
-    address internal immutable REWARDER_ADDRESS;
-    address internal immutable SIGNER_ADDRESS;
-    address internal immutable MULTISIG_ADDRESS;
+    address internal immutable CURATOR_ADDRESS;
+    address internal immutable CUSTODIAN_ADDRESS;
+    address internal immutable CUSTODIAN_KEEPER_ADDRESS;
     address internal immutable DEPLOYER_ADDRESS;
-    address internal immutable KEEPER_ADDRESS;
+    address internal immutable GATEKEEPER_ADDRESS;
+    address internal immutable MINTER_ADDRESS;
+    address internal immutable MULTICALLER_ADDRESS;
+    address internal immutable MULTISIG_ADDRESS;
+    address internal immutable OWNER_ADDRESS;
+    address internal immutable REBALANCER_ADDRESS;
     address internal immutable RESTRICTER_ADDRESS;
+    address internal immutable REVENUE_KEEPER_ADDRESS;
+    address internal immutable REWARDER_ADDRESS;
+    address internal immutable SIGNER_ADDRESS; // testnet only
+    address internal immutable SIGNER_MANAGER_ADDRESS;
 
     // Roles
-    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 internal constant GATEKEEPER_ROLE = keccak256("GATEKEEPER_ROLE");
     bytes32 internal constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 internal constant CURATOR_ROLE = keccak256("CURATOR_ROLE");
-    bytes32 internal constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
-    bytes32 internal constant MULTICALLER_ROLE = keccak256("MULTICALLER_ROLE");
-    bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
     bytes32 internal constant CAP_ADJUSTER_ROLE = keccak256("CAP_ADJUSTER_ROLE");
-    bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
+    bytes32 internal constant CURATOR_ROLE = keccak256("CURATOR_ROLE");
     bytes32 internal constant CUSTODIAN_KEEPER_ROLE = keccak256("CUSTODIAN_KEEPER_ROLE");
-    bytes32 internal constant REVENUE_KEEPER_ROLE = keccak256("REVENUE_KEEPER_ROLE");
-    bytes32 internal constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
     bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
+    bytes32 internal constant GATEKEEPER_ROLE = keccak256("GATEKEEPER_ROLE");
+    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 internal constant MULTICALLER_ROLE = keccak256("MULTICALLER_ROLE");
+    bytes32 internal constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
+    bytes32 internal constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
+    bytes32 internal constant REVENUE_KEEPER_ROLE = keccak256("REVENUE_KEEPER_ROLE");
+    bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
+    bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
 
     /// @notice Contracts deployed by this script
     struct DeploymentResult {
@@ -90,23 +91,25 @@ contract DeployTestnet is BaseScript, Config {
         console.log("deploying...");
         console.log(block.chainid);
         _loadConfig("./config.toml", false);
-        DEPLOYER_ADDRESS = config.get("deployer").toAddress();
-        // require(broadcaster == DEPLOYER_ADDRESS, "broadcaster must be deployer address");
-        CUSTODIAN_ADDRESS = config.get("custodian").toAddress();
-        MINTER_ADDRESS = config.get("minter").toAddress();
-        SIGNER_ADDRESS = config.get("signer").toAddress();
-        GATEKEEPER_ADDRESS = config.get("gatekeeper").toAddress();
+
+        // get addresses from config.toml
         ADMIN_ADDRESS = config.get("admin").toAddress();
-        CURATOR_ADDRESS = config.get("curator").toAddress();
-        REBALANCE_ADDRESS = config.get("rebalancer").toAddress();
-        MULTICALLER_ADDRESS = config.get("multicaller").toAddress();
-        SIGNER_MANAGER_ADDRESS = config.get("signer_manager").toAddress();
         CAP_ADJUSTER_ADDRESS = config.get("cap_adjuster").toAddress();
-        REWARDER_ADDRESS = config.get("rewarder").toAddress();
-        OWNER_ADDRESS = config.get("owner").toAddress();
+        CURATOR_ADDRESS = config.get("curator").toAddress();
+        CUSTODIAN_ADDRESS = config.get("custodian").toAddress();
+        CUSTODIAN_KEEPER_ADDRESS = config.get("custodian_keeper").toAddress();
+        DEPLOYER_ADDRESS = config.get("deployer").toAddress();
+        GATEKEEPER_ADDRESS = config.get("gatekeeper").toAddress();
+        MINTER_ADDRESS = config.get("minter").toAddress();
+        MULTICALLER_ADDRESS = config.get("multicaller").toAddress();
         MULTISIG_ADDRESS = config.get("multisig").toAddress();
-        KEEPER_ADDRESS = config.get("keeper").toAddress();
+        OWNER_ADDRESS = config.get("owner").toAddress();
+        REBALANCER_ADDRESS = config.get("rebalancer").toAddress();
         RESTRICTER_ADDRESS = config.get("restricter").toAddress();
+        REVENUE_KEEPER_ADDRESS = config.get("revenue_keeper").toAddress();
+        REWARDER_ADDRESS = config.get("rewarder").toAddress();
+        SIGNER_ADDRESS = config.get("signer").toAddress();
+        SIGNER_MANAGER_ADDRESS = config.get("signer_manager").toAddress();
     }
 
     function run() public broadcast returns (DeploymentResult memory deployment) {
@@ -154,7 +157,7 @@ contract DeployTestnet is BaseScript, Config {
         console.log("minter address: ", MINTER_ADDRESS);
         console.log("signer address: ", SIGNER_ADDRESS);
 
-        // mint mock usdc
+        // mint mock usdc (testnet )
         deployment.collateral.mint(OWNER_ADDRESS, 1_000_000e6);
 
         // set permissions
@@ -167,7 +170,7 @@ contract DeployTestnet is BaseScript, Config {
         deployment.controller.grantRole(RESTRICTER_ROLE, RESTRICTER_ADDRESS);
         deployment.manager.grantRole(ADMIN_ROLE, ADMIN_ADDRESS);
         deployment.manager.grantRole(CURATOR_ROLE, CURATOR_ADDRESS);
-        deployment.manager.grantRole(REBALANCER_ROLE, REBALANCE_ADDRESS);
+        deployment.manager.grantRole(REBALANCER_ROLE, REBALANCER_ADDRESS);
         deployment.manager.grantRole(CAP_ADJUSTER_ROLE, CAP_ADJUSTER_ADDRESS);
         deployment.manager.grantRole(CURATOR_ROLE, address(deployment.multicall));
         deployment.manager.grantRole(GATEKEEPER_ROLE, GATEKEEPER_ADDRESS);
@@ -176,8 +179,8 @@ contract DeployTestnet is BaseScript, Config {
         deployment.staking.grantRole(REWARDER_ROLE, MULTISIG_ADDRESS);
         deployment.staking.grantRole(REWARDER_ROLE, address(deployment.revenueModule));
         deployment.staking.grantRole(RESTRICTER_ROLE, RESTRICTER_ADDRESS);
-        deployment.revenueModule.grantRole(REVENUE_KEEPER_ROLE, KEEPER_ADDRESS);
-        deployment.custodianModule.grantRole(CUSTODIAN_KEEPER_ROLE, KEEPER_ADDRESS);
+        deployment.revenueModule.grantRole(REVENUE_KEEPER_ROLE, REVENUE_KEEPER_ADDRESS);
+        deployment.custodianModule.grantRole(CUSTODIAN_KEEPER_ROLE, CUSTODIAN_KEEPER_ADDRESS);
 
         // configuration
         deployment.controller.grantRole(ADMIN_ROLE, broadcaster);
@@ -225,10 +228,11 @@ contract DeployTestnet is BaseScript, Config {
             deployment.custodianModule.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
         }
 
-        // mint some tokens to deployer
+        // mint some tokens to deployer (testnet)
         deployment.collateral.mint(broadcaster, 1_000_000e6);
         deployment.collateral.approve(address(deployment.controller), 1_000_000e6);
 
+        // output
         console.log("\n========================= Domain ============================\n");
         console.log("domain separator: ");
         console.logBytes32(deployment.controller.getDomainSeparator());
@@ -251,42 +255,53 @@ contract DeployTestnet is BaseScript, Config {
         console.log("Mock1InchRouter: ", address(deployment.router));
         console.log("RevenueModule : ", address(deployment.revenueModule));
         console.log("CustodianModule : ", address(deployment.custodianModule));
-
         console.log("\n=============================================================\n");
         console.log("\nSerializing json...\n");
         string memory key = "deployments";
+        // string memory role = "roles";
+        // string memory tgld = "tgld";
+        // string memory contracts = "contracts";
+        // string memory config = "config";
         string memory obj = "{}";
-        obj = vm.serializeAddress(key, "collateral_manager", address(deployment.manager));
-        obj = vm.serializeAddress(key, "controller", address(deployment.controller));
-        obj = vm.serializeAddress(key, "multicall", address(deployment.multicall));
-        obj = vm.serializeAddress(key, "staked_asset", address(deployment.staking));
-        obj = vm.serializeAddress(key, "swap_module", address(deployment.swapModule));
+
+        // serialize contracts
+        // contracts
         obj = vm.serializeAddress(key, "asset_token", address(deployment.asset));
         obj = vm.serializeAddress(key, "collateral", address(deployment.collateral));
-        obj = vm.serializeAddress(key, "revenue_module", address(deployment.revenueModule));
+        obj = vm.serializeAddress(key, "collateral_manager", address(deployment.manager));
+        obj = vm.serializeAddress(key, "controller", address(deployment.controller));
         obj = vm.serializeAddress(key, "custodian_module", address(deployment.custodianModule));
+        obj = vm.serializeAddress(key, "multicall", address(deployment.multicall));
+        obj = vm.serializeAddress(key, "revenue_module", address(deployment.revenueModule));
         obj = vm.serializeAddress(key, "silo", address(deployment.silo));
-        obj = vm.serializeAddress(key, "deployer", DEPLOYER_ADDRESS);
-        obj = vm.serializeAddress(key, "multisig", MULTISIG_ADDRESS);
-        obj = vm.serializeAddress(key, "keeper", KEEPER_ADDRESS);
-        obj = vm.serializeAddress(key, "owner", OWNER_ADDRESS);
-        obj = vm.serializeAddress(key, "custodian", CUSTODIAN_ADDRESS);
-        obj = vm.serializeAddress(key, "minter", MINTER_ADDRESS);
-        obj = vm.serializeAddress(key, "multicaller", MULTICALLER_ADDRESS);
-        obj = vm.serializeAddress(key, "signer", SIGNER_ADDRESS);
-        obj = vm.serializeAddress(key, "rebalance", REBALANCE_ADDRESS);
-        obj = vm.serializeAddress(key, "gatekeeper", GATEKEEPER_ADDRESS);
-        obj = vm.serializeAddress(key, "admin", ADMIN_ADDRESS);
-        obj = vm.serializeAddress(key, "curator", CURATOR_ADDRESS);
-        obj = vm.serializeAddress(key, "signer_manager", SIGNER_MANAGER_ADDRESS);
-        obj = vm.serializeAddress(key, "cap_adjuster", CAP_ADJUSTER_ADDRESS);
-        obj = vm.serializeAddress(key, "rewarder", REWARDER_ADDRESS);
-        obj = vm.serializeAddress(key, "restricter", RESTRICTER_ADDRESS);
+        obj = vm.serializeAddress(key, "staked_asset", address(deployment.staking));
+        obj = vm.serializeAddress(key, "swap_module", address(deployment.swapModule));
 
+        // serialize accounts
+        obj = vm.serializeAddress(key, "admin_role", ADMIN_ADDRESS);
+        obj = vm.serializeAddress(key, "cap_adjuster_role", CAP_ADJUSTER_ADDRESS);
+        obj = vm.serializeAddress(key, "curator_role", CURATOR_ADDRESS);
+        obj = vm.serializeAddress(key, "custodian", CUSTODIAN_ADDRESS);
+        obj = vm.serializeAddress(key, "custodian_keeper_role", CUSTODIAN_KEEPER_ADDRESS);
+        obj = vm.serializeAddress(key, "deployer", DEPLOYER_ADDRESS);
+        obj = vm.serializeAddress(key, "gatekeeper_role", GATEKEEPER_ADDRESS);
+        obj = vm.serializeAddress(key, "minter_role", MINTER_ADDRESS);
+        obj = vm.serializeAddress(key, "multicaller_role", MULTICALLER_ADDRESS);
+        obj = vm.serializeAddress(key, "multisig", MULTISIG_ADDRESS);
+        obj = vm.serializeAddress(key, "default_admin_role", OWNER_ADDRESS);
+        obj = vm.serializeAddress(key, "rebalancer_role", REBALANCER_ADDRESS);
+        obj = vm.serializeAddress(key, "restricter_role", RESTRICTER_ADDRESS);
+        obj = vm.serializeAddress(key, "revenue_keeper_role", REVENUE_KEEPER_ADDRESS);
+        obj = vm.serializeAddress(key, "rewarder_role", REWARDER_ADDRESS);
+        obj = vm.serializeAddress(key, "signer", SIGNER_ADDRESS);
+        obj = vm.serializeAddress(key, "signer_manager_role", SIGNER_MANAGER_ADDRESS);
+
+        // write to file
         string memory path = string.concat("broadcast/DeployTestnet.s.sol/", vm.toString(block.chainid));
         vm.createDir(path, true);
         vm.writeJson(obj, string.concat(path, "/deployments.json"));
 
+        // logo
         console.log("\n=============================================================\n");
         console.log(
             "\n  __/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\__________________________/\\\\\\____________________________        "

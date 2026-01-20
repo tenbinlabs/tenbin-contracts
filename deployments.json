@@ -2,7 +2,7 @@
 	"sepolia": {
 		"global": {
             "admin_multisig": "0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2",
-            "custodians": ["0x0000000000000000000000000000000000000000"],
+            "custodians": ["0xBb9D2E2F9084721de949E1426BCe93d5CFaBefE6"],
 			"deployer": "0x003893636F55f16409eF493115867986a0d3DAf1",
             "tenbin_multisig": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
             "owner_multisig": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
@@ -11,35 +11,34 @@
             "config": {
                 "deployment_block": 9705343,
                 "domain_separator": "0x41cd97e951f7b593e5aec9a852f580fbdae9fced3686887e74c8d720e3415cdc",
-                "version": "1.0.5"
+                "version": "1.1.0"
             },
 			"contracts": {
-                "asset_token": "0xe334D251047E42F424021F1a4BCE929f8Ea6041d",
-                "collateral": "0x81FF19CF5053856c2B9f2A6CB5FFc87b96C1e322",
-                "collateral_manager": "0x052fcad592E336eBB2169CAab366842cC60e8805",
-                "controller": "0x301351Edf95F7aa505Bd7119a43e40331E2F7E1D",
-                "custodian_module": "0x162f3caaEe16B5A5de00201c1a3e0359d22C9f88",
-                "multicall": "0x0f314E647164b5C4054d6e13deF930d0F2bBB059",
-                "revenue_module": "0x97FF4D920B2d6Db4609BE76C6fF91AeAcC7b4e92",
-                "silo": "0x0011620e6c28c7687E6f29eaC9cF85F823697372",
-                "staked_asset": "0xFd129196AAF099512d1FbEBFDAaaa07B8464e378",
-                "swap_module": "0x3D14f957f1e91f9A44049C556521C7676eae8311"
+                "asset_token": "0xe7a3cED90D3b5Dae794cF51dc33C5E986cC83515",
+                "collateral": "0x565a7620c7A4b40cC70D0Ce656a2d3839b46eDa4",
+                "collateral_manager": "0xC68e3F9e3166BdB0f3E8E14830b17712093dF6FC",
+                "controller": "0x55079c4e8074772f8BB59ABa9CB7C2eC1AA10146",
+                "custodian_module": "0x2Dde8916B2Db3Fb9D87480c1181e755e501A7e3a",
+                "multicall": "0x8Ebb224E84Fb32F7b714c64Bb1843DB3AB237D21",
+                "revenue_module": "0xb28d5C3912FB1ce014607ADf3E89059DB5Cddec9",
+                "silo": "0x30E16a37e017c213bF71F53F7D91b3DBf795F5fC",
+                "staked_asset": "0x6A44dE893f021BEE84BFB507E13c82DbCa05d288",
+                "swap_module": "0xeba9505d4B6E0439DB69aF62398644fB675A9A87"
 			},
             "roles": {
                 "admin_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
                 "cap_adjuster_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
                 "collector_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
                 "curator_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
+                "default_admin_role": ["0x794eBfe3B3C92409f72F569ADb3e44913a056a54"],
                 "gatekeeper_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
-                "keeper_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
                 "minter_role": ["0x500dc3fcC67ac5C9C7CA5557b158998d21D70E1D"],
                 "multicaller_role": ["0x500dc3fcC67ac5C9C7CA5557b158998d21D70E1D"],
                 "multisig_role": ["0x794eBfe3B3C92409f72F569ADb3e44913a056a54"],
-                "owner_role": ["0x794eBfe3B3C92409f72F569ADb3e44913a056a54"],
                 "rebalancer_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
                 "restricter_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
+                "revenue_keeper_role": "0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2",
                 "rewarder_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"],
-                "signer_role": ["0xFc8E0e6c28C8f6dD656dE0e9C0b0ecef598Fc9Ce"],
                 "signer_manager_role": ["0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2"]
             }
 		}

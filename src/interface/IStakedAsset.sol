@@ -32,6 +32,8 @@ interface IStakedAsset {
     error ExceedsMaxCooldownPeriod();
     /// @notice Max vesting period exceeded
     error ExceedsMaxVestingPeriod();
+    /// @notice Cannot cooldown zero assets or shares
+    error InvalidCooldownAmount();
     /// @notice Cannot rescue asset token from staking contract
     error InvalidRescueToken();
     /// @notice Only restricted account
@@ -42,8 +44,6 @@ interface IStakedAsset {
     error RequiresCooldown();
     /// @notice Min cooldown period subceeded
     error SubceedsMinVestingPeriod();
-    /// @notice Must not be vesting
-    error VestingNotCompleted();
 
     /// @notice Emitted when new rewards are received by this contract
     /// @param assets Amount of asset tokens rewarded
@@ -65,6 +65,11 @@ interface IStakedAsset {
     /// @param assets Amount of assets transferred
     event Unstake(address indexed from, address to, uint256 assets);
 
+    /// @notice Emitted when an account cancels a cooldown
+    /// @param account Account which cancelled cooldown
+    /// @param assets Amount of assets returned to the staking pool
+    event CooldownCancelled(address indexed account, uint256 assets);
+
     /// @notice Emitted when the vesting period gets updated
     /// @param newVestingPeriod New vesting period
     event VestingPeriodUpdated(uint128 newVestingPeriod);
@@ -76,12 +81,6 @@ interface IStakedAsset {
     /// @notice Get pending rewards for this contract
     /// @return pending Pending unvested token reward
     function pendingRewards() external view returns (uint256 pending);
-
-    /// @notice Adds new rewards to the contract and extends vesting period
-    /// @dev WARNING: This resets the vesting end time to block.timestamp + vesting.period,
-    /// which can delay distribution of previously pending rewards
-    /// @param assets Amount of asset tokens to transfer to this contract as a reward
-    function reward(uint256 assets) external;
 
     /// @notice Enter cooldown for amount of `shares`
     /// Assets in cooldown are transferred to the silo contract and withdrawable at the end of cooldown
@@ -104,4 +103,10 @@ interface IStakedAsset {
     /// @notice Unstake all assets that are in cooldown
     /// @param to Account to receive assets
     function unstake(address to) external;
+
+    /// @notice Adds new rewards to the contract and extends vesting period
+    /// @dev WARNING: This resets the vesting end time to block.timestamp + vesting.period,
+    /// which can delay distribution of previously pending rewards
+    /// @param assets Amount of asset tokens to transfer to this contract as a reward
+    function reward(uint256 assets) external;
 }

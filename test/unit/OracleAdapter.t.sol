@@ -25,7 +25,7 @@ contract OracleAdapterTest is Test {
 
     function test_Revert_getPrice() public {
         // rounds freshness
-        vm.warp(block.timestamp + 90 minutes);
+        vm.warp(block.timestamp + 3 days);
         aggregator.switchIsFresh();
         vm.expectRevert(IOracleAdapter.OraclePriceStale.selector);
         adapter.getPrice();

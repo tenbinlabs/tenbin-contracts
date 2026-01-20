@@ -13,8 +13,8 @@ contract GoldOracleAdapter is IOracleAdapter {
     /// @dev Difference between oracle decimals and 1e18
     uint256 internal constant DECIMALS_OFFSET = 1e10;
 
-    /// @notice Stale price threshold (e.g., 1 hour for XAU/USD)
-    uint256 public constant PRICE_STALENESS_THRESHOLD = 3600;
+    /// @notice Stale price threshold (e.g., 24 hours for XAU/USD)
+    uint256 public constant PRICE_STALENESS_THRESHOLD = 1 days;
 
     /// @notice Chainlink oracle
     AggregatorV3Interface public immutable oracle;

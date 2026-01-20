@@ -59,9 +59,6 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
     // @notice Cap adjuster role can adjust rebalance caps, swap caps, and min swap price
     bytes32 public constant CAP_ADJUSTER_ROLE = keccak256("CAP_ADJUSTER_ROLE");
 
-    /// @notice Precision for basis calculations. 10,000 = 100%
-    uint256 internal constant BASIS_PRECISION = 10_000;
-
     /* ------------------------------------ STATE VARIABLES ------------------------------------ */
 
     /// @notice Controller associated with this contract
@@ -294,31 +291,42 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
     }
 
     /// @inheritdoc ICollateralManager
-    function getAssets(address collateral) external view returns (uint256 assets) {
+    function getVaultAssets(address collateral) external view returns (uint256 assets) {
         IERC4626 vault = vaults[collateral];
         if (address(vault) == address(0)) revert CollateralNotSupported();
-        uint256 revenue = _getRevenue(collateral, vault);
-        assets = _totalAssets(vault) + IERC20(collateral).balanceOf(address(this)) - revenue;
+        assets = _totalAssets(vault);
     }
 
     /// @inheritdoc ICollateralManager
-    function deposit(address collateral, uint256 amount) external nonReentrant notPaused onlyRole(CURATOR_ROLE) {
+    function deposit(address collateral, uint256 amount, uint256 minShares)
+        external
+        nonReentrant
+        notPaused
+        onlyRole(CURATOR_ROLE)
+    {
         IERC4626 vault = vaults[collateral];
         if (address(vault) == address(0)) revert CollateralNotSupported();
         pendingRevenue[collateral] = _getRevenue(collateral, vault);
         // slither-disable-next-line reentrancy-no-eth
-        vault.deposit(amount, address(this));
+        uint256 shares = vault.deposit(amount, address(this));
+        if (shares < minShares) revert InsufficientSharesReceived();
         lastTotalAssets[collateral] = _totalAssets(vault);
         emit Deposit(collateral, amount);
     }
 
     /// @inheritdoc ICollateralManager
-    function withdraw(address collateral, uint256 amount) external nonReentrant notPaused onlyRole(CURATOR_ROLE) {
+    function withdraw(address collateral, uint256 amount, uint256 maxShares)
+        external
+        nonReentrant
+        notPaused
+        onlyRole(CURATOR_ROLE)
+    {
         IERC4626 vault = vaults[collateral];
         if (address(vault) == address(0)) revert CollateralNotSupported();
         pendingRevenue[collateral] = _getRevenue(collateral, vault);
         // slither-disable-next-line reentrancy-no-eth
-        vault.withdraw(amount, address(this), address(this));
+        uint256 shares = vault.withdraw(amount, address(this), address(this));
+        if (shares > maxShares) revert ExcessiveSharesRedeemed();
         lastTotalAssets[collateral] = _totalAssets(vault);
         emit Withdraw(collateral, amount);
     }
@@ -385,7 +393,7 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         // transfer tokens in and perform swap
         // slither-disable-next-line reentrancy-no-eth
         IERC20(params.srcToken).safeTransfer(swapModule, params.amount);
-        // slither-disable-next-line reentrancy-no-eth
+        // slither-disable-next-line reentrancy-no-eth,reentrancy-balance
         ISwapModule(swapModule).swap(parameters, data);
 
         // ensure correct post-swap state

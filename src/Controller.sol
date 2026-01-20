@@ -79,7 +79,7 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     bytes4 public constant MAGICVALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     /// @notice Semantic version
-    string public constant VERSION = "1.0.6";
+    string public constant VERSION = "1.1.0";
 
     /// @notice Asset token this controller manages
     address public immutable asset;
@@ -434,7 +434,6 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     /// @param payer Payer to verify nonce for
     /// @param nonce Nonce to be verified
     function _verifyNonce(address payer, uint256 nonce) internal view {
-        // forge-lint: disable-next-line(unsafe-typecast)
-        if (nonces[payer][nonce] != false) revert InvalidNonce();
+        if (nonces[payer][nonce]) revert InvalidNonce();
     }
 }

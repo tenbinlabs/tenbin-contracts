@@ -72,7 +72,7 @@ contract MorphoIntegrationTest is BaseTest {
     function setUpMockVaultWithCollateral(uint256 collateralAmount) public {
         collateral.mint(address(manager), collateralAmount);
         vm.prank(curator);
-        manager.deposit(address(collateral), collateralAmount);
+        manager.deposit(address(collateral), collateralAmount, 0);
     }
 
     function test_SetUpTenbinIntegrationTest() public view {
@@ -184,7 +184,7 @@ contract MorphoIntegrationTest is BaseTest {
         batchTargets[1] = address(manager);
         bytes[] memory batchOrders = new bytes[](2);
         batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature);
-        batchOrders[1] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral), 9000e6);
+        batchOrders[1] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral), 9000e6, 0);
         vm.prank(multicaller);
         multicall.multicall(batchTargets, batchOrders);
         assertEq(collateral.balanceOf(custodian), 1000e6);
@@ -203,7 +203,8 @@ contract MorphoIntegrationTest is BaseTest {
         batchTargets[0] = address(manager);
         batchTargets[1] = address(controller);
         bytes[] memory batchOrders = new bytes[](2);
-        batchOrders[0] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral), 10000e6);
+        batchOrders[0] =
+            abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral), 10000e6, UINT256_MAX);
         batchOrders[1] = abi.encodeWithSelector(IController.redeem.selector, order, signature);
         vm.prank(multicaller);
         multicall.multicall(batchTargets, batchOrders);

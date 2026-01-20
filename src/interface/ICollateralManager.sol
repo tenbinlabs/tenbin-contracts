@@ -20,6 +20,8 @@ interface ICollateralManager {
     error ExceedsPendingRevenue();
     /// @notice Rebalance withdrawal exceeds cap
     error ExceedsRebalanceCap();
+    /// @notice Excessive number of shares redeemed during a withdrawal
+    error ExcessiveSharesRedeemed();
     /// @notice Emergency pause
     error FMLPause();
     /// @notice Collateral vault not compatible with collateral token
@@ -28,6 +30,8 @@ interface ICollateralManager {
     error InvalidRescueToken();
     /// @notice Insufficient amount received in swap
     error InsufficientAmountReceived();
+    /// @notice Insufficient shares received during a vault deposit
+    error InsufficientSharesReceived();
     /// @notice Emitted when a swap amount out is insufficient given price thresholds
     error InsufficientSwapPrice();
     /// @notice Zero address not allowed
@@ -124,20 +128,22 @@ interface ICollateralManager {
     /// @param collateral Get revenue for a specific collateral
     function getRevenue(address collateral) external view returns (uint256 revenue);
 
-    /// @notice Get total asset for a collateral type (not including revenue)
-    /// @param collateral Collateral to get assets for
-    /// @return assets Total assets for a collateral type (not including revenue)
-    function getAssets(address collateral) external view returns (uint256 assets);
+    /// @notice Get vault total assets for a collateral
+    /// @param collateral Collateral to get vault assets for
+    /// @return assets Total asset value of vault for a collateral
+    function getVaultAssets(address collateral) external view returns (uint256 assets);
 
     /// @notice Deposit collateral into underlying vault
     /// @param collateral Collateral used to deposit into vault
     /// @param amount Amount of collateral to deposit
-    function deposit(address collateral, uint256 amount) external;
+    /// @param minShares Minimum number of shares to receive
+    function deposit(address collateral, uint256 amount, uint256 minShares) external;
 
     /// @notice Withdraw collateral from underlying vault
     /// @param collateral Collateral to withdraw from vault
     /// @param amount Amount of collateral to withdraw
-    function withdraw(address collateral, uint256 amount) external;
+    /// @param maxShares Maximum number of shares to redeem
+    function withdraw(address collateral, uint256 amount, uint256 maxShares) external;
 
     /// @notice Withdraw revenue accumulated by underlying vault
     /// @param collateral Collateral to withdraw
