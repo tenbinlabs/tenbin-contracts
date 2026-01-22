@@ -23,11 +23,13 @@ contract StakedAssetHandler is Test {
 
         vm.startPrank(user);
         asset.approve(address(this), type(uint256).max);
+        asset.approve(address(staking), type(uint256).max);
         staking.approve(address(this), type(uint256).max);
         vm.stopPrank();
 
         vm.prank(rewarder);
         asset.approve(address(this), type(uint256).max);
+        asset.approve(address(staking), type(uint256).max);
     }
 
     function reward(uint256 rewardAmount) public {
@@ -44,23 +46,18 @@ contract StakedAssetHandler is Test {
     }
 
     function cooldownShares(uint256 shares) public {
-        shares = bound(shares, 0, 1e40);
-        mintAsset(user, shares);
-        vm.prank(admin);
-        staking.setCooldownPeriod(7 days);
+        shares = bound(shares, 1e18, 1e40);
+        stake(shares);
 
-        // deposit
-        vm.prank(user);
-        shares = staking.deposit(shares, user);
-
-        blockAtCooldown = block.timestamp;
-
+        // initiate cooldown
         vm.prank(user);
         staking.cooldownShares(user, shares);
+
+        // fast forward to end of cooldown
+        vm.warp(block.timestamp + 7 days);
     }
 
     function unstake(uint256 shares) public {
-        shares = bound(shares, 0, 1e40);
         cooldownShares(shares);
 
         // fast forward to end of cooldown
@@ -86,19 +83,29 @@ contract StakedAssetHandler is Test {
 
     function redeem(uint256 shares) public {
         shares = bound(shares, 0, 1e40);
-
+        stake(shares);
         withdraw(shares);
-
+        uint256 maxShares = staking.balanceOf(user);
+        uint256 amount = shares > maxShares ? maxShares : shares;
         vm.prank(user);
-        asset.approve(address(this), staking.balanceOf(user));
-
-        vm.prank(user);
-        staking.redeem(staking.balanceOf(user), user, user);
+        staking.redeem(amount, user, user);
     }
 
     // helper to mint assets
     function mintAsset(address account, uint256 amount) internal {
         vm.prank(asset.minter());
         asset.mint(account, amount);
+    }
+
+    // helper to ensure stake balance
+    function stake(uint256 amount) internal {
+        // setup
+        mintAsset(user, amount);
+        vm.prank(admin);
+        staking.setCooldownPeriod(7 days);
+
+        // deposit
+        vm.prank(user);
+        staking.deposit(amount, user);
     }
 }

@@ -1,4 +1,12 @@
 {
+    "mainnet": {
+        "global": {
+            "admin_multisig": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
+            "dev_multisig": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
+            "owner_multisig:": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
+            "tenbin_multisig": "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"
+        }
+    },
 	"sepolia": {
 		"global": {
             "admin_multisig": "0x0cCa9129cCCbd78288ff87631C5233dD835c9AA2",

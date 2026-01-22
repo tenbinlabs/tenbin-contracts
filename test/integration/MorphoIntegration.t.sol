@@ -2,7 +2,6 @@
 pragma solidity 0.8.30;
 
 import {BaseTest} from "test/BaseTest.sol";
-import {MorphoVaultV1Adapter} from "test/external/morpho/adapters/MorphoVaultV1Adapter.sol";
 import {IAdapter} from "test/external/morpho/interfaces/IAdapter.sol";
 import {ICollateralManager} from "src/CollateralManager.sol";
 import {IController} from "src/interface/IController.sol";
@@ -10,6 +9,8 @@ import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626
 import {IVaultV2} from "test/external/morpho/interfaces/IVaultV2.sol";
 import {ReceiveSharesGate} from "test/external/morpho/ReceiveSharesGate.sol";
 import {VaultV2} from "test/external/morpho/VaultV2.sol";
+import {VaultV2Factory} from "test/external/morpho/VaultV2Factory.sol";
+import {MorphoVaultV1AdapterFactory} from "test/external/morpho/MorphoVaultV1AdapterFactory.sol";
 
 contract MorphoIntegrationTest is BaseTest {
     // accounts
@@ -23,16 +24,21 @@ contract MorphoIntegrationTest is BaseTest {
 
     // max rate (from morpho constants)
     uint256 constant MAX_MAX_RATE = 200e16 / uint256(365 days); // 200% APR
+    // salt for vault deployment
+    bytes32 constant SALT = bytes32(abi.encodePacked("salt"));
 
     function setUp() public virtual override {
         depositor = vm.addr(0xC000);
         morphoAllocator = vm.addr(0xC001);
         setUpAccounts();
         setUpDeployments();
+        // set up factories
+        VaultV2Factory vaultFactory = new VaultV2Factory();
+        MorphoVaultV1AdapterFactory adapterFactory = new MorphoVaultV1AdapterFactory();
         // set vault as morpho vault
-        morpho = new VaultV2(address(this), address(collateral));
+        morpho = VaultV2(vaultFactory.createVaultV2(address(this), address(collateral), SALT));
         vault = IERC4626(address(vault));
-        adapter = new MorphoVaultV1Adapter(address(morpho), address(vault));
+        adapter = IAdapter(adapterFactory.createMorphoVaultV1Adapter(address(morpho), address(vault)));
         gate = new ReceiveSharesGate(address(this));
         setUpController();
         setUpManager();

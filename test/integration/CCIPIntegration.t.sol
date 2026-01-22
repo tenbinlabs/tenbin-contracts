@@ -51,12 +51,16 @@ contract CCIPIntegrationTest is BaseTest {
     }
 
     function test_TransferStakingTokens() external {
-        vm.skip(true);
-        staking.mint(1e18, user1);
+        mintAsset(user, 1000e18);
+
+        vm.startPrank(user);
+        staking.deposit(1000e18, user);
+        staking.approve(address(ccipRouter), type(uint256).max);
+        vm.stopPrank();
         (Client.EVMTokenAmount[] memory tokensToSendDetails) = prepareScenario(staking);
 
-        vm.startPrank(user1);
-        deal(user1, 5 ether);
+        vm.startPrank(user);
+        deal(user, 5 ether);
 
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(user2),
@@ -67,10 +71,11 @@ contract CCIPIntegrationTest is BaseTest {
         });
 
         uint256 fees = ccipRouter.getFee(destinationChainSelector, message);
+        uint256 prevBalance = staking.balanceOf(user);
         ccipRouter.ccipSend{value: fees}(destinationChainSelector, message);
         vm.stopPrank();
 
-        assertEq(staking.balanceOf(user1), 0);
+        assertEq(staking.balanceOf(user), prevBalance - 1e18);
         assertEq(staking.balanceOf(user2), 1e18);
     }
 
