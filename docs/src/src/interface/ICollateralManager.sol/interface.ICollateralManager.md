@@ -1,5 +1,5 @@
 # ICollateralManager
-[Git Source](https://github.com/tenbinlabs/contracts/blob/52078fe5e746ed0afc4c8edd1b841cf0bc5824e3/src/interface/ICollateralManager.sol)
+[Git Source](https://github.com/tenbinlabs/monorepo/blob/282e8df48c5730face078c656f06f4082da3317a/src/interface/ICollateralManager.sol)
 
 **Title:**
 ICollateralManager

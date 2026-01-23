@@ -13,6 +13,9 @@ contract ForkBaseTest is BaseTest {
     // fork block
     uint256 internal constant FORK_BLOCK = 24_235_159;
 
+    // source chain fork id
+    uint256 sourceFork;
+
     // mainnet contracts
     IERC20 internal usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     IERC20 internal usdt = IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
@@ -32,8 +35,8 @@ contract ForkBaseTest is BaseTest {
     function setUpFork() internal {
         // fork mainnet
         string memory rpc = vm.rpcUrl("mainnet");
-        uint256 forkId = vm.createFork(rpc, FORK_BLOCK);
-        vm.selectFork(forkId);
+        sourceFork = vm.createFork(rpc, FORK_BLOCK);
+        vm.selectFork(sourceFork);
 
         // setup
         dealer = vm.addr(0xFFFF);

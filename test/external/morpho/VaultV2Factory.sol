@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2025 Morpho Association
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
-import {VaultV2} from "./VaultV2.sol";
-import {IVaultV2Factory} from "./interfaces/IVaultV2Factory.sol";
+import {VaultV2} from "test/external/morpho/VaultV2.sol";
+import {IVaultV2Factory} from "test/external/morpho/interfaces/IVaultV2Factory.sol";
 
 contract VaultV2Factory is IVaultV2Factory {
     mapping(address account => bool) public isVaultV2;

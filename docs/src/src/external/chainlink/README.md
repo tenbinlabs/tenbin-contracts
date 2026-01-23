@@ -1,4 +1,4 @@
 
 
 # Contents
-- [AggregatorInterface](AggregatorInterface.sol/interface.AggregatorInterface.md)
+- [SpokeERC20](SpokeERC20.sol/contract.SpokeERC20.md)

@@ -5,6 +5,8 @@
     - [❱ 1inch](src/external/1inch/README.md)
       - [IAggregationExecutor](src/external/1inch/IAggregationRouterV6.sol/interface.IAggregationExecutor.md)
       - [IAggregationRouterV6](src/external/1inch/IAggregationRouterV6.sol/interface.IAggregationRouterV6.md)
+    - [❱ chainlink](src/external/chainlink/README.md)
+      - [SpokeERC20](src/external/chainlink/SpokeERC20.sol/contract.SpokeERC20.md)
     - [❱ morpho](src/external/morpho/README.md)
       - [IUniversalRewardsDistributor](src/external/morpho/IUniversalRewardsDistributor.sol/interface.IUniversalRewardsDistributor.md)
   - [❱ interface](src/interface/README.md)

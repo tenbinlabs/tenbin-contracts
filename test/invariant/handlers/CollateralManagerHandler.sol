@@ -95,6 +95,7 @@ contract CollateralManagerHandler is Test {
 
     // rescueEther
     function rescueEther(uint256 amount) public {
+        amount = bound(amount, 0, 10_000 ether);
         deal(address(manager), amount);
         vm.prank(admin);
         manager.rescueEther();

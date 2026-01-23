@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {MorphoVaultV1Adapter} from "test/external/morpho/adapters/MorphoVaultV1Adapter.sol";
 import {ForkBaseTest} from "test/fork/ForkBaseTest.sol";
 import {IAdapter} from "test/external/morpho/interfaces/IAdapter.sol";
 import {ICollateralManager} from "src/interface/ICollateralManager.sol";
@@ -11,12 +10,16 @@ import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626
 import {IVaultV2} from "test/external/morpho/interfaces/IVaultV2.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {VaultV2} from "test/external/morpho/VaultV2.sol";
+import {VaultV2Factory} from "test/external/morpho/VaultV2Factory.sol";
+import {MorphoVaultV1AdapterFactory} from "test/external/morpho/MorphoVaultV1AdapterFactory.sol";
 
 contract MorphoForkTest is ForkBaseTest {
     using SafeERC20 for IERC20;
 
     // max rate (from morpho constants)
     uint256 internal constant MAX_MAX_RATE = 200e16 / uint256(365 days); // 200% APR
+    // salt for vault deployment
+    bytes32 constant SALT = bytes32(abi.encodePacked("salt"));
 
     // accounts
     address internal depositor;
@@ -37,13 +40,15 @@ contract MorphoForkTest is ForkBaseTest {
         morphoAllocator = vm.addr(0xC001);
         setUpAccounts();
         setUpDeployments();
+        VaultV2Factory vaultFactory = new VaultV2Factory();
+        MorphoVaultV1AdapterFactory adapterFactory = new MorphoVaultV1AdapterFactory();
         vault = IERC4626(address(vault));
-        morpho = new VaultV2(address(this), address(collateral));
-        usdcMorpho = new VaultV2(address(this), address(usdc));
-        usdtMorpho = new VaultV2(address(this), address(usdt));
-        adapter = new MorphoVaultV1Adapter(address(morpho), address(vault));
-        usdcAdapter = new MorphoVaultV1Adapter(address(usdcMorpho), address(usdcVault));
-        usdtAdapter = new MorphoVaultV1Adapter(address(usdtMorpho), address(usdtVault));
+        morpho = VaultV2(vaultFactory.createVaultV2(address(this), address(collateral), SALT));
+        usdcMorpho = VaultV2(vaultFactory.createVaultV2(address(this), address(usdc), SALT));
+        usdtMorpho = VaultV2(vaultFactory.createVaultV2(address(this), address(usdt), SALT));
+        adapter = IAdapter(adapterFactory.createMorphoVaultV1Adapter(address(morpho), address(vault)));
+        usdcAdapter = IAdapter(adapterFactory.createMorphoVaultV1Adapter(address(usdcMorpho), address(usdcVault)));
+        usdtAdapter = IAdapter(adapterFactory.createMorphoVaultV1Adapter(address(usdtMorpho), address(usdtVault)));
         setUpMorhpoVault(morpho, adapter);
         setUpMorhpoVault(usdcMorpho, usdcAdapter);
         setUpMorhpoVault(usdtMorpho, usdtAdapter);

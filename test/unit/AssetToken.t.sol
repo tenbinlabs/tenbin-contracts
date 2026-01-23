@@ -42,14 +42,20 @@ contract AssetTokenTest is Test {
         vm.prank(minter);
         token.mint(account0, 3000e18);
 
-        // test 3 different burn functions
+        // test burning own tokens
         vm.prank(account0);
         token.burn(1000e18);
         assertEq(token.balanceOf(account0), 2000e18);
+
+        // approve another account to burn
         vm.prank(account0);
+        token.approve(account1, 2000e18);
+
+        // test burnFrom
+        vm.prank(account1);
         token.burn(account0, 1000e18);
         assertEq(token.balanceOf(account0), 1000e18);
-        vm.prank(account0);
+        vm.prank(account1);
         token.burnFrom(account0, 1000e18);
         assertEq(token.balanceOf(account0), 0);
     }
