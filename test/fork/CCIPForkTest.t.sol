@@ -18,8 +18,8 @@ import {StakedAsset} from "src/StakedAsset.sol";
 
 contract CCIPForkTest is ForkBaseTest {
     // contracts deployed in testnet chains
-    address constant TAR_SEPOLIA = 0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82; // Token Admin Registry Eth Sepolia
-    address constant ARB_TAR_SEPOLIA = 0x8126bE56454B628a88C17849B9ED99dd5a11Bd2f; // Token Admin Registry Arbitrum Sepolia
+    address ethTokenAdmin; // Token Admin Registry Eth Sepolia
+    address arbTokenAdmin; // Token Admin Registry Arbitrum Sepolia
     // pools
     MockBurnMintMultiTokenPool ethPool; // eth sepolia pool
     MockBurnMintMultiTokenPool arbPool; // arbitrum sepolia pool
@@ -57,6 +57,8 @@ contract CCIPForkTest is ForkBaseTest {
         vm.makePersistent(address(ccipLocalSimulatorFork));
 
         Register.NetworkDetails memory destinationNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(dstChainId);
+        arbTokenAdmin = destinationNetworkDetails.tokenAdminRegistryAddress;
+        require(destinationNetworkDetails.tokenAdminRegistryAddress.code.length > 0, "dst TAR has no code");
         destinationNetworkDetails.ccipBnMAddress = address(dstAsset);
         destinationChainSelector = destinationNetworkDetails.chainSelector;
         ccipLocalSimulatorFork.setNetworkDetails(dstChainId, destinationNetworkDetails);
@@ -80,17 +82,19 @@ contract CCIPForkTest is ForkBaseTest {
         tokens[1] = IERC20(staking);
 
         Register.NetworkDetails memory sourceNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(chainId);
+        ethTokenAdmin = sourceNetworkDetails.tokenAdminRegistryAddress;
         sourceNetworkDetails.ccipBnMAddress = address(asset);
         sourceRouter = IRouterClient(sourceNetworkDetails.routerAddress);
         ccipLocalSimulatorFork.setNetworkDetails(chainId, sourceNetworkDetails);
         ethPool = new MockBurnMintMultiTokenPool(tokens, empty, address(0), sourceNetworkDetails.routerAddress);
 
+        setUpNewLabels();
         // Configure pools
         // souce chain
         // asset
         configPool(
             sourceFork,
-            TAR_SEPOLIA,
+            ethTokenAdmin,
             address(asset),
             address(dstAsset),
             destinationChainSelector,
@@ -100,7 +104,7 @@ contract CCIPForkTest is ForkBaseTest {
         // staking
         configPool(
             sourceFork,
-            TAR_SEPOLIA,
+            ethTokenAdmin,
             address(staking),
             address(dstStaking),
             destinationChainSelector,
@@ -109,27 +113,26 @@ contract CCIPForkTest is ForkBaseTest {
         );
 
         // destination chain
-        // asset
+        // staking
         configPool(
             destinationFork,
-            ARB_TAR_SEPOLIA,
+            arbTokenAdmin,
             address(dstStaking),
             address(staking),
             destinationChainSelector,
             arbPool,
             address(ethPool)
         );
-        // staking
+        // asset
         configPool(
             destinationFork,
-            ARB_TAR_SEPOLIA,
+            arbTokenAdmin,
             address(dstAsset),
             address(asset),
             destinationChainSelector,
             arbPool,
             address(ethPool)
         );
-        setUpNewLabels();
     }
 
     function test_transferAssetTokensFromEoaToEoaPayFeesInNative() external {
@@ -216,8 +219,8 @@ contract CCIPForkTest is ForkBaseTest {
         vm.stopPrank();
 
         ITokenAdminRegistry.TokenConfig memory cfg = isAssetToken
-            ? ITokenAdminRegistry(TAR_SEPOLIA).getTokenConfig(address(asset))
-            : ITokenAdminRegistry(TAR_SEPOLIA).getTokenConfig(address(staking));
+            ? ITokenAdminRegistry(ethTokenAdmin).getTokenConfig(address(asset))
+            : ITokenAdminRegistry(ethTokenAdmin).getTokenConfig(address(staking));
 
         address admin = cfg.administrator;
         require(admin != address(0), "Token not configured / no admin");
@@ -264,8 +267,8 @@ contract CCIPForkTest is ForkBaseTest {
     function setUpNewLabels() internal {
         label(address(dstAsset), "dstAsset");
         label(address(dstStaking), "dstStaking");
-        label(TAR_SEPOLIA, "TokenRegistryEthSepolia");
-        label(ARB_TAR_SEPOLIA, "TokenRegistryArbSepolia");
+        label(ethTokenAdmin, "TokenRegistryEthSepolia");
+        label(arbTokenAdmin, "TokenRegistryArbSepolia");
         label(address(ethPool), "ethPool");
         label(address(arbPool), "arbPool");
     }
