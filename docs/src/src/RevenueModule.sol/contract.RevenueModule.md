@@ -1,5 +1,5 @@
 # RevenueModule
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/282e8df48c5730face078c656f06f4082da3317a/src/RevenueModule.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/7874f0709e21201d251621138d90d5b61ccd404d/src/RevenueModule.sol)
 
 **Inherits:**
 [IRevenueModule](/src/interface/IRevenueModule.sol/interface.IRevenueModule.md), AccessControl

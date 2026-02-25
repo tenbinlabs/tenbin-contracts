@@ -1,5 +1,5 @@
 # IBurnMintERC20
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/282e8df48c5730face078c656f06f4082da3317a/src/interface/IBurnMintERC20.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/7874f0709e21201d251621138d90d5b61ccd404d/src/interface/IBurnMintERC20.sol)
 
 **Inherits:**
 IERC20

@@ -1,8 +1,40 @@
 # Tenbin Smart Contracts
 
+[tenbinlabs.xyz](https://tenbinlabs.xyz)
+ 
 Tenbin is an asset tokenization protocol which uses futures contracts to enable highly liquid assets. Read the full docs here: [DOCS](docs/src/SUMMARY.md)
 
-## Setup
+# Mainnet Addresses
+
+| Contract | Address |
+| --- | --- |
+| Adapter | [0x932E0ba317897D4a3142929B95CaaDA33df5fC35](https://etherscan.io/address/0x932E0ba317897D4a3142929B95CaaDA33df5fC35) |
+| AssetSilo | [0xA924A7493782c11b4E408B072367A0Fc02556092](https://etherscan.io/address/0xA924A7493782c11b4E408B072367A0Fc02556092) |
+| AssetToken | [0x6a547b25534234bb79CE6961a23Db13DE154b6F4](https://etherscan.io/address/0x6a547b25534234bb79CE6961a23Db13DE154b6F4) |
+| CollateralManager | [0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa](https://etherscan.io/address/0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa) |
+| Controller | [0xcaF2cD7fd794CaAf56555Db90A5865a5FE9182f7](https://etherscan.io/address/0xcaF2cD7fd794CaAf56555Db90A5865a5FE9182f7) |
+| CustodianModule | [0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89](https://etherscan.io/address/0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89) |
+| Gate | [0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1](https://etherscan.io/address/0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1) |
+| MultiCall | [0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8](https://etherscan.io/address/0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8) |
+| StakedAsset | [0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4](https://etherscan.io/address/0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4) |
+| Vault | [0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75](https://etherscan.io/address/0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75) |
+| RevenueModule | [0x5D46Ec01376d218Ade3c1133a7E38976c2DBe584](https://etherscan.io/address/0x5D46Ec01376d218Ade3c1133a7E38976c2DBe584) |
+| SwapModule | [0xB426bcB6028Ba1fBB746a8af11859D97007BE594](https://etherscan.io/address/0xB426bcB6028Ba1fBB746a8af11859D97007BE594) |
+
+# Audit
+Four smart contract audits were performed on the solidity codebase. An initial independent audit was conducted, followed by major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
+
+[scope](audit/scope_1_22_26.pdf)
+ 
+[0xleastwood](audit/0xleastwood_1_22_26.pdf)
+ 
+[fuzzland](audit/fuzzland_1_22_26.pdf)
+ 
+[spearbit](audit/spearbit_1_22_26.pdf)
+ 
+[verilog](audit/verilog_1_22_26.pdf)
+
+# Setup
 
 ### Installations
 
@@ -60,6 +92,14 @@ View coverage with uncovered branches and lines:
 
 `forge doc`
 
+### Fuzzing
+
+Install echidna: https://github.com/crytic/echidna?tab=readme-ov-file#installation
+
+Run all echidna tests: `echidna.sh`
+
+`echidna test/echidna/<contract-file-name>.sol --contract <contract-name> --config echidna.yaml"`
+
 ### Formal Verification
 
 #### Certora
@@ -92,9 +132,9 @@ Run mythril: `myth analyze {your_contract}`
 
 Configuration: https://getfoundry.sh/config/static-analyzers/#mythril
 
-## Deployments
+# Deploy
 
-Use `config.toml` to configure roles and parameters when running deploy scripts. Roles and existing deployments are tracked in deployments.json. When running the deployment script, a file is created in `broadcast/{chainid}/{script_name}/deployments.json` containing the recently deployed contracts and roles.
+Use `config/` to configure roles and parameters when running deploy scripts. Roles and existing deployments are tracked in deployments.json. When running the deployment script, a file is created in `broadcast/{chainid}/{script_name}/deployments.json` containing the recently deployed contracts and roles.
 
 ### Deploy locally
 
@@ -104,11 +144,14 @@ Use `config.toml` to configure roles and parameters when running deploy scripts.
 
 3) Run `FOUNDRY_PROFILE=production forge script script/DeployTestnet.s.sol --rpc-url ws:/localhost:8545 --broadcast`
 
+### Deploy morhpo v2 vault onto sepolia testnet
+1) Ensure BROADCASTER_KEY is set in .env
+
+2) `Run FOUNDRY_PROFILE=production forge script script/DeployVault.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast`
+
 ### Deploy to sepolia testnet:
 
-1) Set `deployer` is config.toml. You can configure additional accounts here (see [31337.address]).
-
-2) Run `FOUNDRY_PROFILE=production forge script script/DeployTestnet.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+Run `FOUNDRY_PROFILE=production forge script script/DeployMock.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
 
 Use `--broadcast` to broadcast
 
@@ -122,6 +165,10 @@ Use `--broadcast` to broadcast
 5) Run the mint script
 ```forge script script/MintTestnet.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $MINTER_KEY --broadcast```
 THIS SCRIPT IS NOT SAFE TO RUN ON MAINNET!!
+
+### Deploying to mainnet 
+
+```FOUNDRY_PROFILE=production forge script script/Deploy.s.sol --private-key $BROADCASTER_KEY --rpc-url $MAINNET_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY --broadcast --slow ```
 
 # Architecture
 

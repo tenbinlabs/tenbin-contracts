@@ -1,11 +1,21 @@
 # StakedAsset
-[Git Source](https://github.com/tenbinlabs/monorepo/blob/282e8df48c5730face078c656f06f4082da3317a/src/StakedAsset.sol)
+[Git Source](https://github.com/tenbinlabs/contracts/blob/7874f0709e21201d251621138d90d5b61ccd404d/src/StakedAsset.sol)
 
 **Inherits:**
 [IStakedAsset](/src/interface/IStakedAsset.sol/interface.IStakedAsset.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), UUPSUpgradeable, ERC20PermitUpgradeable, ERC4626Upgradeable, AccessControlUpgradeable
 
 **Title:**
 StakedAsset
+
+__/\\\\\\\\\\\\\\\__________________________/\\\____________________________
+_\///////\\\/////__________________________\/\\\____________________________
+_______\/\\\_______________________________\/\\\_________/\\\_______________
+_______\/\\\______/\\\\\\\\___/\\/\\\\\\___\/\\\________\///___/\\/\\\\\\___
+_______\/\\\____/\\\/////\\\_\/\\\////\\\__\/\\\\\\\\\___/\\\_\/\\\////\\\__
+_______\/\\\___/\\\\\\\\\\\__\/\\\__\//\\\_\/\\\////\\\_\/\\\_\/\\\__\//\\\_
+_______\/\\\__\//\\///////___\/\\\___\/\\\_\/\\\__\/\\\_\/\\\_\/\\\___\/\\\_
+_______\/\\\___\//\\\\\\\\\\_\/\\\___\/\\\_\/\\\\\\\\\__\/\\\_\/\\\___\/\\\_
+_______\///_____\//////////__\///____\///__\/////////___\///__\///____\///__
 
 Allows staking an asset token for a staking token
 Rewards can be sent to this contract to reward stakers proportionally to their stake
