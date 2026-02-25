@@ -8,6 +8,7 @@
     - [❱ chainlink](src/external/chainlink/README.md)
       - [SpokeERC20](src/external/chainlink/SpokeERC20.sol/contract.SpokeERC20.md)
     - [❱ morpho](src/external/morpho/README.md)
+      - [Gate](src/external/morpho/Gate.sol/contract.Gate.md)
       - [IUniversalRewardsDistributor](src/external/morpho/IUniversalRewardsDistributor.sol/interface.IUniversalRewardsDistributor.md)
   - [❱ interface](src/interface/README.md)
     - [IBurnMintERC20](src/interface/IBurnMintERC20.sol/interface.IBurnMintERC20.md)

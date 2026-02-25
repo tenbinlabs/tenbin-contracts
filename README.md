@@ -1,5 +1,7 @@
 # Tenbin Smart Contracts
 
+[tenbinlabs.xyz](https://tenbinlabs.xyz)
+ 
 Tenbin is an asset tokenization protocol which uses futures contracts to enable highly liquid assets. Read the full docs here: [DOCS](docs/src/SUMMARY.md)
 
 # Mainnet Addresses
@@ -17,7 +19,7 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 | StakedAsset | [0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4](https://etherscan.io/address/0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4) |
 | Vault | [0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75](https://etherscan.io/address/0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75) |
 | RevenueModule | [0x5D46Ec01376d218Ade3c1133a7E38976c2DBe584](https://etherscan.io/address/0x5D46Ec01376d218Ade3c1133a7E38976c2DBe584) |
-| SwapModule | [0x2a477FA5C9270DB6C600e799241cb8235D6f95f4](https://etherscan.io/address/0x2a477FA5C9270DB6C600e799241cb8235D6f95f4) |
+| SwapModule | [0xB426bcB6028Ba1fBB746a8af11859D97007BE594](https://etherscan.io/address/0xB426bcB6028Ba1fBB746a8af11859D97007BE594) |
 
 # Audit
 Four smart contract audits were performed on the solidity codebase. An initial independent audit was conducted, followed by major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
