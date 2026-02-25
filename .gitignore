@@ -1,6 +1,12 @@
+**/*.env
+**/target
+**/out
+**/cache
+**/out-echidna
+**/cache-echidna
+**/.DS_Store
+**/broadcast
+**/.certora_internal
 .vscode
-.env
-broadcast/**
-cache/**
-out/**
-.DS_Store
+**/crytic-export/
+**/echidna-corpus
