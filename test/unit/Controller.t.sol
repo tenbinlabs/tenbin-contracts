@@ -66,7 +66,7 @@ contract ControllerTest is BaseTest {
     }
 
     function test_Version() public view {
-        assertEq("1.1.0", controller.version());
+        assertEq("1.0.0", controller.version());
     }
 
     function test_HashOrder() public view {

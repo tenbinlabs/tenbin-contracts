@@ -21,6 +21,7 @@ contract OneInchForkTest is ForkBaseTest {
 
     function setUp() public override {
         super.setUp();
+        setUpMockVaults();
 
         // deploy code to mainnet account which has real USDC and USDT balance
         address managerImplementation = address(new CollateralManager());

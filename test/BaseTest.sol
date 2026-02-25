@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+import {console2} from "forge-std/console2.sol";
 import {AssetSilo} from "src/AssetSilo.sol";
 import {AssetToken} from "src/AssetToken.sol";
 import {CollateralManager} from "src/CollateralManager.sol";
@@ -60,6 +61,8 @@ contract BaseTest is Test {
     uint96 internal constant MAX_ORACLE_TOLERANCE = 1e18;
     // chainlink price aggregator precision
     uint256 internal constant ADAPTER_PRECISION = 1e10;
+    // dead deposit address
+    address internal constant DEAD_DEPOSIT_ADDRESS = 0x000000000000000000000000000000000000dEaD;
 
     // keys
     uint256 internal payerKey = 0xB000;
@@ -85,6 +88,7 @@ contract BaseTest is Test {
     address internal user;
     address internal rewarder;
     address internal restricter;
+    address internal broadcaster;
 
     // contracts
     ControllerHarness internal controller;
@@ -158,6 +162,7 @@ contract BaseTest is Test {
         user = vm.addr(0xB011);
         rewarder = vm.addr(0xB012);
         restricter = vm.addr(0xB013);
+        broadcaster = getTestBroadcaster();
     }
 
     function setUpDeployments() internal {
@@ -448,5 +453,14 @@ contract BaseTest is Test {
 
         parameters = abi.encode(params);
         swapData = abi.encode(data.executor, desc, new bytes(0));
+    }
+
+    function getTestBroadcaster() internal view returns (address account) {
+        string memory mnemonic = vm.envString("TEST_MNEMONIC");
+        console2.log("TEST_MNEMONIC: ", mnemonic);
+        string memory derivationPath = "m/44'/60'/0'/0";
+        // forge-lint: disable-next-line(unsafe-cheatcode)
+        uint256 privateKey = vm.deriveKey(mnemonic, derivationPath, 0);
+        account = vm.addr(privateKey);
     }
 }

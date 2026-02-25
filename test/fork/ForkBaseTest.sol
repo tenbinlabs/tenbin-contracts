@@ -10,9 +10,6 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 contract ForkBaseTest is BaseTest {
     using SafeERC20 for IERC20;
 
-    // fork block
-    uint256 internal constant FORK_BLOCK = 24_235_159;
-
     // source chain fork id
     uint256 sourceFork;
 
@@ -20,12 +17,19 @@ contract ForkBaseTest is BaseTest {
     IERC20 internal usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     IERC20 internal usdt = IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
 
+    // see: https://docs.morpho.org/get-started/resources/addresses/#morpho-v2-contracts
+    address internal constant VAULT_V2_FACTORY_ADDRESS = 0xA1D94F746dEfa1928926b84fB2596c06926C0405;
+    address internal constant VAULT_V1_ADAPTER_FACTORY_ADDRESS = 0xD1B8E2dee25c2b89DCD2f98448a7ce87d6F63394;
+
     // contracts
     IERC4626 internal usdcVault;
     IERC4626 internal usdtVault;
 
     // accounts
     address dealer;
+
+    // default fork block
+    uint256 forkBlock = 24398000;
 
     function setUp() public virtual override {
         setUpFork();
@@ -35,24 +39,23 @@ contract ForkBaseTest is BaseTest {
     function setUpFork() internal {
         // fork mainnet
         string memory rpc = vm.rpcUrl("mainnet");
-        sourceFork = vm.createFork(rpc, FORK_BLOCK);
-        vm.selectFork(sourceFork);
+        vm.createSelectFork(rpc, forkBlock);
 
-        // setup
-        dealer = vm.addr(0xFFFF);
-        usdcVault = new MockERC4626("USDC Vault", "vUSDC", usdc);
-        usdtVault = new MockERC4626("USDT Vault", "vUSDT", usdt);
+        // accounts
+        dealer = vm.addr(0xE000);
 
         // labels
         label(address(usdc), "usdc");
         label(address(usdt), "usdt");
         label(dealer, "dealer");
-        label(address(usdcVault), "usdcVault");
-        label(address(usdtVault), "usdtVault");
     }
 
-    function testFork_Config() internal view {
-        assertEq(block.number, FORK_BLOCK);
+    function setUpMockVaults() internal {
+        // setup mock vaults
+        usdcVault = new MockERC4626("USDC Vault", "vUSDC", usdc);
+        usdtVault = new MockERC4626("USDT Vault", "vUSDT", usdt);
+        label(address(usdcVault), "usdcVault");
+        label(address(usdtVault), "usdtVault");
     }
 
     // helper function to mock token balances in fork tests

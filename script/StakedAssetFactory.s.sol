@@ -12,6 +12,7 @@ import {StakedAsset} from "src/StakedAsset.sol";
 /// Contract must be funded by at least 1e18 amount of the underlying asset token before attempting to call
 // the `createStakedAsset` function.
 contract StakedAssetFactory is BaseScript, Ownable2Step {
+    address DEAD_DEPOSIT_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     using SafeERC20 for AssetToken;
 
     /// @notice emits when a new staking contract was deployed
@@ -46,7 +47,7 @@ contract StakedAssetFactory is BaseScript, Ownable2Step {
         AssetToken(_asset).approve(address(staking), 1e18);
         staking.mint(1e18, address(this));
 
-        require(staking.transfer(address(0xDEAD), 1e18));
+        require(staking.transfer(address(DEAD_DEPOSIT_ADDRESS), 1e18));
 
         emit StakingCreated(address(staking));
         return staking;

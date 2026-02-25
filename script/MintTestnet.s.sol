@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 
 import {BaseScript} from "script/Base.s.sol";
-import {console} from "forge-std/console.sol";
+import {console2} from "lib/forge-std/src/console2.sol";
 import {Controller} from "src/Controller.sol";
 import {IController} from "src/interface/IController.sol";
 
@@ -24,8 +24,6 @@ contract MintTestnetScript is BaseScript {
     address internal constant RECIPIENT_ADDRESS = 0xFc8E0e6c28C8f6dD656dE0e9C0b0ecef598Fc9Ce;
     /// @notice Collateral address
     address internal constant COLLATERAL_ADDRESS = 0x81FF19CF5053856c2B9f2A6CB5FFc87b96C1e322;
-    /// @notice Minter role
-    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor() {
         broadcaster = vm.envOr({name: "MINTER_ADDRESS", defaultValue: address(0)});
@@ -60,13 +58,13 @@ contract MintTestnetScript is BaseScript {
         // get order hash and sign
         bytes32 orderHash = controller.hashOrder(order);
         IController.Signature memory signature = signOrder(payerKey, orderHash);
-        console.log("\nSignature bytes: \n");
-        console.logBytes(signature.signature_bytes);
+        console2.log("\nSignature bytes: \n");
+        console2.logBytes(signature.signature_bytes);
 
         // perform mint
         controller.mint(order, signature);
-        console.log("mint success.");
-        console.log("recipient: ", order.recipient);
+        console2.log("mint success.");
+        console2.log("recipient: ", order.recipient);
     }
 
     /// @notice function to sign an order hash

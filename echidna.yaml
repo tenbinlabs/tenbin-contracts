@@ -1,0 +1,5 @@
+corpusDir: "echidna-corpus"
+allContracts: true
+testLimit: 100000
+coverage: false
+stopOnFail: false

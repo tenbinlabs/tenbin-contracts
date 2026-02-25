@@ -2,8 +2,8 @@
 pragma solidity 0.8.30;
 
 import {AssetToken} from "src/AssetToken.sol";
-import {CCIPLocalSimulatorFork, Register} from "@chainlink/local/src/ccip/CCIPLocalSimulatorFork.sol";
-import {Client} from "lib/chainlink-local/lib/ccip/contracts/src/v0.8/ccip/libraries/Client.sol";
+import {CCIPLocalSimulatorFork, Register} from "lib/chainlink-local/src/ccip/CCIPLocalSimulatorFork.sol";
+import {Client} from "lib/chainlink-local/lib/chainlink-ccip/chains/evm/contracts/libraries/Client.sol";
 import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ForkBaseTest} from "test/fork/ForkBaseTest.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -90,7 +90,7 @@ contract CCIPForkTest is ForkBaseTest {
 
         setUpNewLabels();
         // Configure pools
-        // souce chain
+        // source chain
         // asset
         configPool(
             sourceFork,

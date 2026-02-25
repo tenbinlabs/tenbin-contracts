@@ -4,7 +4,7 @@ libs = ["lib"]
 deny = "warnings"
 optimizer = true
 optimizer_runs = 100000
-dynamic_test_linking = true
+dynamic_test_linking = false
 isolate = true
 gas_reports = [
   "AssetSilo",
@@ -30,7 +30,7 @@ optimizer = true
 optimizer_runs = 8888888
 
 [lint]
-ignore = ["test/external/**/*"]
+ignore = ["test/external/**/*", "test/echidna/**/*"]
 exclude_lints = [
   "mixed-case-variable",
   "screaming-snake-case-immutable",

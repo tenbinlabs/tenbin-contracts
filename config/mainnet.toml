@@ -1,0 +1,39 @@
+# mainnet
+[mainnet]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[mainnet.string]
+asset_name = "Tenbin Gold"
+asset_symbol = "tGLD"
+staked_asset_name = "Staked Tenbin Gold"
+staked_asset_symbol = "stGLD"
+
+[mainnet.uint]
+cooldown_period = 604_800               # 7 days
+min_swap_price = 0                      # 0
+oracle_tolerance = 50_000000000000000   # 5%
+ratio = 170_000000000000000             # 17%
+rebalance_cap = 100_000_000_000000      # 100m
+swap_cap = 0                            # 0
+vesting_period = 259_200                # 3 days
+
+[mainnet.address]
+one_inch_router = "0x111111125421cA6dc452d289314280a0f8842A65"
+admin_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+cap_adjuster_role = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"
+collateral = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+curator_role = "0xD1a89086428E2b208414201712cbE0952DabEA03"
+custodian = "0x1f766513abc0DD46b26590Ea83A6b20377460a18"
+custodian_keeper_role = "0xD1a89086428E2b208414201712cbE0952DabEA03"
+default_admin_role = "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"
+gatekeeper_role = "0x44C24D0937A829B3057be462b0e069516f1D9D45"
+minter_role = "0xCa2D7CfAa96290171c98e112c73fC87c2AE2fe9B"
+multicaller_role = "0xCa2D7CfAa96290171c98e112c73fC87c2AE2fe9B"
+multisig = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"
+oracle = "0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6"
+rebalancer_role = "0xD1a89086428E2b208414201712cbE0952DabEA03"
+restricter_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+revenue_keeper_role = "0xD1a89086428E2b208414201712cbE0952DabEA03"
+rewarder_role = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"
+signer_manager_role = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"
+vault = "0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75"

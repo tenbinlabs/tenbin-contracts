@@ -5,6 +5,64 @@
             "dev_multisig": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
             "owner_multisig:": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
             "tenbin_multisig": "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"
+        },
+        "tGLD": {
+            "config": {
+                "asset_name": "Tenbin Gold",
+                "asset_symbol": "tGLD",
+                "deployment_block": 24422885,
+                "domain_separator": "0xa037ae5202d2a96282f094d981563ab719f04a4f9ae1efe9cf97168420dbc11d",
+                "staked_asset_name": "Staked Tenbin Gold",
+                "staked_asset_symbol": "stGLD",
+                "version": "1.0.0"
+            },
+            "contracts": {
+                "asset_token": "0x6a547b25534234bb79CE6961a23Db13DE154b6F4",
+                "collateral": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                "collateral_manager": "0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa",
+                "controller": "0xcaF2cD7fd794CaAf56555Db90A5865a5FE9182f7",
+                "custodian_module": "0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89",
+                "multicall": "0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8",
+                "revenue_module": "0x5D46Ec01376d218Ade3c1133a7E38976c2DBe584",
+                "silo": "0xA924A7493782c11b4E408B072367A0Fc02556092",
+                "staked_asset": "0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4",
+                "swap_module": "0xB426bcB6028Ba1fBB746a8af11859D97007BE594"
+            },
+            "roles": {
+                "admin_role": ["0xE6Eb534f33A635e8d867414Af32F766D221F30d1"],
+                "cap_adjuster_role": ["0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"],
+                "curator_role": ["0xD1a89086428E2b208414201712cbE0952DabEA03"],
+                "custodian": ["0x1f766513abc0DD46b26590Ea83A6b20377460a18"],
+                "custodian_keeper_role": ["0xD1a89086428E2b208414201712cbE0952DabEA03"],
+                "default_admin_role": ["0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"],
+                "deployer": ["0x224D7291D3E05d848B35364836Dfa9a01e3Ba69b"],
+                "gatekeeper_role": ["0x44C24D0937A829B3057be462b0e069516f1D9D45"],
+                "minter_role": ["0xCa2D7CfAa96290171c98e112c73fC87c2AE2fe9B"],
+                "multicaller_role": ["0xCa2D7CfAa96290171c98e112c73fC87c2AE2fe9B"],
+                "multisig": ["0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"],
+                "rebalancer_role": ["0xD1a89086428E2b208414201712cbE0952DabEA03"],
+                "restricter_role": ["0xE6Eb534f33A635e8d867414Af32F766D221F30d1"],
+                "revenue_keeper_role": ["0xD1a89086428E2b208414201712cbE0952DabEA03"],
+                "rewarder_role": ["0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"],
+                "signer_manager_role": ["0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"]
+            },
+            "vault": {
+                "config": {
+                    "asset": "usdc",
+                    "deployment_block": 24398720
+                },
+                "contracts": {
+                    "adapter": "0x932E0ba317897D4a3142929B95CaaDA33df5fC35",
+                    "gate": "0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1",
+                    "vault": "0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75"
+                },
+                "roles": {
+                    "allocator": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
+                    "curator": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
+                    "owner": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
+                    "sentinel": "0x44C24D0937A829B3057be462b0e069516f1D9D45"
+                }
+            }
         }
     },
 	"sepolia": {

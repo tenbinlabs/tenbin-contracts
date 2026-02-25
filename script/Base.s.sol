@@ -9,6 +9,21 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 contract BaseScript is Script {
     using Strings for uint256;
 
+    // Roles
+    bytes32 internal constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 internal constant CAP_ADJUSTER_ROLE = keccak256("CAP_ADJUSTER_ROLE");
+    bytes32 internal constant CURATOR_ROLE = keccak256("CURATOR_ROLE");
+    bytes32 internal constant CUSTODIAN_KEEPER_ROLE = keccak256("CUSTODIAN_KEEPER_ROLE");
+    bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
+    bytes32 internal constant GATEKEEPER_ROLE = keccak256("GATEKEEPER_ROLE");
+    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 internal constant MULTICALLER_ROLE = keccak256("MULTICALLER_ROLE");
+    bytes32 internal constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
+    bytes32 internal constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
+    bytes32 internal constant REVENUE_KEEPER_ROLE = keccak256("REVENUE_KEEPER_ROLE");
+    bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
+    bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
+
     /// @dev Included to enable compilation of the script without a $MNEMONIC environment variable.
     string internal constant TEST_MNEMONIC = "ten ten ten ten ten ten ten ten ten ten ten test";
 
@@ -32,6 +47,7 @@ contract BaseScript is Script {
             (broadcaster,) = deriveRememberKey({mnemonic: mnemonic, index: 0});
         }
 
+        console2.log("broadcaster: ", broadcaster);
         // Construct the salt for deterministic deployments.
         SALT = constructCreate2Salt();
     }
@@ -58,7 +74,34 @@ contract BaseScript is Script {
 
     /// @dev The version for this deployment
     function getVersion() internal pure returns (string memory) {
-        return "1.1.0";
+        return "1.0.0";
+    }
+
+    function printLogo() internal pure {
+        // logo
+        console2.log("\n=============================================================\n");
+        console2.log(
+            "\n  __/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\__________________________/\\\\\\____________________________        "
+        );
+        console2.log(" _\\///////\\\\\\/////__________________________\\/\\\\\\____________________________       ");
+        console2.log("  _______\\/\\\\\\_______________________________\\/\\\\\\_________/\\\\\\_______________      ");
+        console2.log(
+            "   _______\\/\\\\\\______/\\\\\\\\\\\\\\\\___/\\\\/\\\\\\\\\\\\___\\/\\\\\\________\\///___/\\\\/\\\\\\\\\\\\___     "
+        );
+        console2.log(
+            "    _______\\/\\\\\\____/\\\\\\/////\\\\\\_\\/\\\\\\////\\\\\\__\\/\\\\\\\\\\\\\\\\\\___/\\\\\\_\\/\\\\\\////\\\\\\__    "
+        );
+        console2.log(
+            "     _______\\/\\\\\\___/\\\\\\\\\\\\\\\\\\\\\\__\\/\\\\\\__\\//\\\\\\_\\/\\\\\\////\\\\\\_\\/\\\\\\_\\/\\\\\\__\\//\\\\\\_   "
+        );
+        console2.log(
+            "      _______\\/\\\\\\__\\//\\\\///////___\\/\\\\\\___\\/\\\\\\_\\/\\\\\\__\\/\\\\\\_\\/\\\\\\_\\/\\\\\\___\\/\\\\\\_  "
+        );
+        console2.log(
+            "       _______\\/\\\\\\___\\//\\\\\\\\\\\\\\\\\\\\_\\/\\\\\\___\\/\\\\\\_\\/\\\\\\\\\\\\\\\\\\__\\/\\\\\\_\\/\\\\\\___\\/\\\\\\_ "
+        );
+        console2.log("        _______\\///_____\\//////////__\\///____\\///__\\/////////___\\///__\\///____\\///__\n");
+        console2.log("\n=============================================================\n");
     }
 
     // mark this as a test contract

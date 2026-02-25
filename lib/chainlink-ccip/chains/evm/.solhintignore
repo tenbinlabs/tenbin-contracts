@@ -1,3 +1,0 @@
-# Test files run with a different solhint ruleset, ignore them here.
-./**/*.t.sol
-./node_modules/

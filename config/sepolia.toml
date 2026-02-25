@@ -1,0 +1,29 @@
+# sepolia
+[11155111]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[11155111.string]
+asset_name = "Test Asset"
+asset_symbol = "tAsset"
+
+[11155111.address]
+admin_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+cap_adjuster_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+curator_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+custodian = "0xbb9d2e2f9084721de949e1426bce93d5cfabefe6"
+custodian_keeper_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+deployer = "0x003893636F55f16409eF493115867986a0d3DAf1"
+gatekeeper_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+minter_role = "0x500dc3fcC67ac5C9C7CA5557b158998d21D70E1D"
+multicaller_role = "0x500dc3fcC67ac5C9C7CA5557b158998d21D70E1D"
+multisig = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+default_admin_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+payer = "0xFc8E0e6c28C8f6dD656dE0e9C0b0ecef598Fc9Ce"
+recipient = "0x3765999e2b5Aec9a88dF9EC11C98A445bD48aa0C"
+rebalancer_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+restricter_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+revenue_keeper_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+rewarder_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+signer = "0xFc8E0e6c28C8f6dD656dE0e9C0b0ecef598Fc9Ce"
+signer_manager_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"
+vault = "0x0000000000000000000000000000000000000000"
