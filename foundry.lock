@@ -24,6 +24,9 @@
     }
   },
   "lib/vault-v2": {
-    "rev": "00881eb5f5c8031252c7fcdb7cd7e026bb21cfa4"
+    "tag": {
+      "name": "2025-12-04",
+      "rev": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017"
+    }
   }
 }
