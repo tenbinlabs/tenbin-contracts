@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
-import {ICollateralManager} from "src/interface/ICollateralManager.sol";
+import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import {ICollateralManager} from "../../src/interface/ICollateralManager.sol";
 
 contract MockReentrantERC20 is ERC20 {
     uint8 private immutable _decimals;

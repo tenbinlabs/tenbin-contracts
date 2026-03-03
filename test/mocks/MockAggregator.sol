@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AggregatorV3Interface} from "lib/chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
-import {SafeCast} from "lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {AggregatorV3Interface} from "chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
+import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 /// @title Mock chainlink oracle which allows setting price directly
 contract MockAggregator is AggregatorV3Interface {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity 0.8.30;
 
-import {IController} from "src/interface/IController.sol";
-import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
-import {Test} from "forge-std/Test.sol";
+import {IController} from "../../src/interface/IController.sol";
+import {IERC1271} from "openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
+import {Test} from "forge-std/src/Test.sol";
 
 contract MockERC1271Signer is IERC1271, Test {
     // @dev in a real implementation this is not public

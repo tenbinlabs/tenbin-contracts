@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {IBurnMintERC20} from "src/interface/IBurnMintERC20.sol";
-import {RateLimiter} from "lib/chainlink-ccip/chains/evm/contracts/libraries/RateLimiter.sol";
-import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
-import {IRouter} from "lib/chainlink-ccip/chains/evm/contracts/interfaces/IRouter.sol";
-import {IERC165} from "lib/openzeppelin-contracts/contracts/interfaces/IERC165.sol";
-import {Ownable, Ownable2Step} from "lib/openzeppelin-contracts/contracts/access/Ownable2Step.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IBurnMintERC20} from "../../src/interface/IBurnMintERC20.sol";
+import {RateLimiter} from "chainlink-ccip/chains/evm/contracts/libraries/RateLimiter.sol";
+import {EnumerableSet} from "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {IRouter} from "chainlink-ccip/chains/evm/contracts/interfaces/IRouter.sol";
+import {IERC165} from "openzeppelin-contracts/contracts/interfaces/IERC165.sol";
+import {Ownable, Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
 
 //TODO fix natspecs inherit
 /// @dev Chainlink inspired pool compatible with multiple V1 pool types.
