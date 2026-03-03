@@ -10,13 +10,18 @@ gas_reports = [
   "AssetSilo",
   "AssetToken",
   "CollateralManager",
+  "CollateralManagerHarness",
   "Controller",
+  "ControllerHarness",
   "CustodianModule",
+  "ERC1967Proxy",
   "GoldOracleAdapter",
   "MultiCall",
   "RevenueModule",
   "StakedAsset",
-  "SwapModule"
+  "StakedAssetHarness",
+  "SwapModule",
+  "SwapModuleHarness"
 ]
 fs_permissions = [{ access = "read-write", path = "./" }]
 
@@ -42,7 +47,15 @@ exclude_lints = [
 runs = 10000
 
 [profile.coverage]
-skip = ["test/external/*", "test/integration/*", "test/fork/*", "test/invariant/*", "test/mocks/*"]
+skip = [
+  "test/echidna/*",
+  "test/external/*",
+  "test/fork/*",
+  "test/integration/*",
+  "test/invariant/*", 
+  "test/mocks/*", 
+  "script/*"
+]
 
 [rpc_endpoints]
 mainnet = "${MAINNET_RPC_URL}"
