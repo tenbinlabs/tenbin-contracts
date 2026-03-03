@@ -12,7 +12,7 @@ import {CustodianModule} from "../src/CustodianModule.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import {Mock1InchRouter} from "test/mocks/Mock1InchRouter.sol";
+import {Mock1InchRouter} from "../test/mocks/Mock1InchRouter.sol";
 import {MockERC20} from "../test/mocks/MockERC20.sol";
 import {MockERC4626} from "../test/mocks/MockERC4626.sol";
 import {MultiCall} from "../src/MultiCall.sol";
