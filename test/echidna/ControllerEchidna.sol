@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetToken} from "src/AssetToken.sol";
-import {Controller} from "src/Controller.sol";
+import {AssetToken} from "../../src/AssetToken.sol";
+import {Controller} from "../../src/Controller.sol";
 import {EchidnaBase} from "./EchidnaBase.sol";
-import {IController} from "src/interface/IController.sol";
+import {IController} from "../../src/interface/IController.sol";
 
 // echidna test/echidna/ControllerEchidna.sol --contract ControllerEchidna --config echidna.yaml
 contract ControllerEchidna is EchidnaBase {

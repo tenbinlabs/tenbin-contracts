@@ -2,9 +2,9 @@
 pragma solidity 0.8.30;
 
 import {EchidnaBase} from "./EchidnaBase.sol";
-import {IAggregationRouterV6} from "src/external/1inch/IAggregationRouterV6.sol";
-import {ISwapModule} from "src/interface/ISwapModule.sol";
-import {SwapModule} from "src/SwapModule.sol";
+import {IAggregationRouterV6} from "../../src/external/1inch/IAggregationRouterV6.sol";
+import {ISwapModule} from "../../src/interface/ISwapModule.sol";
+import {SwapModule} from "../../src/SwapModule.sol";
 
 // echidna test/echidna/SwapModuleEchidna.sol  --contract SwapModuleEchidna --config echidna.yaml
 contract SwapModuleEchidna is EchidnaBase {

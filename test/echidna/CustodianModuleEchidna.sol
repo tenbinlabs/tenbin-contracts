@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {CustodianModule} from "src/CustodianModule.sol";
+import {CustodianModule} from "../../src/CustodianModule.sol";
 import {EchidnaBase} from "./EchidnaBase.sol";
 
 // echidna test/echidna/CustodianModuleEchidna.sol --contract CustodianModuleEchidna --config echidna.yaml
