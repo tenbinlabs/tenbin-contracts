@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {CollateralManager} from "src/CollateralManager.sol";
-import {CollateralManagerPause} from "test/mocks/CollateralManagerPause.sol";
-import {Controller} from "src/Controller.sol";
-import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ERC1967Utils} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import {ERC4626} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
-import {IAggregationRouterV6} from "src/external/1inch/IAggregationRouterV6.sol";
-import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {ICollateralManager} from "src/interface/ICollateralManager.sol";
-import {IERC20Errors} from "lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
-import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
-import {ISwapModule} from "src/interface/ISwapModule.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {CollateralManager} from "../../src/CollateralManager.sol";
+import {CollateralManagerPause} from "../mocks/CollateralManagerPause.sol";
+import {Controller} from "../../src/Controller.sol";
+import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1967Utils} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import {ERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import {IAggregationRouterV6} from "../../src/external/1inch/IAggregationRouterV6.sol";
+import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import {ICollateralManager} from "../../src/interface/ICollateralManager.sol";
+import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import {ISwapModule} from "../../src/interface/ISwapModule.sol";
 import {
     Mock1InchRouterWithInsufficientAmountSent,
     Mock1InchRouterWithExtraAmountSent
-} from "test/mocks/Mock1InchRouter.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {MockERC4626} from "test/mocks/MockERC4626.sol";
-import {MockReentrantERC20} from "test/mocks/MockReentrantERC20.sol";
-import {MockReentrantERC4626} from "test/mocks/MockReentrantERC4626.sol";
-import {ReentrancyGuardTransient} from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
+} from "../mocks/Mock1InchRouter.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {MockERC4626} from "../mocks/MockERC4626.sol";
+import {MockReentrantERC20} from "../mocks/MockReentrantERC20.sol";
+import {MockReentrantERC4626} from "../mocks/MockReentrantERC4626.sol";
+import {ReentrancyGuardTransient} from "openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
 
 contract CollateralManagerTest is BaseTest {
     function test_CollateralManager_Initialize() public view {

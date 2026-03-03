@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {MultiCall} from "src/MultiCall.sol";
-import {Test} from "forge-std/Test.sol";
+import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {MultiCall} from "../../src/MultiCall.sol";
+import {Test} from "forge-std/src/Test.sol";
 
 contract MultiCallTest is Test {
     address caller;

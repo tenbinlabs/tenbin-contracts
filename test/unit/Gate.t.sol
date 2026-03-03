@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {Gate} from "src/external/morpho/Gate.sol";
-import {Test} from "forge-std/Test.sol";
+import {Gate} from "../../src/external/morpho/Gate.sol";
+import {Test} from "forge-std/src/Test.sol";
 
 contract GateTest is Test {
     address manager;

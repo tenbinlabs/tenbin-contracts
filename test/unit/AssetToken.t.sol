@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {IERC20Errors} from "lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
-import {AssetToken} from "src/AssetToken.sol";
-import {Test} from "forge-std/Test.sol";
+import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import {AssetToken} from "../../src/AssetToken.sol";
+import {Test} from "forge-std/src/Test.sol";
 
 contract AssetTokenTest is Test {
     AssetToken internal token;

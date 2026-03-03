@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {IController} from "src/interface/IController.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {IRevenueModule} from "src/interface/IRevenueModule.sol";
-import {RevenueModule} from "src/RevenueModule.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import {IController} from "../../src/interface/IController.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IRevenueModule} from "../../src/interface/IRevenueModule.sol";
+import {RevenueModule} from "../../src/RevenueModule.sol";
 
 contract RevenueModuleTest is BaseTest {
     function test_SetUp() public view {

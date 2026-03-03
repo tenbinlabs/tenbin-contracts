@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetToken} from "src/AssetToken.sol";
-import {BaseTest} from "test/BaseTest.sol";
-import {Controller} from "src/Controller.sol";
-import {ECDSA} from "lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
-import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {IController} from "src/interface/IController.sol";
-import {IERC20Errors} from "lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
-import {IRestrictedRegistry} from "src/interface/IRestrictedRegistry.sol";
-import {Math} from "lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
+import {AssetToken} from "../../src/AssetToken.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {Controller} from "../../src/Controller.sol";
+import {ECDSA} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import {IController} from "../../src/interface/IController.sol";
+import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import {IRestrictedRegistry} from "../../src/interface/IRestrictedRegistry.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ControllerTest is BaseTest {

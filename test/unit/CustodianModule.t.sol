@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {CustodianModule} from "src/CustodianModule.sol";
-import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {CustodianModule} from "../../src/CustodianModule.sol";
+import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 
 contract CustodianModuleTest is BaseTest {
     function test_Deployment() public view {
