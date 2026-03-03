@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {IAggregationRouterV6, IAggregationExecutor} from "src/external/1inch/IAggregationRouterV6.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {ISwapModule} from "src/interface/ISwapModule.sol";
-import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IAggregationRouterV6, IAggregationExecutor} from "./external/1inch/IAggregationRouterV6.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ISwapModule} from "./interface/ISwapModule.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title Swap Module
 /// @notice The Swap Module is responsible for handling swaps using external protocols

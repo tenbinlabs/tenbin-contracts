@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {ICollateralManager} from "src/interface/ICollateralManager.sol";
-import {IController} from "src/interface/IController.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {ICollateralManager} from "../../src/interface/ICollateralManager.sol";
+import {IController} from "../../src/interface/IController.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
 
 contract TenbinIntegrationTest is BaseTest {
     function setUp() public virtual override {

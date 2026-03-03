@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetToken} from "src/AssetToken.sol";
-import {CCIPLocalSimulatorFork, Register} from "lib/chainlink-local/src/ccip/CCIPLocalSimulatorFork.sol";
-import {Client} from "lib/chainlink-local/lib/chainlink-ccip/chains/evm/contracts/libraries/Client.sol";
-import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ForkBaseTest} from "test/fork/ForkBaseTest.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {IRouterClient} from "lib/chainlink-local/src/ccip/CCIPLocalSimulator.sol";
-import {ITokenAdminRegistry} from "test/external/chainlink/ITokenAdminRegistry.sol";
-import {MockBurnMintMultiTokenPool} from "test/mocks/MockBurnMintMultiTokenPool.sol";
-import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable2Step.sol";
-import {RateLimiter} from "lib/chainlink-ccip/chains/evm/contracts/libraries/RateLimiter.sol";
-import {SpokeERC20} from "src/external/chainlink/SpokeERC20.sol";
-import {StakedAssetHarness} from "test/harness/StakedAssetHarness.sol";
-import {StakedAsset} from "src/StakedAsset.sol";
+import {AssetToken} from "../../src/AssetToken.sol";
+import {CCIPLocalSimulatorFork, Register} from "chainlink-local/src/ccip/CCIPLocalSimulatorFork.sol";
+import {Client} from "chainlink-local/lib/ccip/contracts/src/v0.8/ccip/libraries/Client.sol";
+import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IRouterClient} from "chainlink-local/src/ccip/CCIPLocalSimulator.sol";
+import {ITokenAdminRegistry} from "../external/chainlink/ITokenAdminRegistry.sol";
+import {MockBurnMintMultiTokenPool} from "../mocks/MockBurnMintMultiTokenPool.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
+import {RateLimiter} from "chainlink-ccip/chains/evm/contracts/libraries/RateLimiter.sol";
+import {SpokeERC20} from "../../src/external/chainlink/SpokeERC20.sol";
+import {StakedAssetHarness} from "../harness/StakedAssetHarness.sol";
+import {StakedAsset} from "../../src/StakedAsset.sol";
 
 contract CCIPForkTest is ForkBaseTest {
     // contracts deployed in testnet chains

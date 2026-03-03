@@ -6,8 +6,8 @@ import {
     ISendSharesGate,
     IReceiveAssetsGate,
     ISendAssetsGate
-} from "lib/vault-v2/src/interfaces/IGate.sol";
-import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable2Step.sol";
+} from "vault-v2/src/interfaces/IGate.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
 
 /// @notice Gate used to restrict vault deposits/withdrawals to a single manager account
 /// https://docs.morpho.org/curate/concepts/gates/#gates-in-vault-v2

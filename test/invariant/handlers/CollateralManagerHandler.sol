@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {CollateralManager} from "src/CollateralManager.sol";
-import {IAggregationRouterV6} from "src/external/1inch/IAggregationRouterV6.sol";
-import {ISwapModule} from "src/interface/ISwapModule.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {MockERC4626} from "test/mocks/MockERC4626.sol";
-import {SwapModule} from "src/SwapModule.sol";
-import {Test} from "forge-std/Test.sol";
+import {CollateralManager} from "../../../src/CollateralManager.sol";
+import {IAggregationRouterV6} from "../../../src/external/1inch/IAggregationRouterV6.sol";
+import {ISwapModule} from "../../../src/interface/ISwapModule.sol";
+import {MockERC20} from "../../mocks/MockERC20.sol";
+import {MockERC4626} from "../../mocks/MockERC4626.sol";
+import {SwapModule} from "../../../src/SwapModule.sol";
+import {Test} from "forge-std/test.sol";
 
 /// @dev Handler to interact with the collateral manager and save snapshots for invariant testing
 contract CollateralManagerHandler is Test {

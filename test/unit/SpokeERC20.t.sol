@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {IERC20Errors} from "lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
-import {IRestrictedRegistry} from "src/interface/IRestrictedRegistry.sol";
-import {SpokeERC20} from "src/external/chainlink/SpokeERC20.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import {IRestrictedRegistry} from "../../src/interface/IRestrictedRegistry.sol";
+import {SpokeERC20} from "../../src/external/chainlink/SpokeERC20.sol";
 
 contract SpokeERC20Test is BaseTest {
     SpokeERC20 token;

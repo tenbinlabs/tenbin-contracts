@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {MockAggregator} from "test/mocks/MockAggregator.sol";
-import {IOracleAdapter} from "src/interface/IOracleAdapter.sol";
-import {GoldOracleAdapter} from "src/oracle/GoldOracleAdapter.sol";
+import {MockAggregator} from "../mocks/MockAggregator.sol";
+import {IOracleAdapter} from "../../src/interface/IOracleAdapter.sol";
+import {GoldOracleAdapter} from "../../src/oracle/GoldOracleAdapter.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract OracleAdapterTest is Test {

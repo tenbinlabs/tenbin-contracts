@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {Controller} from "src/Controller.sol";
+import {Controller} from "../../src/Controller.sol";
 
 contract ControllerHarness is Controller {
     constructor(address asset_, uint256 ratio_, address custodian_, address owner_)

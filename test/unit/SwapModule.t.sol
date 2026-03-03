@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {IAggregationRouterV6} from "src/external/1inch/IAggregationRouterV6.sol";
-import {IERC20Errors} from "lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
-import {ISwapModule} from "src/interface/ISwapModule.sol";
+import {IAggregationRouterV6} from "../../src/external/1inch/IAggregationRouterV6.sol";
+import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import {ISwapModule} from "../../src/interface/ISwapModule.sol";
 import {
     Mock1InchRouter,
     Mock1InchRouterWithInsufficientReturnAmount,
     Mock1InchRouterWithInsufficientAmountReportSent
-} from "test/mocks/Mock1InchRouter.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {SwapModuleHarness} from "test/harness/SwapModuleHarness.sol";
+} from "../mocks/Mock1InchRouter.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {SwapModuleHarness} from "../harness/SwapModuleHarness.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract SwapModuleTest is Test {

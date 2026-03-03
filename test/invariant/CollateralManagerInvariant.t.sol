@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {CollateralManagerHandler} from "test/invariant/handlers/CollateralManagerHandler.sol";
-import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {CollateralManagerHandler} from "../invariant/handlers/CollateralManagerHandler.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 // forge test --mc CollateralManagerInvariantTest -vvvv
 contract CollateralManagerInvariantTest is BaseTest {

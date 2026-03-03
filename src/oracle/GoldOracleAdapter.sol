@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AggregatorV3Interface} from "lib/chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
-import {IOracleAdapter} from "src/interface/IOracleAdapter.sol";
-import {SafeCast} from "lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {AggregatorV3Interface} from "chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
+import {IOracleAdapter} from "../interface/IOracleAdapter.sol";
+import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 /// @title Gold Oracle Adapter
 /// @notice Normalize oracle data from a Chainlink aggregator into a standard representation

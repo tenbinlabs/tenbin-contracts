@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetSilo} from "src/AssetSilo.sol";
-import {BaseTest} from "test/BaseTest.sol";
+import {AssetSilo} from "../../src/AssetSilo.sol";
+import {BaseTest} from "../BaseTest.sol";
 
 contract AssetSiloTest is BaseTest {
     function test_constructor() public view {

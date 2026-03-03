@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {StakedAssetHandler} from "test/invariant/handlers/StakedAssetHandler.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {StakedAssetHandler} from "../invariant/handlers/StakedAssetHandler.sol";
 
 // forge test --mc StakedAssetInvariantTest -vvvv
 contract StakedAssetInvariantTest is BaseTest {

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetToken} from "src/AssetToken.sol";
-import {AggregatorV3Interface} from "lib/chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
-import {IController} from "src/interface/IController.sol";
-import {IOracleAdapter} from "src/interface/IOracleAdapter.sol";
-import {GoldOracleAdapter} from "src/oracle/GoldOracleAdapter.sol";
-import {ForkBaseTest} from "test/fork/ForkBaseTest.sol";
-import {SafeCast} from "lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import {AssetToken} from "../../src/AssetToken.sol";
+import {AggregatorV3Interface} from "chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
+import {IController} from "../../src/interface/IController.sol";
+import {IOracleAdapter} from "../../src/interface/IOracleAdapter.sol";
+import {GoldOracleAdapter} from "../../src/oracle/GoldOracleAdapter.sol";
+import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ChainlinkOracleForkTest is ForkBaseTest {

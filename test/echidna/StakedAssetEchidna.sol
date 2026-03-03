@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {EchidnaBase} from "./EchidnaBase.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {StakedAsset} from "src/StakedAsset.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {StakedAsset} from "../../src/StakedAsset.sol";
 
 // echidna test/echidna/StakedAssetEchidna.sol --contract StakedAssetEchidna --config echidna.yaml
 contract StakedAssetEchidna is EchidnaBase {

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseScript} from "script/Base.s.sol";
-import {console2} from "lib/forge-std/src/console2.sol";
-import {Controller} from "src/Controller.sol";
-import {IController} from "src/interface/IController.sol";
+import {BaseScript} from "./Base.s.sol";
+import {console2} from "forge-std/console2.sol";
+import {Controller} from "../src/Controller.sol";
+import {IController} from "../src/interface/IController.sol";
 
 /// @notice Script to mint tokens on testnet
 /// 1) Ensure `COLLATERAL_ADDRESS`, `CONTROLLER_ADDRESS`, `MINTER_ADDRESS`, `MINTER_KEY`, and `SIGNER_KEY` are set in `.env`

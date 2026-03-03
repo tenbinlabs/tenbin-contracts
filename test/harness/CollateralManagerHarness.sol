@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {CollateralManager} from "src/CollateralManager.sol";
-import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import {CollateralManager} from "../../src/CollateralManager.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 contract CollateralManagerHarness is CollateralManager {
     constructor() CollateralManager() {}

@@ -3,9 +3,9 @@ pragma solidity 0.8.30;
 
 import {
     AccessControlUpgradeable
-} from "lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import {ICollateralManager} from "src/interface/ICollateralManager.sol";
-import {UUPSUpgradeable} from "lib/openzeppelin-contracts/contracts/proxy/utils/UUPSUpgradeable.sol";
+} from "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import {ICollateralManager} from "../../src/interface/ICollateralManager.sol";
+import {UUPSUpgradeable} from "openzeppelin-contracts/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 /// @dev Paused version of collateral manager
 contract CollateralManagerPause is ICollateralManager, UUPSUpgradeable, AccessControlUpgradeable {

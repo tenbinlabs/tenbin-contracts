@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetSilo} from "src/AssetSilo.sol";
-import {AssetToken} from "src/AssetToken.sol";
-import {BaseScript} from "script/Base.s.sol";
-import {CollateralManager} from "src/CollateralManager.sol";
+import {AssetSilo} from "../src/AssetSilo.sol";
+import {AssetToken} from "../src/AssetToken.sol";
+import {BaseScript} from "./Base.s.sol";
+import {CollateralManager} from "../src/CollateralManager.sol";
 import {Config} from "forge-std/Config.sol";
-import {console2} from "lib/forge-std/src/console2.sol";
-import {Controller} from "src/Controller.sol";
-import {CustodianModule} from "src/CustodianModule.sol";
-import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {GoldOracleAdapter} from "src/oracle/GoldOracleAdapter.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import {IOracleAdapter} from "src/interface/IOracleAdapter.sol";
-import {MultiCall} from "src/MultiCall.sol";
-import {RevenueModule} from "src/RevenueModule.sol";
-import {StakedAsset} from "src/StakedAsset.sol";
-import {SwapModule} from "src/SwapModule.sol";
+import {console2} from "forge-std/console2.sol";
+import {Controller} from "../src/Controller.sol";
+import {CustodianModule} from "../src/CustodianModule.sol";
+import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {GoldOracleAdapter} from "../src/oracle/GoldOracleAdapter.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import {IOracleAdapter} from "../src/interface/IOracleAdapter.sol";
+import {MultiCall} from "../src/MultiCall.sol";
+import {RevenueModule} from "../src/RevenueModule.sol";
+import {StakedAsset} from "../src/StakedAsset.sol";
+import {SwapModule} from "../src/SwapModule.sol";
 
 /// @notice Deploy and configure the protocol using config/*.toml file
 contract Deploy is BaseScript, Config {

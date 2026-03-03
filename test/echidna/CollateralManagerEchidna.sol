@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {CollateralManager} from "src/CollateralManager.sol";
-import {Controller} from "src/Controller.sol";
+import {CollateralManager} from "../../src/CollateralManager.sol";
+import {Controller} from "../../src/Controller.sol";
 import {EchidnaBase} from "./EchidnaBase.sol";
-import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ICollateralManager} from "src/interface/ICollateralManager.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {SwapModule} from "src/SwapModule.sol";
+import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ICollateralManager} from "../../src/interface/ICollateralManager.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {SwapModule} from "../../src/SwapModule.sol";
 
 // echidna test/echidna/CollateralManagerEchidna.sol --contract CollateralManagerEchidna --config echidna.yaml
 contract CollateralManagerEchidna is EchidnaBase {

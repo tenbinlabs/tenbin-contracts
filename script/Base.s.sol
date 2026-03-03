@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {console2} from "lib/forge-std/src/console2.sol";
-import {Script} from "lib/forge-std/src/Script.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {console2} from "forge-std/console2.sol";
+import {Script} from "forge-std/Script.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @notice Base script from which other scripts inherit
 contract BaseScript is Script {

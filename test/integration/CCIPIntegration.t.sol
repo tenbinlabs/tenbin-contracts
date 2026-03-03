@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {CCIPLocalSimulator, IRouterClient} from "lib/chainlink-local/src/ccip/CCIPLocalSimulator.sol";
-import {Client} from "lib/chainlink-local/lib/chainlink-ccip/chains/evm/contracts/libraries/Client.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {CCIPLocalSimulator, IRouterClient} from "chainlink-local/src/ccip/CCIPLocalSimulator.sol";
+import {Client} from "chainlink-local/lib/ccip/contracts/src/v0.8/ccip/libraries/Client.sol";
 
 contract CCIPIntegrationTest is BaseTest {
     CCIPLocalSimulator public ccipLocalSimulator;

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
-import {Controller} from "src/Controller.sol";
-import {ICollateralManager} from "src/interface/ICollateralManager.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {IRevenueModule} from "src/interface/IRevenueModule.sol";
-import {StakedAsset} from "src/StakedAsset.sol";
-import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {Controller} from "./Controller.sol";
+import {ICollateralManager} from "./interface/ICollateralManager.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IRevenueModule} from "./interface/IRevenueModule.sol";
+import {StakedAsset} from "./StakedAsset.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title RevenueModule
 /// @notice Manages revenue earned by the Tenbin protocol

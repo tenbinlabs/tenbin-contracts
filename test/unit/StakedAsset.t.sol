@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {ERC1967Proxy} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ERC1967Utils} from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {IERC20Errors} from "lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
-import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
-import {IRestrictedRegistry} from "src/interface/IRestrictedRegistry.sol";
-import {IStakedAsset} from "src/interface/IStakedAsset.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {StakedAsset} from "src/StakedAsset.sol";
-import {StakedAssetPause} from "test/mocks/StakedAssetPause.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1967Utils} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import {IRestrictedRegistry} from "../../src/interface/IRestrictedRegistry.sol";
+import {IStakedAsset} from "../../src/interface/IStakedAsset.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {StakedAsset} from "../../src/StakedAsset.sol";
+import {StakedAssetPause} from "../mocks/StakedAssetPause.sol";
 
 contract StakedAssetTest is BaseTest {
     function test_StakedAsset_Initialize() public view {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetToken} from "src/AssetToken.sol";
+import {AssetToken} from "../../../src/AssetToken.sol";
 import {Test} from "forge-std/Test.sol";
 
 /// @dev Handler to interact with the asset token and save snapshots for invariant testing

@@ -2,11 +2,11 @@
 pragma solidity 0.8.30;
 
 import {Config} from "forge-std/Config.sol";
-import {DeployVault} from "script/DeployVault.s.sol";
-import {ForkBaseTest} from "test/fork/ForkBaseTest.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {IVaultV2} from "lib/vault-v2/src/interfaces/IVaultV2.sol";
-import {IVaultV2Gates} from "test/external/morpho/IVaultV2Gates.sol";
+import {DeployVault} from "../../script/DeployVault.s.sol";
+import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IVaultV2} from "vault-v2/src/interfaces/IVaultV2.sol";
+import {IVaultV2Gates} from "../external/morpho/IVaultV2Gates.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // test deployment script

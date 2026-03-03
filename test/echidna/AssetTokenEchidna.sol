@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetToken} from "src/AssetToken.sol";
+import {AssetToken} from "../../src/AssetToken.sol";
 import {EchidnaBase} from "./EchidnaBase.sol";
 
 // echidna test/echidna/AssetTokenEchidna.sol --contract AssetTokenEchidna --config echidna.yaml

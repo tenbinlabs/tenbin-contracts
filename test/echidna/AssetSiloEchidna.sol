@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetSilo} from "src/AssetSilo.sol";
+import {AssetSilo} from "../../src/AssetSilo.sol";
 import {EchidnaBase} from "./EchidnaBase.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {MockERC4626} from "test/mocks/MockERC4626.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {MockERC4626} from "../mocks/MockERC4626.sol";
 
 // echidna test/echidna/AssetSiloEchidna.sol --contract AssetSiloEchidna --config echidna.yaml
 contract AssetSiloEchidna is EchidnaBase {

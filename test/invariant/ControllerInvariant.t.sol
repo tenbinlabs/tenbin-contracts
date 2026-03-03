@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "test/BaseTest.sol";
-import {ControllerHandler} from "test/invariant/handlers/ControllerHandler.sol";
-import {IController} from "src/Controller.sol";
+import {BaseTest} from "../BaseTest.sol";
+import {ControllerHandler} from "../invariant/handlers/ControllerHandler.sol";
+import {IController} from "../../src/Controller.sol";
 
 // forge test --mc ControllerInvariantTest -vvvv
 contract ControllerInvariantTest is BaseTest {

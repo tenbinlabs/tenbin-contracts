@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {CollateralManager} from "src/CollateralManager.sol";
-import {CollateralManagerHarness} from "test/harness/CollateralManagerHarness.sol";
-import {ForkBaseTest} from "test/fork/ForkBaseTest.sol";
-import {IAggregationRouterV6} from "src/external/1inch/IAggregationRouterV6.sol";
+import {CollateralManager} from "../../src/CollateralManager.sol";
+import {CollateralManagerHarness} from "../harness/CollateralManagerHarness.sol";
+import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {IAggregationRouterV6} from "../../src/external/1inch/IAggregationRouterV6.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {ISwapModule} from "src/interface/ISwapModule.sol";
+import {ISwapModule} from "../../src/interface/ISwapModule.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SwapModuleHarness} from "test/harness/SwapModuleHarness.sol";
+import {SwapModuleHarness} from "../harness/SwapModuleHarness.sol";
 
 contract OneInchForkTest is ForkBaseTest {
     using SafeERC20 for IERC20;

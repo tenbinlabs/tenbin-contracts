@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {ForkBaseTest} from "test/fork/ForkBaseTest.sol";
-import {IAdapter} from "lib/vault-v2/src/interfaces/IAdapter.sol";
-import {ICollateralManager} from "src/interface/ICollateralManager.sol";
-import {IController} from "src/interface/IController.sol";
+import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {IAdapter} from "vault-v2/src/interfaces/IAdapter.sol";
+import {ICollateralManager} from "../../src/interface/ICollateralManager.sol";
+import {IController} from "../../src/interface/IController.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import {IMorphoVaultV1AdapterFactory} from "lib/vault-v2/src/adapters/interfaces/IMorphoVaultV1AdapterFactory.sol";
-import {IVaultV2} from "lib/vault-v2/src/interfaces/IVaultV2.sol";
-import {IVaultV2Factory} from "lib/vault-v2/src/interfaces/IVaultV2Factory.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import {IMorphoVaultV1AdapterFactory} from "vault-v2/src/adapters/interfaces/IMorphoVaultV1AdapterFactory.sol";
+import {IVaultV2} from "vault-v2/src/interfaces/IVaultV2.sol";
+import {IVaultV2Factory} from "vault-v2/src/interfaces/IVaultV2Factory.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract MorphoForkTest is ForkBaseTest {
