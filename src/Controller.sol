@@ -429,13 +429,15 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(order.collateral_token).safeTransferFrom(manager, order.recipient, order.collateral_amount);
 
+        uint256 assetFee = 0;
         // handle redemption for staked assets
         if (order.asset_token == stakedAsset) {
-            IStakedAsset(stakedAsset).instantUnstake(order.asset_amount, order.payer, order.payer);
+            // ignore shares under the assumption share price never increases for staked asset
+            (, assetFee) = IStakedAsset(stakedAsset).instantUnstake(order.asset_amount, order.payer, order.payer);
         }
 
         // burn asset tokens
-        AssetToken(asset).burn(order.payer, order.asset_amount);
+        AssetToken(asset).burn(order.payer, order.asset_amount - assetFee);
 
         emit Redeem(
             msg.sender,

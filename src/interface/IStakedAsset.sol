@@ -155,7 +155,10 @@ interface IStakedAsset {
     /// @param receiver Account to receive assets
     /// @param owner Account which hold staked assets
     /// @return shares Shares redeemed by this function
-    function instantUnstake(uint256 assets, address receiver, address owner) external returns (uint256 shares);
+    /// @return assetFee Amount of asset fee charged by this function
+    function instantUnstake(uint256 assets, address receiver, address owner)
+        external
+        returns (uint256 shares, uint256 assetFee);
 
     /// @notice Adds new rewards to the contract and extends vesting period
     /// @dev WARNING: This resets the vesting end time to block.timestamp + vesting.period,
