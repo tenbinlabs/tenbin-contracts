@@ -327,22 +327,46 @@ contract StakedAssetPause is IERC20, IERC4626, IStakedAsset, UUPSUpgradeable, Ac
     }
 
     function cooldownShares(
-        address, /*owner*/
         uint256 /*shares*/
     )
         external
         pure
         override
         returns (
-            uint256 /*assets*/
+            uint256, /*assets*/
+            uint256 /*id*/
         )
     {
         revert ContractPaused();
     }
 
     function cooldownAssets(
-        address, /*owner*/
         uint256 /*assets*/
+    )
+        external
+        pure
+        override
+        returns (
+            uint256, /*shares*/
+            uint256 /*id*/
+        )
+    {
+        revert ContractPaused();
+    }
+
+    function unstake(
+        address, /*receiver*/
+        uint256 /*id*/
+    )
+        external
+        pure
+        override
+    {
+        revert ContractPaused();
+    }
+
+    function cancelCooldown(
+        uint256 /*id*/
     )
         external
         pure
@@ -354,12 +378,18 @@ contract StakedAssetPause is IERC20, IERC4626, IStakedAsset, UUPSUpgradeable, Ac
         revert ContractPaused();
     }
 
-    function unstake(
-        address /*to*/
+    function instantUnstake(
+        uint256,
+        /*assets*/
+        address,
+        /*receiver*/
+        address /*owner*/
     )
         external
         pure
-        override
+        returns (
+            uint256 /*shares*/
+        )
     {
         revert ContractPaused();
     }

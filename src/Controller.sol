@@ -5,13 +5,16 @@ import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessContr
 import {AssetToken} from "./AssetToken.sol";
 import {ECDSA} from "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
+import {ICollateralManager} from "./interface/ICollateralManager.sol";
 import {IController} from "./interface/IController.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC1271} from "openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IOracleAdapter} from "./interface/IOracleAdapter.sol";
-import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {IRestrictedRegistry} from "./interface/IRestrictedRegistry.sol";
+import {IStakedAsset} from "./interface/IStakedAsset.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title Controller
@@ -39,6 +42,12 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 /// The controller never holds any tokens - collateral is held in a CollateralManager contract or off-ramped by a custodian account.
 /// An oracle is used as a backstop to prevent order price from deviating from the oracle price.
 /// However, order price is not determined by the oracle on-chain.
+///
+/// Staked assets can be redeemed by specifying the staked asset address as part of the order.
+/// Redeeming staked assets requires approving the controller to spend staked assets.
+///
+/// Mint and redemption limits are configurable per block. Limits are always denominated in asset amount.
+/// Setting the block mint limit to max uint will disable the limit
 ///
 /// The controller is intended to be the only account which can mint asset tokens. In the case a new controller is created,
 /// the old controller is deprecated and minting permission is set to the new controller.
@@ -71,18 +80,25 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     bytes32 constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
 
     /// @notice Order typehash
-    bytes32 private constant ORDER_TYPEHASH = keccak256(
-        "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount)"
+    bytes32 public constant ORDER_TYPEHASH = keccak256(
+        "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,address asset_token,uint256 asset_amount)"
     );
+
+    /// @notice Context typehash
+    bytes32 public constant CONTEXT_TYPEHASH =
+        keccak256("Context(bytes32 order_hash,uint256 share_price,bool is_curated)");
 
     /// @notice MAGICVALUE to be used in ERC1271 verification
     bytes4 public constant MAGICVALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     /// @notice Semantic version
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.2.0";
 
-    /// @notice Asset token this controller manages
+    /// @notice Asset token used for this controller
     address public immutable asset;
+
+    /// @notice Staked asset token used for this controller
+    address public immutable stakedAsset;
 
     /* ------------------------------------ STATE VARIABLES ------------------------------------ */
 
@@ -122,6 +138,21 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     /// The oracle is not used to determine exact price, rather it enforces a price delta tolerance
     Oracle public oracle;
 
+    /// @notice Asset mint limit per block
+    uint256 blockMintLimit;
+
+    /// @notice Asset redeem limit per block
+    uint256 blockRedeemLimit;
+
+    /// @notice Asset amount minted for a block. Used to enforce mint limits.
+    uint256 blockMints;
+
+    /// @notice Asset amount redeemed for a block. Used to enforce redemption limits.
+    uint256 blockRedeems;
+
+    /// @notice track block number to enforce limits
+    uint256 blockNumber;
+
     /* ------------------------------------ MODIFIERS ------------------------------------------ */
 
     /// @dev Revert if zero address
@@ -137,11 +168,12 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     /// @param ratio_ Ratio of collateral transferred to custodian during mints
     /// @param custodian_ Custodian account
     /// @param owner_ Account to set as the DEFAULT_ADMIN_ROLE
-    constructor(address asset_, uint256 ratio_, address custodian_, address owner_)
+    constructor(address asset_, address stakedAsset_, uint256 ratio_, address custodian_, address owner_)
         EIP712("TenbinController", VERSION)
     {
         if (ratio_ > RATIO_PRECISION) revert InvalidRatio();
         asset = asset_;
+        stakedAsset = stakedAsset_;
         ratio = ratio_;
         custodian = custodian_;
         _grantRole(DEFAULT_ADMIN_ROLE, owner_);
@@ -243,6 +275,16 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
         emit OracleAdapterUpdated(newAdapter);
     }
 
+    /// @notice Set block mint limit
+    function setBlockMintLimit(uint256 newBlockMintLimit) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        blockMintLimit = newBlockMintLimit;
+    }
+
+    /// @notice Set block redeem limit
+    function setBlockRedeemLimit(uint256 newBlockRedeemLimit) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        blockRedeemLimit = newBlockRedeemLimit;
+    }
+
     /// @notice Rescue tokens sent to this contract
     /// @param token The address of the ERC20 token to be rescued
     /// @param to Recipient of rescued tokens
@@ -274,56 +316,136 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     }
 
     /// @inheritdoc IController
-    function mint(Order calldata order, Signature calldata signature) external override onlyRole(MINTER_ROLE) {
+    function mint(
+        Order calldata order,
+        Signature calldata signature,
+        Context calldata context,
+        Signature calldata approval
+    ) external override {
         if (pauseStatus != ControllerPauseStatus.None) revert MintRedeemPaused();
         if (order.order_type != OrderType.Mint) revert InvalidOrderType();
 
         // verify order and invalidate nonce
-        (address signer,) = verifyOrder(order, signature);
+        (address signer, bytes32 orderHash) = verifyOrder(order, signature);
         nonces[order.payer][order.nonce] = true;
 
-        // calculate custodian and manager amounts
+        // if limit is set, enforce block mint limit
+        {
+            uint256 limit = blockMintLimit;
+            if (limit < type(uint256).max) {
+                if (block.number > blockNumber) {
+                    if (order.asset_amount > limit) revert ExceedsBlockMintLimit();
+                    blockMints = order.asset_amount;
+                    blockNumber = block.number;
+                } else {
+                    uint256 newMints = blockMints + order.asset_amount;
+                    if (newMints > limit) revert ExceedsBlockMintLimit();
+                    blockMints = newMints;
+                }
+            }
+        }
+
+        //  verify context order hash matches
+        if (context.order_hash != orderHash) revert ContextOrderHashMisMatch();
+
+        // verify approval is signed by a minter key
+        verifyContext(context, approval);
+
+        // calculate custodian amount
         uint256 custodianAmount = 0;
         if (ratio > 0) {
             custodianAmount = Math.mulDiv(order.collateral_amount, ratio, RATIO_PRECISION);
         }
-        uint256 managerAmount = order.collateral_amount - custodianAmount;
 
+        // transfer collateral to from payer to custodian and manager
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(order.collateral_token).safeTransferFrom(order.payer, custodian, custodianAmount);
         // slither-disable-next-line arbitrary-send-erc20
-        IERC20(order.collateral_token).safeTransferFrom(order.payer, manager, managerAmount);
+        IERC20(order.collateral_token).safeTransferFrom(order.payer, manager, order.collateral_amount - custodianAmount);
+
+        /// deposit in vault if is_curated enabled
+        if (context.is_curated) {
+            ICollateralManager(manager)
+                .deposit(order.collateral_token, order.collateral_amount - custodianAmount, context.share_price);
+        }
+
+        // mint asset tokens to recipients
         AssetToken(asset).mint(order.recipient, order.asset_amount);
+
         emit Mint(
+            msg.sender,
             signer,
             order.nonce,
             order.payer,
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
+            order.asset_token,
             order.asset_amount
         );
     }
 
     /// @inheritdoc IController
-    function redeem(Order calldata order, Signature calldata signature) external override onlyRole(MINTER_ROLE) {
+    function redeem(
+        Order calldata order,
+        Signature calldata signature,
+        Context calldata context,
+        Signature calldata approval
+    ) external override {
         if (pauseStatus != ControllerPauseStatus.None) revert MintRedeemPaused();
         if (order.order_type != OrderType.Redeem) revert InvalidOrderType();
 
         // verify order and invalidate nonce
-        (address signer,) = verifyOrder(order, signature);
+        (address signer, bytes32 orderHash) = verifyOrder(order, signature);
         nonces[order.payer][order.nonce] = true;
+
+        // if limit is set, enforce block redeem limit
+        {
+            uint256 limit = blockRedeemLimit;
+            if (limit < type(uint256).max) {
+                if (block.number > blockNumber) {
+                    if (order.asset_amount > limit) revert ExceedsBlockRedeemLimit();
+                    blockRedeems = order.asset_amount;
+                    blockNumber = block.number;
+                } else {
+                    uint256 newRedeems = blockRedeems + order.asset_amount;
+                    if (newRedeems > limit) revert ExceedsBlockRedeemLimit();
+                    blockRedeems = newRedeems;
+                }
+            }
+        }
+
+        //  verify context order hash matches
+        if (context.order_hash != orderHash) revert ContextOrderHashMisMatch();
+
+        // verify approval is signed by a minter key
+        verifyContext(context, approval);
+
+        // if curated, perform withdrawal from manager vault
+        if (context.is_curated) {
+            ICollateralManager(manager).withdraw(order.collateral_token, order.collateral_amount, context.share_price);
+        }
 
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(order.collateral_token).safeTransferFrom(manager, order.recipient, order.collateral_amount);
+
+        // handle redemption for staked assets
+        if (order.asset_token == stakedAsset) {
+            IStakedAsset(stakedAsset).instantUnstake(order.asset_amount, order.payer, order.payer);
+        }
+
+        // burn asset tokens
         AssetToken(asset).burn(order.payer, order.asset_amount);
+
         emit Redeem(
+            msg.sender,
             signer,
             order.nonce,
             order.payer,
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
+            order.asset_token,
             order.asset_amount
         );
     }
@@ -359,7 +481,10 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
             } else {
                 revert InvalidERC1271Signature();
             }
+        } else {
+            revert InvalidSignatureType();
         }
+
         // get signer and recipient details
         bool isSigner = signers[signer];
         bool isRecipient = recipients[signer][order.recipient];
@@ -372,6 +497,8 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
         if (isRestricted[order.payer] || isRestricted[order.recipient]) revert AccountRestricted();
         if (!isCollateral[order.collateral_token]) revert CollateralNotSupported();
         if (order.collateral_amount == 0) revert InvalidCollateralAmount();
+        if (order.asset_token != asset && order.asset_token != stakedAsset) revert InvalidAssetToken();
+        if (order.order_type == OrderType.Mint && order.asset_token != asset) revert InvalidAssetToken();
         if (order.asset_amount == 0) revert InvalidAssetAmount();
         if (block.timestamp > order.expiry) revert OrderExpired();
 
@@ -386,8 +513,17 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
             if (decimals == 18) collateralAmount = order.collateral_amount;
             else collateralAmount = order.collateral_amount * 10 ** (18 - decimals);
 
+            // if redeeming staked assets, use converted asset amount based on share price
+            uint256 assetTokenAmount;
+            if (order.asset_token == stakedAsset) {
+                uint256 sharePrice = IERC4626(stakedAsset).convertToAssets(1e18);
+                assetTokenAmount = Math.mulDiv(order.asset_amount, sharePrice, 1e18);
+            } else {
+                assetTokenAmount = order.asset_amount;
+            }
+
             // calculate price delta and revert if it exceeds the oracle tolerance
-            uint256 price = Math.mulDiv(collateralAmount, 1e18, order.asset_amount);
+            uint256 price = Math.mulDiv(collateralAmount, 1e18, assetTokenAmount);
             uint256 difference = price >= oraclePrice ? price - oraclePrice : oraclePrice - price;
             uint256 delta = Math.mulDiv(difference, 1e18, oraclePrice);
             if (delta > oracleData.tolerance) revert ExceedsOracleDeltaTolerance();
@@ -395,8 +531,23 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     }
 
     /// @inheritdoc IController
-    function hashOrder(Order calldata order) public view override returns (bytes32 digest) {
-        digest = _hashTypedDataV4(keccak256(encodeOrder(order)));
+    function verifyContext(Context calldata context, Signature calldata approval) public view override {
+        if (approval.signature_type != SignatureType.EIP712) revert InvalidSignatureType();
+        if (approval.signature_bytes.length != 65) revert InvalidERC712Signature();
+        bytes32 contextHash = hashContext(context);
+        address approver = ECDSA.recover(contextHash, approval.signature_bytes);
+        if (!hasRole(MINTER_ROLE, approver)) revert InvalidApproval();
+        if (context.is_curated && context.share_price == 0) revert InvalidSharePrice();
+    }
+
+    /// @inheritdoc IController
+    function hashOrder(Order calldata order) public view override returns (bytes32 orderHash) {
+        orderHash = _hashTypedDataV4(keccak256(encodeOrder(order)));
+    }
+
+    /// @inheritdoc IController
+    function hashContext(Context calldata context) public view override returns (bytes32 contextHash) {
+        contextHash = _hashTypedDataV4(keccak256(encodeContext(context)));
     }
 
     /// @dev Encode order data according to EIP712 specification
@@ -412,8 +563,16 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
+            order.asset_token,
             order.asset_amount
         );
+    }
+
+    /// @dev Encode context data according to EIP712 specification
+    /// @param context Context data
+    /// @return ABI encoded context
+    function encodeContext(Context calldata context) public pure returns (bytes memory) {
+        return abi.encode(CONTEXT_TYPEHASH, context.order_hash, context.share_price, context.is_curated);
     }
 
     /// @dev Get the domain separator for this contract

@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import {Config} from "forge-std/Config.sol";
 import {DeployVault} from "../../script/DeployVault.s.sol";
-import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IVaultV2} from "vault-v2/src/interfaces/IVaultV2.sol";
 import {IVaultV2Gates} from "../external/morpho/IVaultV2Gates.sol";
@@ -25,8 +25,8 @@ contract DeployVaultForkTest is ForkBaseTest, Config {
     }
 
     function test_fork_DeployVault() public {
-        _loadConfig("./config/vault.toml", false);
-        // hard coded for redundancy. could read from config/vault.toml instead
+        _loadConfig("./config/mainnet/tgld/vaults/tgld_usdc_vault.toml", false);
+        // hard coded for redundancy
         params.name = "tGLD USDC Vault";
         params.symbol = "tGLDv-USDC";
         params.allocator = 0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614;

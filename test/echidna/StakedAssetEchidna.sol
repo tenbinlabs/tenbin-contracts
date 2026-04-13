@@ -15,7 +15,7 @@ contract StakedAssetEchidna is EchidnaBase {
         bytes32 salt = bytes32(abi.encodePacked("salt"));
         address stakingImplementation = address(new StakedAsset{salt: salt}());
         bytes memory data = abi.encodeWithSelector(
-            StakedAsset.initialize.selector, "Staked Asset", "stAST", address(asset), address(this)
+            StakedAsset.initialize.selector, "Staked Asset", "stAST", address(asset), address(this), 0, address(0)
         );
         ERC1967Proxy proxy = new ERC1967Proxy{salt: salt}(stakingImplementation, data);
         staking = StakedAsset(address(proxy));

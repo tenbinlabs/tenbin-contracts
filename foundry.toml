@@ -3,7 +3,7 @@ out = "out"
 libs = ["lib"]
 deny = "warnings"
 optimizer = true
-optimizer_runs = 100000
+optimizer_runs = 1000
 dynamic_test_linking = false
 isolate = true
 gas_reports = [
@@ -23,6 +23,7 @@ gas_reports = [
   "SwapModule",
   "SwapModuleHarness"
 ]
+
 fs_permissions = [{ access = "read-write", path = "./" }]
 
 # compile production contracts with via-ir
@@ -32,7 +33,7 @@ skip = ["test/**/*"]
 via_ir = true
 ffi = true
 optimizer = true
-optimizer_runs = 8888888
+optimizer_runs = 18888
 
 [lint]
 ignore = ["test/external/**/*", "test/echidna/**/*"]

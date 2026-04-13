@@ -21,7 +21,7 @@ contract AssetTokenTest is Test {
         token = new AssetToken("Asset Token", "AST", owner);
     }
 
-    function test_Revert_Mint(uint256 amount) public {
+    function test_Revert_Mint_AssetToken(uint256 amount) public {
         // can't mint from non-minter account
         vm.expectRevert(AssetToken.OnlyMinter.selector);
         token.mint(account0, amount);

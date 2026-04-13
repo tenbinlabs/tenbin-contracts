@@ -4,8 +4,8 @@ pragma solidity 0.8.30;
 import {BaseTest} from "../BaseTest.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ERC1967Utils} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import {ERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
 import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
 import {Initializable} from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {IRestrictedRegistry} from "../../src/interface/IRestrictedRegistry.sol";
 import {IStakedAsset} from "../../src/interface/IStakedAsset.sol";
@@ -18,7 +18,7 @@ contract StakedAssetTest is BaseTest {
         assertEq(staking.name(), "Staked Asset");
         assertEq(staking.symbol(), "stAST");
         assertEq(staking.asset(), address(asset));
-        assertEq(manager.hasRole(DEFAULT_ADMIN_ROLE, owner), true);
+        assertEq(staking.hasRole(DEFAULT_ADMIN_ROLE, owner), true);
     }
 
     function test_Revert_StakedAsset_Initialize() public {
@@ -26,20 +26,37 @@ contract StakedAssetTest is BaseTest {
 
         // cannot initialize again
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        manager.initialize(address(controller), address(this));
+        staking.initialize("Staked Asset", "stAST", address(asset), owner, 0, address(revenueModule));
 
         // cannot initialize implementation
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        stakingImplementation.initialize("Staked Asset", "stAST", address(asset), owner);
+        stakingImplementation.initialize("Staked Asset", "stAST", address(asset), owner, 0, address(revenueModule));
 
         // test failed initialization cases
-        bytes memory data = abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(0), address(this));
+        bytes memory data =
+            abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(0), address(this), 0, address(0));
         vm.expectRevert(IStakedAsset.NonZeroAddress.selector);
         StakedAsset(address(new ERC1967Proxy(address(stakingImplementation), data)));
 
-        data = abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(asset), address(0));
+        data =
+            abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(asset), address(0), 0, address(0));
         vm.expectRevert(IStakedAsset.NonZeroAddress.selector);
         StakedAsset(address(new ERC1967Proxy(address(stakingImplementation), data)));
+
+        data = abi.encodeWithSelector(
+            StakedAsset.initialize.selector, "", "", address(asset), address(1), type(uint256).max, address(1)
+        );
+        vm.expectRevert(IStakedAsset.ExceedsMaxInstantUnstakeFee.selector);
+        StakedAsset(address(new ERC1967Proxy(address(stakingImplementation), data)));
+
+        ERC1967Proxy proxy = new ERC1967Proxy(address(stakingImplementation), "");
+        StakedAsset stakedAsset = StakedAsset(address(proxy));
+        vm.expectRevert(IStakedAsset.InvalidFeeRecipient.selector);
+        stakedAsset.initialize("Staked Asset", "stAST", address(asset), owner, 0, address(proxy));
+
+        assertEq(staking.instantUnstakeCap(), 0);
+        assertEq(staking.instantUnstakeFee(), 0);
+        assertEq(staking.feeRecipient(), address(revenueModule));
     }
 
     function test_Revert_StakedAsset_UpgradeToAndCall() public {
@@ -48,12 +65,12 @@ contract StakedAssetTest is BaseTest {
 
         // revert if not default admin role
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        manager.upgradeToAndCall(newImplementation, new bytes(0));
+        staking.upgradeToAndCall(newImplementation, new bytes(0));
 
         // revert if implementation is not UUPS
         vm.expectPartialRevert(ERC1967Utils.ERC1967InvalidImplementation.selector);
         vm.prank(owner);
-        manager.upgradeToAndCall(badImplementation, new bytes(0));
+        staking.upgradeToAndCall(badImplementation, new bytes(0));
     }
 
     function test_StakedAsset_UpgradeToAndCall() public {
@@ -129,11 +146,11 @@ contract StakedAssetTest is BaseTest {
         vm.expectRevert(StakedAssetPause.ContractPaused.selector);
         staking.reward(uint256(0));
         vm.expectRevert(StakedAssetPause.ContractPaused.selector);
-        staking.cooldownShares(address(0), uint256(0));
+        staking.cooldownShares(uint256(0));
         vm.expectRevert(StakedAssetPause.ContractPaused.selector);
-        staking.cooldownAssets(address(0), uint256(0));
+        staking.cooldownAssets(uint256(0));
         vm.expectRevert(StakedAssetPause.ContractPaused.selector);
-        staking.unstake(address(0));
+        staking.unstake(address(0), 0);
 
         // upgrade back to original implementation
         newImplementation = address(new StakedAsset());
@@ -182,7 +199,7 @@ contract StakedAssetTest is BaseTest {
         assertEq(shares, 1000e18);
     }
 
-    function test_Revert_Mint() public {
+    function test_Revert_Mint_StakedAsset() public {
         address restrictedAddress = address(1);
         vm.prank(restricter);
         staking.setIsRestricted(restrictedAddress, true);
@@ -222,8 +239,8 @@ contract StakedAssetTest is BaseTest {
 
         // initiate cooldown
         vm.prank(user);
-        staking.cooldownShares(user, 1000e18); // Avoid falling below 0
-        (uint256 assets, uint256 end) = staking.cooldowns(user);
+        staking.cooldownShares(1000e18); // Avoid falling below 0
+        (uint256 assets, uint256 end) = staking.cooldowns(user, 0);
         assertEq(end, block.timestamp + 7 days);
         assertEq(assets, 1000e18);
 
@@ -236,10 +253,10 @@ contract StakedAssetTest is BaseTest {
 
         vm.prank(user);
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector); // restricted sender
-        staking.unstake(user);
+        staking.unstake(user, 0);
 
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector); // restricted to
-        staking.unstake(user);
+        staking.unstake(user, 0);
 
         assertEq(staking.balanceOf(user), 0);
         assertEq(asset.balanceOf(address(silo)), 1000e18);
@@ -249,7 +266,7 @@ contract StakedAssetTest is BaseTest {
         staking.setIsRestricted(user, false);
 
         vm.prank(user);
-        staking.unstake(user);
+        staking.unstake(user, 0);
 
         assertEq(staking.balanceOf(user), 0);
         assertEq(asset.balanceOf(user), 1000e18);
@@ -337,23 +354,31 @@ contract StakedAssetTest is BaseTest {
 
         // only default admin can transfer restricted assets
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        staking.transferRestrictedAssets(user, address(this));
+        staking.transferRestrictedAssets(user, address(this), false, 0);
 
-        vm.startPrank(owner);
         // can't transfer assets for a non-restricted account
+        vm.prank(owner);
         vm.expectRevert(IStakedAsset.NonRestrictedAccount.selector);
-        staking.transferRestrictedAssets(user, address(this));
+        staking.transferRestrictedAssets(user, address(this), false, 0);
+
+        // restrict account
+        vm.prank(restricter);
+        staking.setIsRestricted(user, true);
 
         // cannot specify address(0) when transferring restricted assets
+        vm.prank(owner);
         vm.expectRevert(IStakedAsset.NonZeroAddress.selector);
-        staking.transferRestrictedAssets(user, address(0));
+        staking.transferRestrictedAssets(user, address(0), false, 0);
+
+        // revert if restricted account has no assets for specified cooldown
+        vm.prank(owner);
+        vm.expectRevert(IStakedAsset.ZeroCooldownAssets.selector);
+        staking.transferRestrictedAssets(user, address(this), true, 0);
     }
 
     function test_TransferRestrictedAssets() public {
         // First deposit that happens at deployment
         test_Deposit();
-        // setup
-        address restricted = address(2);
 
         mintAsset(restricted, 1000e18);
         vm.prank(restricted);
@@ -371,7 +396,7 @@ contract StakedAssetTest is BaseTest {
 
         // successful transfer
         vm.prank(owner);
-        staking.transferRestrictedAssets(restricted, address(this));
+        staking.transferRestrictedAssets(restricted, address(this), false, 0);
         assertEq(staking.balanceOf(restricted), 0);
         assertEq(asset.balanceOf(address(staking)), 1000e18);
         assertEq(asset.balanceOf(address(this)), 1000e18);
@@ -394,17 +419,20 @@ contract StakedAssetTest is BaseTest {
 
         // cooldowns asset
         vm.prank(restricted);
-        staking.cooldownAssets(restricted, 1000e18);
+        staking.cooldownAssets(1000e18);
 
         // restrict user
         vm.prank(restricter);
         staking.setIsRestricted(restricted, true);
 
-        //execute transfer
+        // execute transfer
         vm.prank(owner);
-        staking.transferRestrictedAssets(restricted, address(this));
+        staking.transferRestrictedAssets(restricted, address(this), true, 0);
 
         // successful transfer
+        (uint256 assets, uint256 end) = staking.cooldowns(restricted, 0);
+        assertEq(assets, 0);
+        assertEq(end, 0);
         assertEq(staking.balanceOf(restricted), 0);
         assertEq(asset.balanceOf(address(staking)), 1000e18);
         assertEq(asset.balanceOf(address(this)), 1000e18);
@@ -755,25 +783,25 @@ contract StakedAssetTest is BaseTest {
         // ensure cooldown reverts for restricted caller
         vm.prank(restrictedAddress);
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        staking.cooldownShares(user, 500e18);
+        staking.cooldownShares(500e18);
 
         vm.startPrank(user);
 
         // cannot cooldown zero shares
         vm.expectRevert(IStakedAsset.InvalidCooldownAmount.selector);
-        staking.cooldownShares(user, 0);
+        staking.cooldownShares(0);
 
         // deposit and initiate cooldown
         staking.deposit(1000e18, user);
-        staking.cooldownShares(user, 500e18);
+        staking.cooldownShares(500e18);
 
         // revert if trying to unstake before cooldown
         vm.expectRevert(IStakedAsset.CooldownInProgress.selector);
-        staking.unstake(user);
+        staking.unstake(user, 0);
 
         // cannot cooldown more shares than user has
         vm.expectRevert(IStakedAsset.CooldownExceededMaxRedeem.selector);
-        staking.cooldownShares(user, 1100e18);
+        staking.cooldownShares(1100e18);
 
         // cannot use withdraw function when cooldown enabled
         vm.expectRevert(IStakedAsset.RequiresCooldown.selector);
@@ -783,10 +811,6 @@ contract StakedAssetTest is BaseTest {
         vm.expectRevert(IStakedAsset.RequiresCooldown.selector);
         staking.redeem(500e18, user, user);
         vm.stopPrank();
-
-        // cannot be called by a spender with no allowance
-        vm.expectPartialRevert(IERC20Errors.ERC20InsufficientAllowance.selector);
-        staking.cooldownShares(user, 500e18);
     }
 
     function test_CooldownShares() public {
@@ -801,8 +825,8 @@ contract StakedAssetTest is BaseTest {
 
         // initiate cooldown for 1/2 shares
         vm.prank(user);
-        staking.cooldownShares(user, 500e18);
-        (uint256 assets, uint256 end) = staking.cooldowns(user);
+        staking.cooldownShares(500e18);
+        (uint256 assets, uint256 end) = staking.cooldowns(user, 0);
         assertEq(end, block.timestamp + 7 days);
         assertEq(assets, 500e18);
 
@@ -811,30 +835,28 @@ contract StakedAssetTest is BaseTest {
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
-        (assets, end) = staking.cooldowns(user);
+        staking.unstake(user, 0);
+        (assets, end) = staking.cooldowns(user, 0);
         assertEq(end, 0);
         assertEq(assets, 0);
         assertApproxEqAbs(asset.balanceOf(user), 500e18, VAULT_TOLERANCE);
         assertEq(staking.balanceOf(user), 500e18);
 
-        // initiate cooldown for more shares by approved account. should reset cooldown
-        vm.prank(user);
-        staking.approve(address(this), 400e18);
+        // initiate cooldown for more shares. should create a new cooldown
 
-        staking.cooldownShares(user, 400e18);
-        (assets, end) = staking.cooldowns(user);
+        vm.prank(user);
+        staking.cooldownShares(400e18);
+        (assets, end) = staking.cooldowns(user, 1);
         assertEq(end, block.timestamp + 7 days);
         assertEq(assets, 400e18);
-        assertEq(staking.allowance(user, address(this)), 0);
 
         // fast forward past end of cooldown
         vm.warp(block.timestamp + 10 days);
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
-        (assets, end) = staking.cooldowns(user);
+        staking.unstake(user, 1);
+        (assets, end) = staking.cooldowns(user, 1);
         assertEq(end, 0);
         assertEq(assets, 0);
 
@@ -850,16 +872,16 @@ contract StakedAssetTest is BaseTest {
 
         // cannot cooldown zero assets
         vm.expectRevert(IStakedAsset.InvalidCooldownAmount.selector);
-        staking.cooldownAssets(user, 0);
+        staking.cooldownAssets(0);
 
         vm.expectRevert(IStakedAsset.CooldownExceededMaxWithdraw.selector);
         vm.prank(user);
-        staking.cooldownAssets(user, max);
+        staking.cooldownAssets(max);
 
         // ensure cooldown reverts for restricted caller
         vm.prank(restrictedAddress);
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        staking.cooldownAssets(user, max);
+        staking.cooldownAssets(max);
     }
 
     function test_CooldownAssets() public {
@@ -874,8 +896,8 @@ contract StakedAssetTest is BaseTest {
 
         // initiate cooldown for 1/2 shares
         vm.prank(user);
-        staking.cooldownAssets(user, 500e18);
-        (uint256 assets, uint256 end) = staking.cooldowns(user);
+        staking.cooldownAssets(500e18);
+        (uint256 assets, uint256 end) = staking.cooldowns(user, 0);
         assertEq(end, block.timestamp + 7 days);
         assertEq(assets, 500e18);
 
@@ -884,30 +906,27 @@ contract StakedAssetTest is BaseTest {
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
-        (assets, end) = staking.cooldowns(user);
+        staking.unstake(user, 0);
+        (assets, end) = staking.cooldowns(user, 0);
         assertEq(end, 0);
         assertEq(assets, 0);
         assertApproxEqAbs(asset.balanceOf(user), 500e18, VAULT_TOLERANCE);
         assertEq(staking.balanceOf(user), 500e18);
 
-        // initiate cooldown for more shares by approved account. should reset cooldown
+        // initiate cooldown for more shares by approved account. will create a new cooldown
         vm.prank(user);
-        staking.approve(address(this), 400e18);
-
-        staking.cooldownAssets(user, 400e18);
-        (assets, end) = staking.cooldowns(user);
+        staking.cooldownAssets(400e18);
+        (assets, end) = staking.cooldowns(user, 1);
         assertEq(end, block.timestamp + 7 days);
         assertEq(assets, 400e18);
-        assertEq(staking.allowance(user, address(this)), 0);
 
         // fast forward past end of cooldown
         vm.warp(block.timestamp + 10 days);
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
-        (assets, end) = staking.cooldowns(user);
+        staking.unstake(user, 1);
+        (assets, end) = staking.cooldowns(user, 1);
         assertEq(end, 0);
         assertEq(assets, 0);
         assertApproxEqAbs(asset.balanceOf(user), 900e18, VAULT_TOLERANCE);
@@ -930,9 +949,9 @@ contract StakedAssetTest is BaseTest {
 
         // initiate cooldown for half of shares
         vm.prank(user);
-        staking.cooldownShares(user, amount / 2);
+        staking.cooldownShares(amount / 2);
         uint256 coolDownCounter = amount / 2;
-        (uint256 assets, uint256 end) = staking.cooldowns(user);
+        (uint256 assets, uint256 end) = staking.cooldowns(user, 0);
         assertEq(end, startTime + cooldownTime);
         assertEq(assets, amount / 2);
 
@@ -941,8 +960,8 @@ contract StakedAssetTest is BaseTest {
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
-        (assets, end) = staking.cooldowns(user);
+        staking.unstake(user, 0);
+        (assets, end) = staking.cooldowns(user, 0);
         assertEq(end, 0);
         assertEq(assets, 0);
         assertApproxEqAbs(asset.balanceOf(user), amount / 2, VAULT_TOLERANCE);
@@ -951,9 +970,9 @@ contract StakedAssetTest is BaseTest {
         // initiate cooldown again
         startTime = block.timestamp;
         vm.prank(user);
-        staking.cooldownShares(user, amount / 4);
+        staking.cooldownShares(amount / 4);
         coolDownCounter += amount / 4;
-        (assets, end) = staking.cooldowns(user);
+        (assets, end) = staking.cooldowns(user, 1);
         assertEq(end, startTime + cooldownTime);
         assertEq(assets, amount / 4);
 
@@ -962,8 +981,8 @@ contract StakedAssetTest is BaseTest {
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
-        (assets, end) = staking.cooldowns(user);
+        staking.unstake(user, 1);
+        (assets, end) = staking.cooldowns(user, 1);
         assertEq(end, 0);
         assertEq(assets, 0);
         assertApproxEqAbs(asset.balanceOf(user), coolDownCounter, VAULT_TOLERANCE);
@@ -987,8 +1006,8 @@ contract StakedAssetTest is BaseTest {
         // initiate cooldown for half of shares
         uint256 totalCooldownAmount = amount / 2;
         vm.prank(user);
-        staking.cooldownAssets(user, amount / 2);
-        (uint256 assets, uint256 end) = staking.cooldowns(user);
+        staking.cooldownAssets(amount / 2);
+        (uint256 assets, uint256 end) = staking.cooldowns(user, 0);
         assertEq(end, startTime + cooldownTime);
         assertEq(assets, amount / 2);
 
@@ -997,8 +1016,8 @@ contract StakedAssetTest is BaseTest {
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
-        (assets, end) = staking.cooldowns(user);
+        staking.unstake(user, 0);
+        (assets, end) = staking.cooldowns(user, 0);
         assertEq(end, 0);
         assertEq(assets, 0);
         assertApproxEqAbs(asset.balanceOf(user), amount / 2, VAULT_TOLERANCE);
@@ -1009,8 +1028,8 @@ contract StakedAssetTest is BaseTest {
         uint256 cooldownAmount = (amount / 4) > 1e18 ? amount / 4 : 1e18; //Avoid falling below minimum shares
         totalCooldownAmount += cooldownAmount;
         vm.prank(user);
-        staking.cooldownAssets(user, cooldownAmount);
-        (assets, end) = staking.cooldowns(user);
+        staking.cooldownAssets(cooldownAmount);
+        (assets, end) = staking.cooldowns(user, 1);
         assertEq(end, startTime + cooldownTime);
         assertEq(assets, cooldownAmount);
 
@@ -1023,8 +1042,8 @@ contract StakedAssetTest is BaseTest {
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
-        (assets, end) = staking.cooldowns(user);
+        staking.unstake(user, 1);
+        (assets, end) = staking.cooldowns(user, 1);
         assertEq(end, 0);
         assertEq(assets, 0);
         assertApproxEqAbs(asset.balanceOf(user), totalCooldownAmount, VAULT_TOLERANCE);
@@ -1046,13 +1065,13 @@ contract StakedAssetTest is BaseTest {
         staking.setCooldownPeriod(3 days);
 
         // can't cancel if no cooldown exists
-        vm.expectRevert(IStakedAsset.RequiresCooldown.selector);
+        vm.expectRevert(IStakedAsset.NonexistentCooldown.selector);
         vm.prank(user);
-        staking.cancelCooldown();
+        staking.cancelCooldown(0);
 
         // start cooldown
         vm.prank(user);
-        staking.cooldownAssets(user, 1e18);
+        staking.cooldownAssets(1e18);
 
         // set restricted
         vm.prank(restricter);
@@ -1061,7 +1080,23 @@ contract StakedAssetTest is BaseTest {
         // restricted user can't cancel cooldown
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
         vm.prank(user);
-        staking.cancelCooldown();
+        staking.cancelCooldown(0);
+
+        // remove restricted status
+        vm.prank(restricter);
+        staking.setIsRestricted(user, false);
+
+        // No cooldown assets
+        // fast forward to end of cooldown
+        vm.warp(block.timestamp + 7 days);
+
+        // unstake
+        vm.prank(user);
+        staking.unstake(user, 0);
+
+        vm.expectRevert(IStakedAsset.ZeroCooldownAssets.selector);
+        vm.prank(user);
+        staking.cancelCooldown(0);
     }
 
     function test_fuzz_CancelCooldown(uint256 amount) public {
@@ -1083,13 +1118,13 @@ contract StakedAssetTest is BaseTest {
 
         // start cooldown
         vm.prank(user);
-        staking.cooldownAssets(user, amount);
+        staking.cooldownAssets(amount);
 
         // cancel cooldown
         vm.expectEmit();
-        emit IStakedAsset.CooldownCancelled(user, amount);
+        emit IStakedAsset.CooldownCancelled(user, amount, amount, 0);
         vm.prank(user);
-        staking.cancelCooldown();
+        staking.cancelCooldown(0);
 
         // ensure balances are correct
         assertEq(staking.balanceOf(user), amount);
@@ -1097,7 +1132,7 @@ contract StakedAssetTest is BaseTest {
         assertEq(asset.balanceOf(address(silo)), 0);
 
         // ensure cooldown is cancelled
-        (uint256 assets, uint256 end) = staking.cooldowns(user);
+        (uint256 assets, uint256 end) = staking.cooldowns(user, 0);
         assertEq(assets, 0);
         assertEq(end, 0);
     }
@@ -1175,5 +1210,113 @@ contract StakedAssetTest is BaseTest {
         vm.prank(rewarder);
         staking.reward(1000e18);
         assertEq(staking.exposedPendingRewards(), 1000e18);
+    }
+
+    function test_InstantUnstake() public {
+        // setup
+        vm.prank(capAdjuster);
+        staking.setInstantUnstakeCap(10e18);
+        vm.prank(owner);
+        staking.setInstantUnstakeFee(1e17);
+        mintAsset(user, 3e18);
+        vm.prank(user);
+        asset.approve(address(staking), 3e18);
+        vm.prank(user);
+        staking.deposit(3e18, user);
+        vm.prank(user);
+        staking.approve(instantUnstaker, 3e18);
+
+        // unstake with fee
+        vm.prank(instantUnstaker);
+        staking.instantUnstake(1e18, user, user);
+        assertApproxEqAbs(asset.balanceOf(user), 0.9e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(asset.balanceOf(address(revenueModule)), 0.1e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(staking.balanceOf(user), 2e18, VAULT_TOLERANCE);
+
+        // unstake with no fee
+        vm.prank(owner);
+        staking.setInstantUnstakeFee(0);
+
+        vm.prank(instantUnstaker);
+        staking.instantUnstake(1e18, user, user);
+        assertApproxEqAbs(asset.balanceOf(user), 1.9e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(asset.balanceOf(address(revenueModule)), 0.1e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(staking.balanceOf(user), 1e18, VAULT_TOLERANCE);
+    }
+
+    function test_Revert_InstantUnstake() public {
+        vm.prank(owner);
+        staking.setInstantUnstakeFee(1e17); // 10%
+        vm.prank(capAdjuster);
+        staking.setInstantUnstakeCap(10e18);
+        vm.prank(restricter);
+        staking.setIsRestricted(restricted, true);
+
+        // not instant unstaker role
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        staking.instantUnstake(1e18, user, user);
+
+        vm.startPrank(instantUnstaker);
+
+        // owner restricted
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.instantUnstake(1e18, restricted, user);
+
+        // recipient restricted
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        staking.instantUnstake(1e18, user, restricted);
+
+        // exceeds instant unstake cap
+        vm.expectRevert(IStakedAsset.ExceedsInstantUnstakeCap.selector);
+        staking.instantUnstake(11e18, user, user);
+
+        // insufficient balance
+        vm.expectPartialRevert(ERC4626.ERC4626ExceededMaxWithdraw.selector);
+        staking.instantUnstake(1e18, user, user);
+        vm.stopPrank();
+    }
+
+    function test_SetInstantUnstakeCap() public {
+        vm.prank(capAdjuster);
+        staking.setInstantUnstakeCap(1000e18);
+        assertEq(staking.instantUnstakeCap(), 1000e18);
+    }
+
+    function test_Revert_SetInstantUnstakeCap() public {
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        staking.setInstantUnstakeCap(1000e18);
+    }
+
+    function test_SetInstantUnstakeFee() public {
+        vm.prank(owner);
+        staking.setInstantUnstakeFee(2e17);
+        assertEq(staking.instantUnstakeFee(), 2e17);
+    }
+
+    function test_Revert_SetInstantUnstakeFee() public {
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        staking.setInstantUnstakeFee(2e17);
+        vm.prank(owner);
+        vm.expectRevert(IStakedAsset.ExceedsMaxInstantUnstakeFee.selector);
+        staking.setInstantUnstakeFee(1e18 + 1);
+    }
+
+    function test_SetFeeRecipient() public {
+        vm.prank(owner);
+        staking.setFeeRecipient(feeRecipient);
+        assertEq(staking.feeRecipient(), feeRecipient);
+    }
+
+    function test_Revert_SetFeeRecipient() public {
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        staking.setFeeRecipient(feeRecipient);
+
+        vm.expectRevert(IStakedAsset.InvalidFeeRecipient.selector);
+        vm.prank(owner);
+        staking.setFeeRecipient(address(0));
+
+        vm.expectRevert(IStakedAsset.InvalidFeeRecipient.selector);
+        vm.prank(owner);
+        staking.setFeeRecipient(address(staking));
     }
 }

@@ -23,6 +23,7 @@ contract BaseScript is Script {
     bytes32 internal constant REVENUE_KEEPER_ROLE = keccak256("REVENUE_KEEPER_ROLE");
     bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
     bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
+    bytes32 internal constant INSTANT_UNSTAKER_ROLE = keccak256("INSTANT_UNSTAKER_ROLE");
 
     /// @dev Included to enable compilation of the script without a $MNEMONIC environment variable.
     string internal constant TEST_MNEMONIC = "ten ten ten ten ten ten ten ten ten ten ten test";
@@ -73,7 +74,7 @@ contract BaseScript is Script {
     }
 
     /// @dev The version for this deployment
-    function getVersion() internal pure returns (string memory) {
+    function getVersion() internal pure virtual returns (string memory) {
         return "1.0.0";
     }
 
@@ -102,6 +103,24 @@ contract BaseScript is Script {
         );
         console2.log("        _______\\///_____\\//////////__\\///____\\///__\\/////////___\\///__\\///____\\///__\n");
         console2.log("\n=============================================================\n");
+    }
+
+    /// @dev Helper function to create a memory array of a single address element
+    /// @param addr Address to turn into an array
+    /// @return res Array containing the address as first element
+    function arr(address addr) internal pure returns (address[] memory res) {
+        res = new address[](1);
+        res[0] = addr;
+    }
+
+    /// @dev Helper function to create a memory array of several address
+    /// @param addr1 First address to include into an array
+    /// @param addr2 Second address to include into an array
+    /// @return res Array containing the addresses as elements
+    function arr(address addr1, address addr2) internal pure returns (address[] memory res) {
+        res = new address[](2);
+        res[0] = addr1;
+        res[1] = addr2;
     }
 
     // mark this as a test contract

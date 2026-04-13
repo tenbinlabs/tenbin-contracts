@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import {CollateralManager} from "../../src/CollateralManager.sol";
 import {CollateralManagerHarness} from "../harness/CollateralManagerHarness.sol";
-import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {IAggregationRouterV6} from "../../src/external/1inch/IAggregationRouterV6.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ISwapModule} from "../../src/interface/ISwapModule.sol";
@@ -26,7 +26,9 @@ contract OneInchForkTest is ForkBaseTest {
         // deploy code to mainnet account which has real USDC and USDT balance
         address managerImplementation = address(new CollateralManager());
         bytes memory data = abi.encodeWithSelector(CollateralManager.initialize.selector, address(controller), owner);
-        deployCodeTo("ERC1967Proxy.sol", abi.encode(managerImplementation, data), managerFork);
+        deployCodeTo(
+            "out/ERC1967/ERC1967Proxy.sol/ERC1967Proxy.json", abi.encode(managerImplementation, data), managerFork
+        );
 
         // create swap module using new manager and 1inch mainnet router
         manager = CollateralManagerHarness(managerFork);

@@ -6,7 +6,7 @@ import {AggregatorV3Interface} from "chainlink-local/src/data-feeds/interfaces/A
 import {IController} from "../../src/interface/IController.sol";
 import {IOracleAdapter} from "../../src/interface/IOracleAdapter.sol";
 import {GoldOracleAdapter} from "../../src/oracle/GoldOracleAdapter.sol";
-import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -72,10 +72,12 @@ contract ChainlinkOracleForkTest is ForkBaseTest {
         // create and sign mint order
         IController.Order memory order = getMintOrder(collateral, collateralAmount, assetAmount, 0);
         IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
         // execute a mint using concrete amount inside the threshold
         vm.prank(minter);
-        controller.mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // check balances
         assertEq(collateral.balanceOf(payer), 0);
@@ -139,7 +141,7 @@ contract ChainlinkOracleForkTest is ForkBaseTest {
         // execute a failed mint using concrete amount inside the threshold
         vm.prank(minter);
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
-        controller.mint(order, signature);
+        controller.mint(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
     }
 
     function testFork_Revert_Oracle_Redeem() public {
@@ -160,9 +162,11 @@ contract ChainlinkOracleForkTest is ForkBaseTest {
 
         // sign redeem order
         IController.Signature memory orderSignature = signOrder(payerKey, controller.hashOrder(redeemOrder));
+        IController.Context memory context = getContext(controller.hashOrder(redeemOrder), 0, false);
+        IController.Signature memory approval = signContext(minterKey, controller.hashContext(context));
 
         // Execute a failed redemption using concrete amounts
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
-        redeem(redeemOrder, orderSignature);
+        controller.redeem(redeemOrder, orderSignature, context, approval);
     }
 }

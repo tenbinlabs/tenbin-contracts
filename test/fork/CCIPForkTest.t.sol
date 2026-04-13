@@ -5,7 +5,7 @@ import {AssetToken} from "../../src/AssetToken.sol";
 import {CCIPLocalSimulatorFork, Register} from "chainlink-local/src/ccip/CCIPLocalSimulatorFork.sol";
 import {Client} from "chainlink-local/lib/ccip/contracts/src/v0.8/ccip/libraries/Client.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IRouterClient} from "chainlink-local/src/ccip/CCIPLocalSimulator.sol";
 import {ITokenAdminRegistry} from "../external/chainlink/ITokenAdminRegistry.sol";
@@ -74,8 +74,9 @@ contract CCIPForkTest is ForkBaseTest {
         uint256 chainId = block.chainid;
         asset = new AssetToken("AssetToken1", "SYN", owner);
         address stakingImplementation = address(new StakedAsset{salt: salt}());
-        bytes memory data =
-            abi.encodeWithSelector(StakedAsset.initialize.selector, "WAGMI", "STK", address(asset), owner);
+        bytes memory data = abi.encodeWithSelector(
+            StakedAsset.initialize.selector, "WAGMI", "STK", address(asset), owner, 0, address(0)
+        );
         ERC1967Proxy proxy = new ERC1967Proxy{salt: salt}(stakingImplementation, data);
         staking = StakedAssetHarness(address(proxy));
         tokens[0] = IERC20(asset);

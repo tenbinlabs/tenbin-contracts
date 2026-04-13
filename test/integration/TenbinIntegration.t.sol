@@ -47,13 +47,15 @@ contract TenbinIntegrationTest is BaseTest {
         IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
         bytes32 orderHash = controller.hashOrder(order);
         IController.Signature memory signature = signOrder(payerKey, orderHash);
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
         vm.prank(payer);
         controller.setRecipientStatus(recipient, true);
         address[] memory batchTargets = new address[](2);
         batchTargets[0] = address(controller);
         batchTargets[1] = address(manager);
         bytes[] memory batchOrders = new bytes[](2);
-        batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature);
+        batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature, context, approval);
         batchOrders[1] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral), 9000e6, 0);
         vm.prank(multicaller);
         multicall.multicall(batchTargets, batchOrders);
@@ -63,12 +65,13 @@ contract TenbinIntegrationTest is BaseTest {
         assertEq(asset.balanceOf(recipient), 3e18);
     }
 
-    function test_Withdraw_Redeem() public {
+    function test_Multicall_Withdraw_Redeem() public {
         setUpPayerAsset(10e18);
         setUpMockVaultWithCollateral(collateral, 100000e6);
         IController.Order memory order = getRedeemOrder(collateral, 10000e6, 3e18, 0);
-        bytes32 orderHash = controller.hashOrder(order);
-        IController.Signature memory signature = signOrder(payerKey, orderHash);
+        IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
         vm.prank(payer);
         controller.setRecipientStatus(recipient, true);
         address[] memory batchTargets = new address[](2);
@@ -77,7 +80,7 @@ contract TenbinIntegrationTest is BaseTest {
         bytes[] memory batchOrders = new bytes[](2);
         batchOrders[0] =
             abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral), 10000e6, UINT256_MAX);
-        batchOrders[1] = abi.encodeWithSelector(IController.redeem.selector, order, signature);
+        batchOrders[1] = abi.encodeWithSelector(IController.redeem.selector, order, signature, context, approval);
         vm.prank(multicaller);
         multicall.multicall(batchTargets, batchOrders);
         assertEq(collateral.balanceOf(address(vault)), 90000e6);
@@ -85,7 +88,7 @@ contract TenbinIntegrationTest is BaseTest {
         assertEq(collateral.balanceOf(recipient), 10000e6);
     }
 
-    function test_Mint_Swap_Deposit() public {
+    function test_Multicall_Mint_Swap_Deposit() public {
         // setup
         setUpPayerCollateral(10000e6);
         address executor = vm.addr(0x1111);
@@ -98,8 +101,9 @@ contract TenbinIntegrationTest is BaseTest {
 
         // create mint order
         IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
-        bytes32 orderHash = controller.hashOrder(order);
-        IController.Signature memory signature = signOrder(payerKey, orderHash);
+        IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
         // create swap data
         (bytes memory parameters, bytes memory swapData,,) = makeSwapData(
@@ -123,7 +127,7 @@ contract TenbinIntegrationTest is BaseTest {
         batchTargets[1] = address(manager);
         batchTargets[2] = address(manager);
         bytes[] memory batchOrders = new bytes[](3);
-        batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature);
+        batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature, context, approval);
         batchOrders[1] = abi.encodeWithSelector(ICollateralManager.swap.selector, parameters, swapData);
         batchOrders[2] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral2), 9000e18, 0);
 
@@ -144,7 +148,7 @@ contract TenbinIntegrationTest is BaseTest {
         assertEq(vault2.totalAssets(), 9000e18);
     }
 
-    function test_Withdraw_Swap_Redeem() public {
+    function test_Multicall_Withdraw_Swap_Redeem() public {
         // setup
         vm.prank(owner);
         manager.addCollateral(address(collateral2), address(vault2));
@@ -159,6 +163,8 @@ contract TenbinIntegrationTest is BaseTest {
         IController.Order memory order = getRedeemOrder(collateral, 18000e6, 5e18, 0);
         bytes32 orderHash = controller.hashOrder(order);
         IController.Signature memory signature = signOrder(payerKey, orderHash);
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
         // create swap data
         (bytes memory parameters, bytes memory swapData,,) = makeSwapData(
@@ -185,7 +191,7 @@ contract TenbinIntegrationTest is BaseTest {
         batchOrders[0] =
             abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral2), 18000e18, UINT256_MAX);
         batchOrders[1] = abi.encodeWithSelector(ICollateralManager.swap.selector, parameters, swapData);
-        batchOrders[2] = abi.encodeWithSelector(IController.redeem.selector, order, signature);
+        batchOrders[2] = abi.encodeWithSelector(IController.redeem.selector, order, signature, context, approval);
 
         // multicall and catch events
         vm.prank(multicaller);

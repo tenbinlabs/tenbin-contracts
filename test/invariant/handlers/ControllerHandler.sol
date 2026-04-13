@@ -2,7 +2,8 @@
 pragma solidity 0.8.30;
 
 import {AssetToken} from "../../../src/AssetToken.sol";
-import {Controller, IController} from "../../../src/Controller.sol";
+import {Controller} from "../../../src/Controller.sol";
+import {IController} from "../../../src/interface/IController.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Test} from "forge-std/Test.sol";
@@ -10,6 +11,10 @@ import {Test} from "forge-std/Test.sol";
 /// @dev Handler to interact with the controller and save snapshots for invariant testing
 contract ControllerHandler is Test {
     using SafeERC20 for AssetToken;
+
+    // TODO: use real approval and context
+    IController.Signature EMPTY_APPROVAL;
+    IController.Context EMPTY_CONTEXT;
 
     struct Config {
         address payer;
@@ -23,6 +28,7 @@ contract ControllerHandler is Test {
         AssetToken asset;
         MockERC20 collateral;
     }
+
     //deploy
     Config cfg;
     uint256 public totalMintCollateral = 0;
@@ -36,6 +42,10 @@ contract ControllerHandler is Test {
     uint128 internal nonce = 0;
 
     constructor(Config memory config) {
+        EMPTY_APPROVAL =
+            IController.Signature({signature_type: IController.SignatureType.EIP712, signature_bytes: new bytes(0)});
+        EMPTY_CONTEXT = IController.Context({order_hash: 0x00, share_price: 0, is_curated: false});
+
         cfg = Config({
             payer: config.payer,
             recipient: config.recipient,
@@ -94,6 +104,7 @@ contract ControllerHandler is Test {
             recipient: cfg.recipient,
             collateral_token: address(cfg.collateral),
             collateral_amount: collateralAmount,
+            asset_token: address(cfg.asset),
             asset_amount: assetAmount
         });
         IController.Signature memory signature;
@@ -107,7 +118,7 @@ contract ControllerHandler is Test {
         lastCollateralSupply = cfg.collateral.totalSupply();
 
         vm.prank(cfg.minter);
-        cfg.controller.mint(order, signature);
+        cfg.controller.mint(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
         nonce++;
         lastMintAmount = collateralAmount;
         totalAssetSupplyMint = cfg.asset.totalSupply();
@@ -137,6 +148,7 @@ contract ControllerHandler is Test {
             recipient: cfg.recipient,
             collateral_token: address(cfg.collateral),
             collateral_amount: collateralAmount,
+            asset_token: address(cfg.asset),
             asset_amount: assetAmount
         });
 
@@ -149,7 +161,7 @@ contract ControllerHandler is Test {
         lastCollateralSupply = cfg.collateral.totalSupply();
 
         vm.prank(cfg.minter);
-        cfg.controller.redeem(redeemOrder, signature);
+        cfg.controller.redeem(redeemOrder, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
         nonce++;
 
         lastAssetSupply = cfg.asset.totalSupply();

@@ -232,17 +232,4 @@ contract RevenueModuleTest is BaseTest {
 
         assertFalse(controller.delegates(payer, address(revenueModule)));
     }
-
-    function test_ClaimMorphoRewards() public {
-        bytes32[] memory proof = new bytes32[](2);
-        proof[0] = keccak256("p0");
-        proof[1] = keccak256("p1");
-
-        assertGt(collateral.balanceOf(address(distributor)), 1e18);
-
-        vm.prank(revenueKeeper);
-        revenueModule.claimMorphoRewards(address(distributor), address(collateral), 1e18, proof);
-
-        assertEq(collateral.balanceOf(address(revenueModule)), 1e18);
-    }
 }

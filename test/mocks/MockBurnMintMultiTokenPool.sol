@@ -9,7 +9,6 @@ import {IRouter} from "chainlink-ccip/chains/evm/contracts/interfaces/IRouter.so
 import {IERC165} from "openzeppelin-contracts/contracts/interfaces/IERC165.sol";
 import {Ownable, Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
 
-//TODO fix natspecs inherit
 /// @dev Chainlink inspired pool compatible with multiple V1 pool types.
 contract MockBurnMintMultiTokenPool is IERC165, Ownable2Step {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -119,7 +118,7 @@ contract MockBurnMintMultiTokenPool is IERC165, Ownable2Step {
     /// @dev The IERC20 token that this pool supports
     EnumerableSet.AddressSet internal s_tokens;
     /// @dev The address of the RMN proxy
-    address internal immutable i_rmnProxy; //TODO cehck if can be erased
+    address internal immutable i_rmnProxy;
     /// @dev The immutable flag that indicates if the pool is access-controlled.
     bool internal immutable i_allowlistEnabled;
     /// @dev A set of addresses allowed to trigger lockOrBurn as original senders.

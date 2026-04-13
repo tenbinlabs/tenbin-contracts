@@ -1,4 +1,7 @@
 {
+  "../../external/sdk-rust": {
+    "rev": "9ac2f3ae869917b7fed592b9cd7989160dacb3df"
+  },
   "lib/chainlink-ccip": {
     "rev": "bbab0601244ce58e2ffac0dbc178a80aab1fa4a3"
   },

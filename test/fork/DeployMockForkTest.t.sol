@@ -4,45 +4,31 @@ pragma solidity 0.8.30;
 import {Config} from "forge-std/Config.sol";
 import {DeployDevelopmentMock} from "../../script/DeployDevelopmentMock.s.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Test} from "forge-std/Test.sol";
 
 // test deployment script
 // this requires .env is set up correctly
-contract DeployMockTest is Test, Config {
+contract DeployMockForkTest is ForkBaseTest, Config {
     using SafeERC20 for IERC20;
 
     // default values
-    uint256 public constant DEFAULT_RATIO = 2e17;
     uint128 public constant DEFAULT_COOLDOWN_PERIOD = 180 seconds;
     uint128 public constant DEFAULT_VESTING_PERIOD = 1200 seconds;
-
-    // roles
-    bytes32 internal constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 internal constant CAP_ADJUSTER_ROLE = keccak256("CAP_ADJUSTER_ROLE");
-    bytes32 internal constant CURATOR_ROLE = keccak256("CURATOR_ROLE");
-    bytes32 internal constant CUSTODIAN_KEEPER_ROLE = keccak256("CUSTODIAN_KEEPER_ROLE");
-    bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
-    bytes32 internal constant GATEKEEPER_ROLE = keccak256("GATEKEEPER_ROLE");
-    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 internal constant MULTICALLER_ROLE = keccak256("MULTICALLER_ROLE");
-    bytes32 internal constant REBALANCER_ROLE = keccak256("REBALANCER_ROLE");
-    bytes32 internal constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
-    bytes32 internal constant REVENUE_KEEPER_ROLE = keccak256("REVENUE_KEEPER_ROLE");
-    bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
-    bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
-    bytes32 internal constant INSTANT_UNSTAKER_ROLE = keccak256("INSTANT_UNSTAKER_ROLE");
 
     // variables
     DeployDevelopmentMock.DeploymentResult deployment;
 
-    function setUp() public {
+    function setUp() public override {
+        super.setUp();
+        string memory rpc = vm.rpcUrl("sepolia"); // eth sepolia
+        vm.createSelectFork(rpc);
         DeployDevelopmentMock deployer = new DeployDevelopmentMock();
         deployment = deployer.run();
     }
 
     function test_DeployDevelopment() public {
-        _loadConfig("./config/local/local.toml", false);
+        _loadConfig("./config/sepolia/sepolia.toml", false);
         // check default admin roles
         assertEq(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
         assertEq(deployment.manager.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
@@ -76,7 +62,7 @@ contract DeployMockTest is Test, Config {
         assertEq(deployment.manager.hasRole(CAP_ADJUSTER_ROLE, config.get("cap_adjuster_role").toAddress()), true);
 
         // check staking roles
-        assertEq(deployment.staking.hasRole(REWARDER_ROLE, config.get("rewarder_role").toAddress()), true);
+        assertEq(deployment.staking.hasRole(REWARDER_ROLE, config.get("multisig").toAddress()), true);
         assertEq(deployment.staking.hasRole(REWARDER_ROLE, address(deployment.revenue_module)), true);
         assertEq(deployment.staking.hasRole(ADMIN_ROLE, config.get("admin_role").toAddress()), true);
         assertEq(deployment.staking.hasRole(RESTRICTER_ROLE, config.get("restricter_role").toAddress()), true);
@@ -121,7 +107,6 @@ contract DeployMockTest is Test, Config {
         }
 
         // check controller is correctly configured
-        assertEq(deployment.controller.ratio(), DEFAULT_RATIO);
         assertEq(deployment.controller.custodian(), address(deployment.custodian_module));
         assertEq(deployment.controller.manager(), address(deployment.manager));
 

@@ -2,60 +2,75 @@
 pragma solidity 0.8.30;
 
 import {Config} from "forge-std/Config.sol";
-import {Deploy} from "../../script/Deploy.s.sol";
-import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {DeployProduction} from "../../script/DeployProduction.s.sol";
+import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {stdToml} from "forge-std/StdToml.sol";
 
 // test deployment script
 // this requires .env is set up correctly
-contract DeployForkTest is ForkBaseTest, Config {
+contract DeployProductionForkTest is ForkBaseTest, Config {
     using SafeERC20 for IERC20;
+    using stdToml for string;
 
-    Deploy.DeploymentResult deployment;
-    Deploy.DeploymentParameters params;
-    Deploy.RolesParameters roles;
+    DeployProduction.DeploymentResult deployment;
+    DeployProduction.DeploymentParameters params;
+    DeployProduction.RolesParameters roles;
+    string constant CONFIG_DIR = "./config/mainnet/tgld/tgld.toml";
 
     function setUp() public override {
         // set a fork block where collateral vault exists
         forkBlock = 24399000;
         super.setUp();
-        Deploy deployer = new Deploy();
-        deployment = deployer.run();
     }
 
     function test_fork_Deploy() public {
-        _loadConfig("./config/mainnet.toml", false);
+        DeployProduction deployer = new DeployProduction();
+        deployment = deployer.run(CONFIG_DIR);
+        sanityChecks();
+    }
+
+    function test_fork_Default_Deploy() public {
+        DeployProduction deployer = new DeployProduction();
+        deployment = deployer.run("");
+        sanityChecks();
+    }
+
+    function sanityChecks() internal {
+        _loadConfig(CONFIG_DIR, false);
+        // forge-lint: disable-next-line(unsafe-cheatcode)
+        string memory toml = vm.readFile(CONFIG_DIR);
 
         // roles
-        roles.admin_role = 0xE6Eb534f33A635e8d867414Af32F766D221F30d1;
-        roles.cap_adjuster_role = 0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614;
-        roles.curator_role = 0xD1a89086428E2b208414201712cbE0952DabEA03;
-        roles.custodian_keeper_role = 0xD1a89086428E2b208414201712cbE0952DabEA03;
-        roles.default_admin_role = 0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99;
-        roles.gatekeeper_role = 0x44C24D0937A829B3057be462b0e069516f1D9D45;
-        roles.minter_role = 0xCa2D7CfAa96290171c98e112c73fC87c2AE2fe9B;
-        roles.multicaller_role = 0xCa2D7CfAa96290171c98e112c73fC87c2AE2fe9B;
-        roles.rebalancer_role = 0xD1a89086428E2b208414201712cbE0952DabEA03;
-        roles.restricter_role = 0xE6Eb534f33A635e8d867414Af32F766D221F30d1;
-        roles.revenue_keeper_role = 0xD1a89086428E2b208414201712cbE0952DabEA03;
-        roles.rewarder_role = 0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8;
-        roles.signer_manager_role = 0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614;
+        roles.admin_role = vm.parseTomlAddress(toml, ".mainnet.address.admin_role");
+        roles.cap_adjuster_role = vm.parseTomlAddress(toml, ".mainnet.address.cap_adjuster_role");
+        roles.curator_role = vm.parseTomlAddress(toml, ".mainnet.address.curator_role");
+        roles.custodian_keeper_role = vm.parseTomlAddress(toml, ".mainnet.address.custodian_keeper_role");
+        roles.default_admin_role = vm.parseTomlAddress(toml, ".mainnet.address.default_admin_role");
+        roles.gatekeeper_role = vm.parseTomlAddress(toml, ".mainnet.address.gatekeeper_role");
+        roles.minter_role = vm.parseTomlAddress(toml, ".mainnet.address.minter_role");
+        roles.multicaller_role = vm.parseTomlAddress(toml, ".mainnet.address.multicaller_role");
+        roles.rebalancer_role = vm.parseTomlAddress(toml, ".mainnet.address.rebalancer_role");
+        roles.restricter_role = vm.parseTomlAddress(toml, ".mainnet.address.restricter_role");
+        roles.rewarder_role = vm.parseTomlAddress(toml, ".mainnet.address.rewarder_role");
+        roles.revenue_keeper_role = vm.parseTomlAddress(toml, ".mainnet.address.revenue_keeper_role");
+        roles.signer_manager_role = vm.parseTomlAddress(toml, ".mainnet.address.signer_manager_role");
 
         // address parameters
-        params.collateral = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-        params.custodian = 0x1f766513abc0DD46b26590Ea83A6b20377460a18;
-        params.multisig = 0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8;
-        params.vault = 0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75;
+        params.collateral = vm.parseTomlAddress(toml, ".mainnet.address.collateral");
+        params.custodian = vm.parseTomlAddress(toml, ".mainnet.address.custodian");
+        params.multisig = vm.parseTomlAddress(toml, ".mainnet.address.multisig");
+        params.vault = vm.parseTomlAddress(toml, ".mainnet.address.vault");
 
         // uint parameters
-        params.cooldown_period = 604_800;
-        /* params.min_swap_price = 0; */
-        params.oracle_tolerance = 50_000000000000000;
-        params.ratio = 170_000000000000000;
-        params.rebalance_cap = 100_000_000_000000;
-        params.swap_cap = 0;
-        params.vesting_period = 259_200;
+        params.cooldown_period = vm.parseTomlUint(toml, ".mainnet.uint.cooldown_period");
+        params.min_swap_price = vm.parseTomlUint(toml, ".mainnet.uint.min_swap_price");
+        params.oracle_tolerance = vm.parseTomlUint(toml, ".mainnet.uint.oracle_tolerance");
+        params.ratio = vm.parseTomlUint(toml, ".mainnet.uint.ratio");
+        params.rebalance_cap = vm.parseTomlUint(toml, ".mainnet.uint.rebalance_cap");
+        params.swap_cap = vm.parseTomlUint(toml, ".mainnet.uint.swap_cap");
+        params.vesting_period = vm.parseTomlUint(toml, ".mainnet.uint.vesting_period");
 
         // check default admin roles
         assertEq(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role), true);
@@ -135,24 +150,25 @@ contract DeployForkTest is ForkBaseTest, Config {
         assertEq(deployment.revenue_module.staking(), address(deployment.staking));
         assertEq(deployment.revenue_module.asset(), address(deployment.asset));
         assertEq(deployment.revenue_module.controller(), address(deployment.controller));
+        assertEq(deployment.revenue_module.multisig(), address(params.multisig));
 
         // ensure roles are renounced by deployer
         assertEq(deployment.asset.pendingOwner(), roles.default_admin_role);
-        assertFalse(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, broadcaster));
-        assertFalse(deployment.manager.hasRole(DEFAULT_ADMIN_ROLE, broadcaster));
-        assertFalse(deployment.multicall.hasRole(DEFAULT_ADMIN_ROLE, broadcaster));
-        assertFalse(deployment.staking.hasRole(DEFAULT_ADMIN_ROLE, broadcaster));
-        assertFalse(deployment.revenue_module.hasRole(DEFAULT_ADMIN_ROLE, broadcaster));
-        assertFalse(deployment.manager.hasRole(ADMIN_ROLE, broadcaster));
-        assertFalse(deployment.manager.hasRole(CURATOR_ROLE, broadcaster));
-        assertFalse(deployment.manager.hasRole(REBALANCER_ROLE, broadcaster));
-        assertFalse(deployment.manager.hasRole(GATEKEEPER_ROLE, broadcaster));
-        assertFalse(deployment.manager.hasRole(CAP_ADJUSTER_ROLE, broadcaster));
-        assertFalse(deployment.staking.hasRole(REWARDER_ROLE, broadcaster));
-        assertFalse(deployment.staking.hasRole(ADMIN_ROLE, broadcaster));
-        assertFalse(deployment.multicall.hasRole(MULTICALLER_ROLE, broadcaster));
-        assertFalse(deployment.revenue_module.hasRole(REVENUE_KEEPER_ROLE, broadcaster));
-        assertFalse(deployment.custodian_module.hasRole(DEFAULT_ADMIN_ROLE, broadcaster));
-        assertFalse(deployment.custodian_module.hasRole(CUSTODIAN_KEEPER_ROLE, broadcaster));
+        assertFalse(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, deployment.broadcaster));
+        assertFalse(deployment.manager.hasRole(DEFAULT_ADMIN_ROLE, deployment.broadcaster));
+        assertFalse(deployment.multicall.hasRole(DEFAULT_ADMIN_ROLE, deployment.broadcaster));
+        assertFalse(deployment.staking.hasRole(DEFAULT_ADMIN_ROLE, deployment.broadcaster));
+        assertFalse(deployment.revenue_module.hasRole(DEFAULT_ADMIN_ROLE, deployment.broadcaster));
+        assertFalse(deployment.manager.hasRole(ADMIN_ROLE, deployment.broadcaster));
+        assertFalse(deployment.manager.hasRole(CURATOR_ROLE, deployment.broadcaster));
+        assertFalse(deployment.manager.hasRole(REBALANCER_ROLE, deployment.broadcaster));
+        assertFalse(deployment.manager.hasRole(GATEKEEPER_ROLE, deployment.broadcaster));
+        assertFalse(deployment.manager.hasRole(CAP_ADJUSTER_ROLE, deployment.broadcaster));
+        assertFalse(deployment.staking.hasRole(REWARDER_ROLE, deployment.broadcaster));
+        assertFalse(deployment.staking.hasRole(ADMIN_ROLE, deployment.broadcaster));
+        assertFalse(deployment.multicall.hasRole(MULTICALLER_ROLE, deployment.broadcaster));
+        assertFalse(deployment.revenue_module.hasRole(REVENUE_KEEPER_ROLE, deployment.broadcaster));
+        assertFalse(deployment.custodian_module.hasRole(DEFAULT_ADMIN_ROLE, deployment.broadcaster));
+        assertFalse(deployment.custodian_module.hasRole(CUSTODIAN_KEEPER_ROLE, deployment.broadcaster));
     }
 }

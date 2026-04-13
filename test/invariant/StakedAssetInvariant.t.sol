@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import {BaseTest} from "../BaseTest.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {StakedAssetHandler} from "../invariant/handlers/StakedAssetHandler.sol";
+import {StakedAssetHandler} from "./handlers/StakedAssetHandler.sol";
 
 // forge test --mc StakedAssetInvariantTest -vvvv
 contract StakedAssetInvariantTest is BaseTest {
@@ -62,7 +62,7 @@ contract StakedAssetInvariantTest is BaseTest {
 
     // - `block.timestamp at cooldown ≥ cooldowns[user].timestamp`
     function invariant_unstakeOnlyAfterCooldown() public view {
-        (uint256 assets, uint256 end) = staking.cooldowns(user);
+        (uint256 assets, uint256 end) = staking.cooldowns(user, 0);
         if (assets != 0) {
             // In some sequences cooldown might not be called
             assertGe(end, handler.blockAtCooldown());

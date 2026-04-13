@@ -139,14 +139,6 @@ contract RevenueModule is IRevenueModule, AccessControl {
         Controller(controller).setDelegateStatus(signer, status);
     }
 
-    /// @inheritdoc IRevenueModule
-    function claimMorphoRewards(address distributor, address rewardToken, uint256 claimable, bytes32[] calldata proof)
-        external
-        onlyRole(REVENUE_KEEPER_ROLE)
-    {
-        ICollateralManager(manager).claimMorphoRewards(distributor, rewardToken, claimable, proof);
-    }
-
     /// @dev Helper function to handle token transfers
     /// @param to Receiver of tokens
     /// @param token Token address to be sent

@@ -7,7 +7,7 @@ import {ISwapModule} from "../../../src/interface/ISwapModule.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
 import {MockERC4626} from "../../mocks/MockERC4626.sol";
 import {SwapModule} from "../../../src/SwapModule.sol";
-import {Test} from "forge-std/test.sol";
+import {Test} from "forge-std/Test.sol";
 
 /// @dev Handler to interact with the collateral manager and save snapshots for invariant testing
 contract CollateralManagerHandler is Test {
