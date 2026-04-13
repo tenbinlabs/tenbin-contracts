@@ -235,18 +235,18 @@ contract StakedAsset is
     }
 
     /// @inheritdoc IStakedAsset
-    function instantUnstake(uint256 assets, address owner, address receiver)
+    function instantUnstake(uint256 assets, address receiver, address owner)
         external
         onlyRole(INSTANT_UNSTAKER_ROLE)
         nonRestricted(owner)
         nonRestricted(receiver)
-        returns (uint256 shares)
+        returns (uint256 shares, uint256 fee)
     {
         if (assets > instantUnstakeCap) revert ExceedsInstantUnstakeCap();
         instantUnstakeCap -= assets;
 
         // If instant unstake fee is set, withdraw fees to fee receiver
-        uint256 fee = 0;
+        fee = 0;
         if (instantUnstakeFee > 0 && feeRecipient != address(0)) {
             fee = Math.mulDiv(instantUnstakeFee, assets, FEE_PRECISION);
             shares += super.withdraw(fee, feeRecipient, owner);
