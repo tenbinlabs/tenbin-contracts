@@ -11,7 +11,6 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {ISwapModule} from "./interface/ISwapModule.sol";
-import {IUniversalRewardsDistributor} from "./external/morpho/IUniversalRewardsDistributor.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {ReentrancyGuardTransient} from "openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -208,7 +207,7 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
     }
 
     /// @notice Set a new revenue module
-    /// @param newRevenueModule New swap module
+    /// @param newRevenueModule New revenue module
     function setRevenueModule(address newRevenueModule)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
@@ -406,17 +405,6 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         swapCap[params.srcToken] = srcTokenCap - params.amount;
         swapCap[params.dstToken] = dstTokenCap - actualOut;
         emit Swap(params.srcToken, params.dstToken, params.amount, actualOut);
-    }
-
-    /// @inheritdoc ICollateralManager
-    function claimMorphoRewards(address distributor, address reward, uint256 claimable, bytes32[] calldata proof)
-        external
-        nonReentrant
-        onlyRevenueModule
-    {
-        uint256 balance = IERC20(reward).balanceOf(address(this));
-        IUniversalRewardsDistributor(distributor).claim(address(this), reward, claimable, proof);
-        IERC20(reward).safeTransfer(revenueModule, IERC20(reward).balanceOf(address(this)) - balance);
     }
 
     /* ------------------------------------ INTERNAL ------------------------------------------- */

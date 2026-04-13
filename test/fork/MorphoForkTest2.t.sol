@@ -186,13 +186,15 @@ contract MorphoForkTest2 is ForkBaseTest {
         IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
         bytes32 orderHash = controller.hashOrder(order);
         IController.Signature memory signature = signOrder(payerKey, orderHash);
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
         vm.prank(payer);
         controller.setRecipientStatus(recipient, true);
         address[] memory batchTargets = new address[](2);
         batchTargets[0] = address(controller);
         batchTargets[1] = address(manager);
         bytes[] memory batchOrders = new bytes[](2);
-        batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature);
+        batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order, signature, context, approval);
         batchOrders[1] = abi.encodeWithSelector(ICollateralManager.deposit.selector, address(collateral), 9000e6, 0);
         vm.prank(multicaller);
         multicall.multicall(batchTargets, batchOrders);
@@ -202,19 +204,20 @@ contract MorphoForkTest2 is ForkBaseTest {
         assertEq(asset.balanceOf(recipient), 3e18);
     }
 
-    function test_Withdraw_Redeem() public {
+    function test_Withdraw_Redeem_Morpho() public {
         setUpPayerAsset(10e18);
         setUpMockVaultWithCollateral(100000e6);
         IController.Order memory order = getRedeemOrder(collateral, 10000e6, 3e18, 0);
-        bytes32 orderHash = controller.hashOrder(order);
-        IController.Signature memory signature = signOrder(payerKey, orderHash);
+        IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
         address[] memory batchTargets = new address[](2);
         batchTargets[0] = address(manager);
         batchTargets[1] = address(controller);
         bytes[] memory batchOrders = new bytes[](2);
         batchOrders[0] =
             abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(collateral), 10000e6, UINT256_MAX);
-        batchOrders[1] = abi.encodeWithSelector(IController.redeem.selector, order, signature);
+        batchOrders[1] = abi.encodeWithSelector(IController.redeem.selector, order, signature, context, approval);
         vm.prank(multicaller);
         multicall.multicall(batchTargets, batchOrders);
         assertEq(collateral.balanceOf(address(vault)), 90000e6);

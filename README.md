@@ -134,26 +134,39 @@ Configuration: https://getfoundry.sh/config/static-analyzers/#mythril
 
 # Deploy
 
-Use `config/` to configure roles and parameters when running deploy scripts. Roles and existing deployments are tracked in deployments.json. When running the deployment script, a file is created in `broadcast/{chainid}/{script_name}/deployments.json` containing the recently deployed contracts and roles.
+Use `config/` to configure roles and parameters when running deploy scripts. Roles and existing deployments are tracked in deployments.json. When running the deployment script, a file is created in `broadcast/{chainid}/{script_name}/contracts.json` containing the recently deployed contracts and roles.
 
 ### Deploy locally
 
-1) Ensure BROADCASTER_KEY is not set in .env
+1) Ensure BROADCASTER_KEY and BROADCASTER_ADDRESS is NOT set in .env
 
 2) Run anvil: `anvil --mnemonic $TEST_MNEMONIC`
 
-3) Run `FOUNDRY_PROFILE=production forge script script/DeployTestnet.s.sol --rpc-url ws:/localhost:8545 --broadcast`
+3) Run `FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol --rpc-url ws:/localhost:8545 --broadcast`
 
-### Deploy morhpo v2 vault onto sepolia testnet
-1) Ensure BROADCASTER_KEY is set in .env
+### Deploy morpho v2 vault onto sepolia testnet
+1) Ensure BROADCASTER_KEY and BROADCASTER_ADDRESS is set in .env
 
 2) `Run FOUNDRY_PROFILE=production forge script script/DeployVault.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast`
 
 ### Deploy to sepolia testnet:
 
-Run `FOUNDRY_PROFILE=production forge script script/DeployMock.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+Run `FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
 
 Use `--broadcast` to broadcast
+
+### Deploy production contracts
+
+1) Ensure `CONFIG_DIR`, `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and `ETHERSCAN_API_KEY` are correctly set up.
+
+2) Run `FOUNDRY_PROFILE=production forge script script/DeployProduction.s.sol $CONFIG_DIR --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+
+Use `--broadcast` to broadcast.
+
+Note: To create a mock version, i.e. use the current development on mainnet, use the following command instead:
+
+`FOUNDRY_PROFILE=production forge script script/DeployDevelopment.s.sol --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+
 
 #### Minting tokens on testnet
 
@@ -166,9 +179,15 @@ Use `--broadcast` to broadcast
 ```forge script script/MintTestnet.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $MINTER_KEY --broadcast```
 THIS SCRIPT IS NOT SAFE TO RUN ON MAINNET!!
 
-### Deploying to mainnet 
+### Creating batch Safe Transaction to restrict addresses
 
-```FOUNDRY_PROFILE=production forge script script/Deploy.s.sol --private-key $BROADCASTER_KEY --rpc-url $MAINNET_RPC_URL --verify --etherscan-api-key $ETHERSCAN_API_KEY --broadcast --slow ```
+Certain contracts support a restricted addresses registry to prevent sanctioned accounts from interacting with them. Only an account with the `RESTRICTER_ROLE` can call their respective `setIsRestricted` method to restrict a specific account, but for cases when we need to create a batch of addresses to restrict, or remove restricted accounts, in a single transaction we can use the `BuildSafeBatch` script as follows:
+
+1) Ensure `CSV_ADDRESSES` is set in .env, or the execution environment, with the addresses to update.
+
+2) Run the following command:
+
+```forge script script/BuildSafeBatch.s.sol:BuildSafeBatch --sig "run(address,bool,string)" <target_contract_address> <bool_status> $CSV_ADDRESSES ```
 
 # Architecture
 
@@ -197,6 +216,7 @@ The controller contract is responsible for minting and redeeming assets. Mint an
         address recipient;          // Account to receive tokens
         address collateral_token;   // Collateral used for this order
         uint256 collateral_amount;  // Amount of collateral tokens
+        address asset_token;        // Specify AssetToken or StakedAsset address when redeeming
         uint256 asset_amount;       // Amount of asset tokens
     }
 ```
@@ -204,8 +224,8 @@ The controller contract is responsible for minting and redeeming assets. Mint an
 ### Order Lifecycle
 
 1. Order signer goes through KYC and is added to the allowed signers list.
-2. An order signer submits a signed order to the Tenbin backend.
-3. The backend processes the order and calls the `mint` or `redeem` function.
+2. An order signer submits an `order` and signed order `signature` to the back end
+3. The back end processes the order and provides a `context` and signed `approval`
 4. Token are transferred accordingly and payer nonce is marked as used.
 
 ### Allowed Signers
@@ -231,6 +251,14 @@ The custodian module receives collateral during a mint order. Custodians are add
 ### Oracle Adapter
 
 The controller has a configurable oracle adapter which can provide a price when executing orders. When enabled, the oracle price acts as a backstop to prevent order pricing from exceeding a threshold. The oracle DOES NOT determine the price of assets, rather it acts as a security measure to prevent minting and redeeming assets at a price off-peg. For example, with the oracle configured it is impossible to mint new assets with a price of $0.
+
+### Mint and Redemption Limits
+
+Mint and redemption limits are configurable per block. If set to type(uint).max, limits are not enforced.
+
+### Staked Asset Redemption
+
+Staked assets can be redeemed directly through the controller by specifying `asset_token` in the Order struct. Redeeming staked assets also requires the payer approves the controller to spend staked assets on its behalf. During staked asset redemption, assets are instantly unstaked by the controller and pricing is determined by the back end pricing engine.
 
 ### RestrictedRegistry
 
@@ -304,16 +332,17 @@ Additionally vesting spreads out rewards over a longer period of time in order t
 
 ### Cooldown
 
-A cooldown time is present in the staking contract to encourage assets to remain staked and allow response time for liquidity management. When a staker calls the `cooldown()` function, staked tokens are burned and transferred to the AssetSilo contract. After the cooldown end time has passed, a user can call `unstake()` to withdraw the underlying asset tokens.
+A cooldown period is present in the staking contract to encourage assets to remain staked and allow response time for liquidity management. When a staker calls the `cooldownShares()` or `cooldownAssets` function, staked tokens are burned and transferred to the AssetSilo contract. An account can have multiple cooldowns at once as determined by a unique set of IDs per account. After the cooldown end time has passed, a user can call `unstake(id)` to withdraw the underlying asset tokens.
 
-In order to withdraw tokens, a staker needs to call `cooldown()` and wait until the cooldown period has passed to withdraw their stake. It is important to note that only one active cooldown process can be in effect simultaneously; if the user calls `cooldown()` again, it will terminate the current cooldown and initiate a new cooldown period.
+In order to withdraw tokens, a staker needs to call `cooldown()` and wait until the cooldown period has passed to withdraw their stake. A cooldown can be cancelled by calling `cancelCooldown(id)`. When cancelling a cooldown, new shares are minted via the AssetSilo contract and transferred to the account which cancelled the cooldown.
 
-Each staker can only have one cooldown at a time, and the cooldown will be reset when cooling down additional assets. Initiating a cooldown cannot be cancelled - new cooled down amounts will be added to the previous cooldown amount. The cooldown period is designed to improve collateral management and prevent abuse of the staking contracts.
+### Instant Unstaking
+
+Instant unstaking is possible via a privileged role. Typically, the Controller is allowed to instant unstake when executing redemptions for staked assets. There is an instantUnstakeCap which sets a limit on the total amount that can be instantly unstaked. An optional instant unstaking fee which, when enabled, will transfer a percentage of assets to a fee recipient. This fee is disabled by default.
 
 ### Restricted Registry
 
 Due to legal restrictions, yield cannot be paid to stakers without regulatory compliance. For this reason, a restricted registry is present in the staking contract. Accounts added to this registry cannot stake, unstake, or transfer staked tokens. If an account is restricted, the contract default admin can burn the account’s staking tokens and withdraw the underlying assets.
-
 
 ### Upgradeability 
 

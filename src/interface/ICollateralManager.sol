@@ -165,12 +165,4 @@ interface ICollateralManager {
     /// @param params Generic swap parameters used to enforce swap constraints
     /// @param data Additional data passed to swap module
     function swap(bytes calldata params, bytes calldata data) external;
-
-    /// @notice Claim rewards from Morpho's Universal Rewards Distributor
-    /// @param distributor The URD contract address
-    /// @param reward The reward token address (e.g., MORPHO)
-    /// @param claimable The total claimable amount from merkle tree
-    /// @param proof The merkle proof for this claim
-    function claimMorphoRewards(address distributor, address reward, uint256 claimable, bytes32[] calldata proof)
-        external;
 }

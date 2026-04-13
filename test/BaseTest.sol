@@ -28,7 +28,6 @@ import {StakedAsset} from "../src/StakedAsset.sol";
 import {StakedAssetHarness} from "./harness/StakedAssetHarness.sol";
 import {SwapModuleHarness} from "./harness/SwapModuleHarness.sol";
 import {Test} from "forge-std/Test.sol";
-import {UniversalRewardsDistributor} from "./mocks/MockUniversalRewardsDistributor.sol";
 
 contract BaseTest is Test {
     using SafeERC20 for IERC20;
@@ -63,10 +62,15 @@ contract BaseTest is Test {
     uint256 internal constant ADAPTER_PRECISION = 1e10;
     // dead deposit address
     address internal constant DEAD_DEPOSIT_ADDRESS = 0x000000000000000000000000000000000000dEaD;
+    // empty approval signature for tenbin executed orders
+    IController.Signature internal EMPTY_APPROVAL;
+    // empty context for orders
+    IController.Context internal EMPTY_CONTEXT;
 
     // keys
     uint256 internal payerKey = 0xB000;
     uint256 internal recipientKey = 0xB001;
+    uint256 internal minterKey = 0xB002;
 
     // accounts
     address internal payer;
@@ -89,6 +93,9 @@ contract BaseTest is Test {
     address internal rewarder;
     address internal restricter;
     address internal broadcaster;
+    address internal instantUnstaker;
+    address internal feeRecipient;
+    address internal restricted;
 
     // contracts
     ControllerHarness internal controller;
@@ -108,7 +115,6 @@ contract BaseTest is Test {
     MockAggregator internal aggregator;
     GoldOracleAdapter internal oracleAdapter;
     AssetSilo internal silo;
-    UniversalRewardsDistributor internal distributor;
     MockEtherReceiver etherReceiver;
 
     // roles
@@ -124,10 +130,17 @@ contract BaseTest is Test {
     bytes32 internal constant CUSTODIAN_KEEPER_ROLE = keccak256("CUSTODIAN_KEEPER_ROLE");
     bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
     bytes32 internal constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE");
+    bytes32 internal constant INSTANT_UNSTAKER_ROLE = keccak256("INSTANT_UNSTAKER_ROLE");
     bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
 
     // mark this as a test contract
     function test() public {}
+
+    constructor() {
+        EMPTY_APPROVAL =
+            IController.Signature({signature_type: IController.SignatureType.EIP712, signature_bytes: new bytes(0)});
+        EMPTY_CONTEXT = IController.Context({order_hash: 0x00, share_price: 0, is_curated: false});
+    }
 
     function setUp() public virtual {
         setUpAccounts();
@@ -139,7 +152,6 @@ contract BaseTest is Test {
         setUpRevenueModule();
         setUpConfiguration();
         setUpCustodianModule();
-        setUpDistributor();
     }
 
     function setUpAccounts() internal {
@@ -147,7 +159,7 @@ contract BaseTest is Test {
         payer = vm.addr(payerKey);
         recipient = vm.addr(recipientKey);
         admin = vm.addr(0xB003);
-        minter = vm.addr(0xB004);
+        minter = vm.addr(minterKey);
         gatekeeper = vm.addr(0xB005);
         custodian = vm.addr(0xB006);
         curator = vm.addr(0xB007);
@@ -162,6 +174,9 @@ contract BaseTest is Test {
         user = vm.addr(0xB011);
         rewarder = vm.addr(0xB012);
         restricter = vm.addr(0xB013);
+        instantUnstaker = vm.addr(0xB014);
+        feeRecipient = vm.addr(0xB015);
+        restricted = vm.addr(0xB016);
         broadcaster = getTestBroadcaster();
     }
 
@@ -171,18 +186,20 @@ contract BaseTest is Test {
         asset = new AssetToken("AssetToken", "SYN", owner);
         vault = new MockERC4626("Collateral Vault", "vCLT", collateral);
         vault2 = new MockERC4626("Collateral Vault 2", "vCLT2", collateral2);
-        controller = new ControllerHarness(address(asset), DEFAULT_RATIO, custodian, owner);
+        address stakingImplementation = address(new StakedAssetHarness());
+        bytes memory data = abi.encodeWithSelector(
+            StakedAsset.initialize.selector, "Staked Asset", "stAST", address(asset), owner, 0, address(revenueModule)
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(stakingImplementation, data);
+        staking = StakedAssetHarness(address(proxy));
+        controller = new ControllerHarness(address(asset), address(staking), DEFAULT_RATIO, custodian, owner);
         address managerImplementation = address(new CollateralManagerHarness());
-        bytes memory data = abi.encodeWithSelector(CollateralManager.initialize.selector, address(controller), owner);
-        ERC1967Proxy proxy = new ERC1967Proxy(managerImplementation, data);
+        data = abi.encodeWithSelector(CollateralManager.initialize.selector, address(controller), owner);
+        proxy = new ERC1967Proxy(managerImplementation, data);
         manager = CollateralManagerHarness(address(proxy));
         router = new Mock1InchRouter();
         swapModule = new SwapModuleHarness(address(manager), address(router), owner);
         multicall = new MultiCall(owner);
-        address stakingImplementation = address(new StakedAssetHarness());
-        data = abi.encodeWithSelector(StakedAsset.initialize.selector, "Staked Asset", "stAST", address(asset), owner);
-        proxy = new ERC1967Proxy(stakingImplementation, data);
-        staking = StakedAssetHarness(address(proxy));
         revenueModule = new RevenueModule(
             address(manager), address(staking), owner, address(controller), address(asset), address(multisig)
         );
@@ -190,7 +207,6 @@ contract BaseTest is Test {
         custodianModule = new CustodianModule(owner);
         aggregator = new MockAggregator();
         oracleAdapter = new GoldOracleAdapter(address(aggregator));
-        distributor = new UniversalRewardsDistributor();
         etherReceiver = new MockEtherReceiver();
     }
 
@@ -214,6 +230,9 @@ contract BaseTest is Test {
         label(multisig, "multisig");
         label(user, "user");
         label(restricter, "restricter");
+        label(instantUnstaker, "instantUnstaker");
+        label(feeRecipient, "feeRecipient");
+        label(restricted, "restricted");
 
         // contracts
         label(address(collateral), "collateral");
@@ -232,7 +251,6 @@ contract BaseTest is Test {
         label(address(aggregator), "aggregator");
         label(address(oracleAdapter), "oracleAdapter");
         label(address(silo), "silo");
-        label(address(distributor), "distributor");
     }
 
     // helper function to configure controller
@@ -246,6 +264,9 @@ contract BaseTest is Test {
         controller.grantRole(GATEKEEPER_ROLE, gatekeeper);
         controller.grantRole(SIGNER_MANAGER_ROLE, signerManager);
         controller.grantRole(RESTRICTER_ROLE, restricter);
+        // disable block mint & redeem limit
+        controller.setBlockMintLimit(type(uint256).max);
+        controller.setBlockRedeemLimit(type(uint256).max);
     }
 
     // helper function to configure manager
@@ -253,6 +274,7 @@ contract BaseTest is Test {
         vm.startPrank(owner);
         manager.grantRole(ADMIN_ROLE, admin);
         manager.grantRole(CURATOR_ROLE, curator);
+        manager.grantRole(CURATOR_ROLE, address(controller));
         manager.grantRole(REBALANCER_ROLE, rebalancer);
         // multicall is minter and curator
         manager.grantRole(CURATOR_ROLE, address(multicall));
@@ -275,6 +297,10 @@ contract BaseTest is Test {
         staking.grantRole(REWARDER_ROLE, address(revenueModule));
         staking.grantRole(ADMIN_ROLE, admin);
         staking.grantRole(RESTRICTER_ROLE, restricter);
+        staking.grantRole(CAP_ADJUSTER_ROLE, capAdjuster);
+        staking.grantRole(INSTANT_UNSTAKER_ROLE, instantUnstaker);
+        staking.grantRole(INSTANT_UNSTAKER_ROLE, address(controller));
+        staking.setFeeRecipient(address(revenueModule));
         vm.stopPrank();
 
         // approvals
@@ -313,11 +339,6 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function setUpDistributor() internal {
-        vm.prank(curator);
-        collateral.mint(address(distributor), 1000e18);
-    }
-
     // helper to label accounts for tracing
     function label(address account, string memory newLabel) internal {
         vm.label({account: account, newLabel: newLabel});
@@ -347,6 +368,11 @@ contract BaseTest is Test {
         controller.setSignerStatus(signer, true);
     }
 
+    function addRecipient(address signer, address newRecipient) internal {
+        vm.prank(signer);
+        controller.setRecipientStatus(newRecipient, true);
+    }
+
     // helper to approve controller to spend tokens
     function approveController(IERC20 token, address account, uint256 amount) internal {
         vm.prank(account);
@@ -355,19 +381,28 @@ contract BaseTest is Test {
 
     // helper function to execute a mint
     function mint(IController.Order memory order, IController.Signature memory signature) internal {
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
         vm.prank(minter);
-        controller.mint(order, signature);
+        controller.mint(order, signature, context, approval);
     }
 
     // helper function to execute a redeem
     function redeem(IController.Order memory order, IController.Signature memory signature) internal {
+        IController.Context memory context = getContext(controller.hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, controller.hashContext(context));
         vm.prank(minter);
-        controller.redeem(order, signature);
+        controller.redeem(order, signature, context, approval);
     }
 
     // helper function to hash an order
     function hashOrder(IController.Order memory order) internal view returns (bytes32 orderHash) {
         orderHash = controller.hashOrder(order);
+    }
+
+    // helper function to hash a context
+    function hashContext(IController.Context memory context) internal view returns (bytes32 contextHash) {
+        contextHash = controller.hashContext(context);
     }
 
     // helper function to get a mint order
@@ -384,6 +419,7 @@ contract BaseTest is Test {
             recipient: recipient,
             collateral_token: address(collateralToken),
             collateral_amount: collateralAmount,
+            asset_token: address(asset),
             asset_amount: mintAmount
         });
     }
@@ -402,13 +438,35 @@ contract BaseTest is Test {
             recipient: recipient,
             collateral_token: address(collateralToken),
             collateral_amount: collateralAmount,
+            asset_token: address(asset),
             asset_amount: redeemAmount
         });
     }
 
-    // helper function to sign an order
+    // helper function to get a context
+    function getContext(bytes32 orderHash, uint256 sharePrice, bool isCurated)
+        internal
+        pure
+        returns (IController.Context memory)
+    {
+        return IController.Context({order_hash: orderHash, share_price: sharePrice, is_curated: isCurated});
+    }
+
+    // helper function to sign an order hash
     function signOrder(uint256 key, bytes32 orderHash) internal pure returns (IController.Signature memory signature) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, orderHash);
+        signature = IController.Signature({
+            signature_type: IController.SignatureType.EIP712, signature_bytes: abi.encodePacked(r, s, v)
+        });
+    }
+
+    // helper function to sign a context hash
+    function signContext(uint256 key, bytes32 contextHash)
+        internal
+        pure
+        returns (IController.Signature memory signature)
+    {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, contextHash);
         signature = IController.Signature({
             signature_type: IController.SignatureType.EIP712, signature_bytes: abi.encodePacked(r, s, v)
         });

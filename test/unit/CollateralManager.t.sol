@@ -838,7 +838,7 @@ contract CollateralManagerTest is BaseTest {
 
     function test_Revert_UpdateController() public {
         // set up
-        Controller newController = new Controller(address(asset), 1e17, custodian, address(this));
+        Controller newController = new Controller(address(asset), address(staking), 1e17, custodian, address(this));
         address[] memory collaterals = new address[](1);
         collaterals[0] = address(0);
 
@@ -856,7 +856,7 @@ contract CollateralManagerTest is BaseTest {
         // set up and add second collateral
         vm.prank(owner);
         manager.addCollateral(address(collateral2), address(vault2));
-        Controller newController = new Controller(address(asset), 1e17, custodian, address(this));
+        Controller newController = new Controller(address(asset), address(staking), 1e17, custodian, address(this));
         address[] memory collaterals = new address[](2);
         collaterals[0] = address(collateral);
         collaterals[1] = address(collateral2);
@@ -1108,28 +1108,6 @@ contract CollateralManagerTest is BaseTest {
         vm.prank(curator);
         manager.deposit(address(collateral), 1000e18, 0);
         assertApproxEqAbs(manager.exposedTotalAssets(vault), 1000e18, VAULT_TOLERANCE);
-    }
-
-    function test_Revert_ClaimRewards() public {
-        bytes32[] memory proof = new bytes32[](2);
-        proof[0] = keccak256("p0");
-        proof[1] = keccak256("p1");
-
-        vm.expectPartialRevert(ICollateralManager.OnlyRevenueModule.selector);
-        manager.claimMorphoRewards(address(distributor), address(collateral), 1e18, proof);
-    }
-
-    function test_ClaimRewards() public {
-        bytes32[] memory proof = new bytes32[](2);
-        proof[0] = keccak256("p0");
-        proof[1] = keccak256("p1");
-
-        assertGt(collateral.balanceOf(address(distributor)), 1e18);
-
-        vm.prank(address(revenueModule));
-        manager.claimMorphoRewards(address(distributor), address(collateral), 1e18, proof);
-
-        assertEq(collateral.balanceOf(address(revenueModule)), 1e18);
     }
 
     function test_Revert_SetRevenueModule() public {

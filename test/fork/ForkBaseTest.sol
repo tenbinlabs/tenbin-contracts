@@ -29,7 +29,7 @@ contract ForkBaseTest is BaseTest {
     address dealer;
 
     // default fork block
-    uint256 forkBlock = 24398000;
+    uint256 forkBlock = 24535453;
 
     function setUp() public virtual override {
         setUpFork();

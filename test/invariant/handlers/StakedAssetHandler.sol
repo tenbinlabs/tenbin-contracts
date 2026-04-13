@@ -51,7 +51,7 @@ contract StakedAssetHandler is Test {
 
         // initiate cooldown
         vm.prank(user);
-        staking.cooldownShares(user, shares);
+        staking.cooldownShares(shares);
 
         // fast forward to end of cooldown
         vm.warp(block.timestamp + 7 days);
@@ -65,7 +65,7 @@ contract StakedAssetHandler is Test {
 
         // unstake
         vm.prank(user);
-        staking.unstake(user);
+        staking.unstake(user, 0);
     }
 
     function withdraw(uint256 assets) public {

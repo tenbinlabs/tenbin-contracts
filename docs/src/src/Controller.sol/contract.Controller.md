@@ -1,5 +1,5 @@
 # Controller
-[Git Source](https://github.com/tenbinlabs/contracts/blob/34d0d98c6959c0c67cf21488bdfb4b79f4ce3f2e/src/Controller.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/Controller.sol)
 
 **Inherits:**
 [IController](/src/interface/IController.sol/interface.IController.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), AccessControl, EIP712
@@ -26,6 +26,10 @@ A signer can maintain a list of approved recipients. Only approved recipients fo
 The controller never holds any tokens - collateral is held in a CollateralManager contract or off-ramped by a custodian account.
 An oracle is used as a backstop to prevent order price from deviating from the oracle price.
 However, order price is not determined by the oracle on-chain.
+Staked assets can be redeemed by specifying the staked asset address as part of the order.
+Redeeming staked assets requires approving the controller to spend staked assets.
+Mint and redemption limits are configurable per block. Limits are always denominated in asset amount.
+Setting the block mint limit to max uint will disable the limit
 The controller is intended to be the only account which can mint asset tokens. In the case a new controller is created,
 the old controller is deprecated and minting permission is set to the new controller.
 
@@ -97,9 +101,19 @@ Order typehash
 
 
 ```solidity
-bytes32 private constant ORDER_TYPEHASH = keccak256(
-    "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount)"
+bytes32 public constant ORDER_TYPEHASH = keccak256(
+    "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,address asset_token,uint256 asset_amount)"
 )
+```
+
+
+### CONTEXT_TYPEHASH
+Context typehash
+
+
+```solidity
+bytes32 public constant CONTEXT_TYPEHASH =
+    keccak256("Context(bytes32 order_hash,uint256 share_price,bool is_curated)")
 ```
 
 
@@ -117,16 +131,25 @@ Semantic version
 
 
 ```solidity
-string public constant VERSION = "1.0.0"
+string public constant VERSION = "1.2.0"
 ```
 
 
 ### asset
-Asset token this controller manages
+Asset token used for this controller
 
 
 ```solidity
 address public immutable asset
+```
+
+
+### stakedAsset
+Staked asset token used for this controller
+
+
+```solidity
+address public immutable stakedAsset
 ```
 
 
@@ -232,6 +255,51 @@ Oracle public oracle
 ```
 
 
+### blockMintLimit
+Asset mint limit per block
+
+
+```solidity
+uint256 blockMintLimit
+```
+
+
+### blockRedeemLimit
+Asset redeem limit per block
+
+
+```solidity
+uint256 blockRedeemLimit
+```
+
+
+### blockMints
+Asset amount minted for a block. Used to enforce mint limits.
+
+
+```solidity
+uint256 blockMints
+```
+
+
+### blockRedeems
+Asset amount redeemed for a block. Used to enforce redemption limits.
+
+
+```solidity
+uint256 blockRedeems
+```
+
+
+### blockNumber
+track block number to enforce limits
+
+
+```solidity
+uint256 blockNumber
+```
+
+
 ## Functions
 ### nonZeroAddress
 
@@ -248,7 +316,7 @@ Constructor
 
 
 ```solidity
-constructor(address asset_, uint256 ratio_, address custodian_, address owner_)
+constructor(address asset_, address stakedAsset_, uint256 ratio_, address custodian_, address owner_)
     EIP712("TenbinController", VERSION);
 ```
 **Parameters**
@@ -256,6 +324,7 @@ constructor(address asset_, uint256 ratio_, address custodian_, address owner_)
 |Name|Type|Description|
 |----|----|-----------|
 |`asset_`|`address`|Address of asset token|
+|`stakedAsset_`|`address`||
 |`ratio_`|`uint256`|Ratio of collateral transferred to custodian during mints|
 |`custodian_`|`address`|Custodian account|
 |`owner_`|`address`|Account to set as the DEFAULT_ADMIN_ROLE|
@@ -436,6 +505,24 @@ function setOracleAdapter(address newAdapter) external onlyRole(ADMIN_ROLE);
 |`newAdapter`|`address`|New oracle adapter|
 
 
+### setBlockMintLimit
+
+Set block mint limit
+
+
+```solidity
+function setBlockMintLimit(uint256 newBlockMintLimit) external onlyRole(DEFAULT_ADMIN_ROLE);
+```
+
+### setBlockRedeemLimit
+
+Set block redeem limit
+
+
+```solidity
+function setBlockRedeemLimit(uint256 newBlockRedeemLimit) external onlyRole(DEFAULT_ADMIN_ROLE);
+```
+
 ### rescueToken
 
 Rescue tokens sent to this contract
@@ -484,7 +571,12 @@ Mint asset tokens
 
 
 ```solidity
-function mint(Order calldata order, Signature calldata signature) external override onlyRole(MINTER_ROLE);
+function mint(
+    Order calldata order,
+    Signature calldata signature,
+    Context calldata context,
+    Signature calldata approval
+) external override;
 ```
 **Parameters**
 
@@ -492,6 +584,8 @@ function mint(Order calldata order, Signature calldata signature) external overr
 |----|----|-----------|
 |`order`|`Order`|Order data|
 |`signature`|`Signature`|Signature of hashed order|
+|`context`|`Context`|Context used to determine order execution options|
+|`approval`|`Signature`|ECDSA signature of context data|
 
 
 ### redeem
@@ -500,7 +594,12 @@ Redeem asset tokens
 
 
 ```solidity
-function redeem(Order calldata order, Signature calldata signature) external override onlyRole(MINTER_ROLE);
+function redeem(
+    Order calldata order,
+    Signature calldata signature,
+    Context calldata context,
+    Signature calldata approval
+) external override;
 ```
 **Parameters**
 
@@ -508,6 +607,8 @@ function redeem(Order calldata order, Signature calldata signature) external ove
 |----|----|-----------|
 |`order`|`Order`|Order data|
 |`signature`|`Signature`|ECDSA signature of hashed order|
+|`context`|`Context`|Context used to determine order execution options|
+|`approval`|`Signature`|ECDSA signature of context data|
 
 
 ### verifyNonce
@@ -543,7 +644,7 @@ function invalidateNonce(uint256 nonce) external;
 
 ### verifyOrder
 
-Verify an order signed with EIP712
+Verify a signed EIP712 order
 
 
 ```solidity
@@ -568,13 +669,29 @@ function verifyOrder(Order calldata order, Signature calldata signature)
 |`orderHash`|`bytes32`|Order hash of verified order|
 
 
+### verifyContext
+
+Verify a signed EIP712 context. Reverts if context is not signed by MINTER_ROLE
+
+
+```solidity
+function verifyContext(Context calldata context, Signature calldata approval) public view override;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`context`|`Context`|Context data|
+|`approval`|`Signature`|Signature of hashed context|
+
+
 ### hashOrder
 
 Get the EIP712 typed data hash of an order.
 
 
 ```solidity
-function hashOrder(Order calldata order) public view override returns (bytes32 digest);
+function hashOrder(Order calldata order) public view override returns (bytes32 orderHash);
 ```
 **Parameters**
 
@@ -586,7 +703,28 @@ function hashOrder(Order calldata order) public view override returns (bytes32 d
 
 |Name|Type|Description|
 |----|----|-----------|
-|`digest`|`bytes32`|orderHash EIP712 typed data hash of `order`|
+|`orderHash`|`bytes32`|EIP712 typed data hash of `order`|
+
+
+### hashContext
+
+Get the EIP712 typed data hash of a context.
+
+
+```solidity
+function hashContext(Context calldata context) public view override returns (bytes32 contextHash);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`context`|`Context`|Context data|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`contextHash`|`bytes32`|EIP712 typed data hash of `context`|
 
 
 ### encodeOrder
@@ -608,6 +746,27 @@ function encodeOrder(Order calldata order) public pure returns (bytes memory);
 |Name|Type|Description|
 |----|----|-----------|
 |`<none>`|`bytes`|ABI encoded order|
+
+
+### encodeContext
+
+Encode context data according to EIP712 specification
+
+
+```solidity
+function encodeContext(Context calldata context) public pure returns (bytes memory);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`context`|`Context`|Context data|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`bytes`|ABI encoded context|
 
 
 ### getDomainSeparator

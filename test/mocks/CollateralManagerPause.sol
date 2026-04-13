@@ -50,10 +50,6 @@ contract CollateralManagerPause is ICollateralManager, UUPSUpgradeable, AccessCo
         revert ContractPaused();
     }
 
-    function claimMorphoRewards(address, address, uint256, bytes32[] calldata) external pure {
-        revert ContractPaused();
-    }
-
     function revenueModule(address) external pure returns (address) {
         revert ContractPaused();
     }

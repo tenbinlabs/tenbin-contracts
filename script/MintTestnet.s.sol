@@ -24,9 +24,16 @@ contract MintTestnetScript is BaseScript {
     address internal constant RECIPIENT_ADDRESS = 0xFc8E0e6c28C8f6dD656dE0e9C0b0ecef598Fc9Ce;
     /// @notice Collateral address
     address internal constant COLLATERAL_ADDRESS = 0x81FF19CF5053856c2B9f2A6CB5FFc87b96C1e322;
+    /// @notice Asset address
+    address internal constant ASSET_ADDRESS = 0xe7a3cED90D3b5Dae794cF51dc33C5E986cC83515;
+    IController.Signature internal EMPTY_APPROVAL;
+    IController.Context internal EMPTY_CONTEXT;
 
     constructor() {
         broadcaster = vm.envOr({name: "MINTER_ADDRESS", defaultValue: address(0)});
+        EMPTY_APPROVAL =
+            IController.Signature({signature_type: IController.SignatureType.EIP712, signature_bytes: new bytes(0)});
+        EMPTY_CONTEXT = IController.Context({order_hash: 0x00, share_price: 0, is_curated: false});
     }
 
     /// @notice Get order for this mint from
@@ -40,6 +47,7 @@ contract MintTestnetScript is BaseScript {
             recipient: RECIPIENT_ADDRESS,
             collateral_token: COLLATERAL_ADDRESS,
             collateral_amount: 100_000e6, // 100k usdc
+            asset_token: ASSET_ADDRESS,
             asset_amount: 238e17 // 23.8k gold
         });
     }
@@ -62,7 +70,7 @@ contract MintTestnetScript is BaseScript {
         console2.logBytes(signature.signature_bytes);
 
         // perform mint
-        controller.mint(order, signature);
+        controller.mint(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
         console2.log("mint success.");
         console2.log("recipient: ", order.recipient);
     }

@@ -62,12 +62,4 @@ interface IRevenueModule {
     /// @param signer Signer account
     /// @param status Whether or not this signer is delegated
     function delegateSigner(address signer, bool status) external;
-
-    /// @notice Claim rewards from Morpho's Universal Rewards Distributor
-    /// @param distributor The URD contract address
-    /// @param rewardToken The reward token address (e.g., MORPHO)
-    /// @param claimable The total claimable amount from merkle tree
-    /// @param proof The merkle proof for this claim
-    function claimMorphoRewards(address distributor, address rewardToken, uint256 claimable, bytes32[] calldata proof)
-        external;
 }

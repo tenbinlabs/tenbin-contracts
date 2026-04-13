@@ -152,16 +152,4 @@ contract CollateralManagerEchidna is EchidnaBase {
             return true;
         }
     }
-
-    // claimMorphoRewards always revert unauthorized callers
-    function echidna_claimMorphoRewards_reverts_for_every_non_revenueModule_caller() public returns (bool) {
-        bytes32[] memory proof = new bytes32[](2);
-        proof[0] = keccak256("p0");
-        proof[1] = keccak256("p1");
-        try manager.claimMorphoRewards(address(1), address(2), 1e18, proof) {
-            return false;
-        } catch {
-            return true;
-        }
-    }
 }

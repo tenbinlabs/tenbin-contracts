@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {ForkBaseTest} from "../fork/ForkBaseTest.sol";
+import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {IAdapter} from "vault-v2/src/interfaces/IAdapter.sol";
 import {ICollateralManager} from "../../src/interface/ICollateralManager.sol";
 import {IController} from "../../src/interface/IController.sol";
@@ -124,9 +124,11 @@ contract MorphoForkTest is ForkBaseTest {
         // mint order with usdc
         IController.Order memory order = getMintOrder(usdc, 3600e6, 1e18, 0);
         IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
         vm.prank(minter);
-        controller.mint(order, signature);
+        controller.mint(order, signature, context, approval);
         assertEq(usdc.balanceOf(address(manager)), 3240e6);
         assertEq(usdc.balanceOf(custodian), 360e6);
         assertEq(asset.balanceOf(recipient), 1e18);
@@ -134,9 +136,11 @@ contract MorphoForkTest is ForkBaseTest {
         // mint order with usdt
         order = getMintOrder(usdt, 3600e6, 1e18, 1);
         signature = signOrder(payerKey, hashOrder(order));
+        context = getContext(hashOrder(order), 0, false);
+        approval = signContext(minterKey, hashContext(context));
 
         vm.prank(minter);
-        controller.mint(order, signature);
+        controller.mint(order, signature, context, approval);
         assertEq(usdt.balanceOf(address(manager)), 3240e6);
         assertEq(usdt.balanceOf(custodian), 360e6);
         assertEq(asset.balanceOf(recipient), 2e18);
@@ -187,11 +191,14 @@ contract MorphoForkTest is ForkBaseTest {
 
         // create redemption orders
         IController.Order memory order1 = getRedeemOrder(usdc, 3600e6, 1e18, 2);
-        bytes32 orderHash1 = controller.hashOrder(order1);
-        IController.Signature memory signature1 = signOrder(payerKey, orderHash1);
+        IController.Signature memory signature1 = signOrder(payerKey, hashOrder(order1));
+        IController.Context memory context1 = getContext(hashOrder(order1), 0, false);
+        IController.Signature memory approval1 = signContext(minterKey, hashContext(context1));
+
         IController.Order memory order2 = getRedeemOrder(usdt, 3600e6, 1e18, 3);
-        bytes32 orderHash2 = controller.hashOrder(order2);
-        IController.Signature memory signature2 = signOrder(payerKey, orderHash2);
+        IController.Signature memory signature2 = signOrder(payerKey, hashOrder(order2));
+        IController.Context memory context2 = getContext(hashOrder(order2), 0, false);
+        IController.Signature memory approval2 = signContext(minterKey, hashContext(context2));
 
         // create batch
         address[] memory targets = new address[](4);
@@ -202,8 +209,8 @@ contract MorphoForkTest is ForkBaseTest {
         targets[3] = address(controller);
         batch[0] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(usdc), 3600e6, UINT256_MAX);
         batch[1] = abi.encodeWithSelector(ICollateralManager.withdraw.selector, address(usdt), 3600e6, UINT256_MAX);
-        batch[2] = abi.encodeWithSelector(IController.redeem.selector, order1, signature1);
-        batch[3] = abi.encodeWithSelector(IController.redeem.selector, order2, signature2);
+        batch[2] = abi.encodeWithSelector(IController.redeem.selector, order1, signature1, context1, approval1);
+        batch[3] = abi.encodeWithSelector(IController.redeem.selector, order2, signature2, context2, approval2);
 
         // transfer tokens to payer for redemption
         resetPrank(recipient);
@@ -215,7 +222,7 @@ contract MorphoForkTest is ForkBaseTest {
         vm.stopPrank();
         assertEq(asset.balanceOf(payer), 0);
 
-        assertEq(usdc.balanceOf(recipient), 3600e6); //THIS CHECK IS FIALING
+        assertEq(usdc.balanceOf(recipient), 3600e6);
 
         assertEq(usdt.balanceOf(recipient), 3600e6);
 

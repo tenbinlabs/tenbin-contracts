@@ -2,14 +2,14 @@
 pragma solidity 0.8.30;
 
 import {Config} from "forge-std/Config.sol";
-import {DeployMock} from "../../script/DeployMock.s.sol";
+import {DeployDevelopmentMock} from "../../script/DeployDevelopmentMock.s.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Test} from "forge-std/Test.sol";
 
 // test deployment script
 // this requires .env is set up correctly
-contract DeployTest is Test, Config {
+contract DeployMockTest is Test, Config {
     using SafeERC20 for IERC20;
 
     // default values
@@ -31,17 +31,18 @@ contract DeployTest is Test, Config {
     bytes32 internal constant REVENUE_KEEPER_ROLE = keccak256("REVENUE_KEEPER_ROLE");
     bytes32 internal constant REWARDER_ROLE = keccak256("REWARDER_ROLE");
     bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
+    bytes32 internal constant INSTANT_UNSTAKER_ROLE = keccak256("INSTANT_UNSTAKER_ROLE");
 
     // variables
-    DeployMock.DeploymentResult deployment;
+    DeployDevelopmentMock.DeploymentResult deployment;
 
     function setUp() public {
-        DeployMock deployer = new DeployMock();
+        DeployDevelopmentMock deployer = new DeployDevelopmentMock();
         deployment = deployer.run();
     }
 
-    function test_DeployMock() public {
-        _loadConfig("./config/local.toml", false);
+    function test_DeployDevelopment() public {
+        _loadConfig("./config/local/local.toml", false);
         // check default admin roles
         assertEq(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
         assertEq(deployment.manager.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
@@ -49,10 +50,10 @@ contract DeployTest is Test, Config {
         assertEq(deployment.multicall.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
         assertEq(deployment.staking.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
         assertEq(
-            deployment.revenueModule.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true
+            deployment.revenue_module.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true
         );
         assertEq(
-            deployment.custodianModule.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true
+            deployment.custodian_module.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true
         );
 
         // check controller roles
@@ -65,33 +66,37 @@ contract DeployTest is Test, Config {
         assertEq(deployment.controller.hasRole(RESTRICTER_ROLE, config.get("restricter_role").toAddress()), true);
 
         // check manager roles
-        assertEq(deployment.manager.revenueModule(), address(deployment.revenueModule));
+        assertEq(deployment.manager.revenueModule(), address(deployment.revenue_module));
         assertEq(deployment.manager.hasRole(ADMIN_ROLE, config.get("admin_role").toAddress()), true);
         assertEq(deployment.manager.hasRole(CURATOR_ROLE, config.get("curator_role").toAddress()), true);
+        assertEq(deployment.manager.hasRole(CURATOR_ROLE, address(deployment.multicall)), true);
+        assertEq(deployment.manager.hasRole(CURATOR_ROLE, address(deployment.controller)), true);
         assertEq(deployment.manager.hasRole(REBALANCER_ROLE, config.get("rebalancer_role").toAddress()), true);
         assertEq(deployment.manager.hasRole(GATEKEEPER_ROLE, config.get("gatekeeper_role").toAddress()), true);
         assertEq(deployment.manager.hasRole(CAP_ADJUSTER_ROLE, config.get("cap_adjuster_role").toAddress()), true);
 
         // check staking roles
         assertEq(deployment.staking.hasRole(REWARDER_ROLE, config.get("rewarder_role").toAddress()), true);
-        assertEq(deployment.staking.hasRole(REWARDER_ROLE, address(deployment.revenueModule)), true);
+        assertEq(deployment.staking.hasRole(REWARDER_ROLE, address(deployment.revenue_module)), true);
         assertEq(deployment.staking.hasRole(ADMIN_ROLE, config.get("admin_role").toAddress()), true);
         assertEq(deployment.staking.hasRole(RESTRICTER_ROLE, config.get("restricter_role").toAddress()), true);
+        assertEq(deployment.staking.hasRole(CAP_ADJUSTER_ROLE, config.get("cap_adjuster_role").toAddress()), true);
+        assertEq(deployment.staking.hasRole(INSTANT_UNSTAKER_ROLE, address(deployment.controller)), true);
 
         // check multicall roles
         assertEq(deployment.multicall.hasRole(MULTICALLER_ROLE, config.get("multicaller_role").toAddress()), true);
 
         // check revenue manager roles
         assertEq(
-            deployment.revenueModule.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true
+            deployment.revenue_module.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true
         );
         assertEq(
-            deployment.revenueModule.hasRole(REVENUE_KEEPER_ROLE, config.get("revenue_keeper_role").toAddress()), true
+            deployment.revenue_module.hasRole(REVENUE_KEEPER_ROLE, config.get("revenue_keeper_role").toAddress()), true
         );
 
         // check custodian module roles
         assertEq(
-            deployment.custodianModule.hasRole(CUSTODIAN_KEEPER_ROLE, config.get("custodian_keeper_role").toAddress()),
+            deployment.custodian_module.hasRole(CUSTODIAN_KEEPER_ROLE, config.get("custodian_keeper_role").toAddress()),
             true
         );
 
@@ -110,23 +115,23 @@ contract DeployTest is Test, Config {
             assertFalse(deployment.staking.hasRole(REWARDER_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.staking.hasRole(ADMIN_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.multicall.hasRole(MULTICALLER_ROLE, config.get("deployer").toAddress()));
-            assertFalse(deployment.revenueModule.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
-            assertFalse(deployment.revenueModule.hasRole(REVENUE_KEEPER_ROLE, config.get("deployer").toAddress()));
-            assertFalse(deployment.custodianModule.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
+            assertFalse(deployment.revenue_module.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
+            assertFalse(deployment.revenue_module.hasRole(REVENUE_KEEPER_ROLE, config.get("deployer").toAddress()));
+            assertFalse(deployment.custodian_module.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
         }
 
         // check controller is correctly configured
         assertEq(deployment.controller.ratio(), DEFAULT_RATIO);
-        assertEq(deployment.controller.custodian(), address(deployment.custodianModule));
+        assertEq(deployment.controller.custodian(), address(deployment.custodian_module));
         assertEq(deployment.controller.manager(), address(deployment.manager));
 
         // check manager is correctly configured
         assertEq(deployment.manager.controller(), address(deployment.controller));
-        assertEq(deployment.manager.swapModule(), address(deployment.swapModule));
+        assertEq(deployment.manager.swapModule(), address(deployment.swap_module));
 
         // check swap module is correctly configured
-        assertEq(deployment.swapModule.manager(), address(deployment.manager));
-        assertEq(deployment.swapModule.router(), address(deployment.router));
+        assertEq(deployment.swap_module.manager(), address(deployment.manager));
+        assertEq(deployment.swap_module.router(), address(deployment.one_inch_router));
 
         // check staking is correctly configured
         (
@@ -137,9 +142,9 @@ contract DeployTest is Test, Config {
         assertEq(deployment.staking.cooldownPeriod(), DEFAULT_COOLDOWN_PERIOD);
 
         // check revenue module is correctly configured
-        assertEq(deployment.revenueModule.manager(), address(deployment.manager));
-        assertEq(deployment.revenueModule.staking(), address(deployment.staking));
-        assertEq(deployment.revenueModule.asset(), address(deployment.asset));
-        assertEq(deployment.revenueModule.controller(), address(deployment.controller));
+        assertEq(deployment.revenue_module.manager(), address(deployment.manager));
+        assertEq(deployment.revenue_module.staking(), address(deployment.staking));
+        assertEq(deployment.revenue_module.asset(), address(deployment.asset));
+        assertEq(deployment.revenue_module.controller(), address(deployment.controller));
     }
 }

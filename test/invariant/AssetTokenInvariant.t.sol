@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {AssetTokenHandler} from "../invariant/handlers/AssetTokenHandler.sol";
+import {AssetTokenHandler} from "./handlers/AssetTokenHandler.sol";
 import {BaseTest} from "../BaseTest.sol";
 
 // forge test --mc AssetTokenInvariantsTest -vvvv

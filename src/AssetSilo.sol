@@ -40,8 +40,9 @@ contract AssetSilo {
     /// @notice Cancel cooldown for an account by minting new shares
     /// @param account Account to mint new staking shares for
     /// @param amount Amount of assets to deposit
-    function cancel(address account, uint256 amount) external {
+    /// @return shares Amount of shares minted by this cancellation
+    function cancel(address account, uint256 amount) external returns (uint256 shares) {
         if (msg.sender != staking) revert OnlyStaking();
-        IERC4626(staking).deposit(amount, account);
+        return IERC4626(staking).deposit(amount, account);
     }
 }

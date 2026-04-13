@@ -1,8 +1,8 @@
 # SpokeERC20
-[Git Source](https://github.com/tenbinlabs/contracts/blob/34d0d98c6959c0c67cf21488bdfb4b79f4ce3f2e/src/external/chainlink/SpokeERC20.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/external/chainlink/SpokeERC20.sol)
 
 **Inherits:**
-[IBurnMintERC20](/src/interface/IBurnMintERC20.sol/interface.IBurnMintERC20.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), ERC20Permit, AccessControl
+[IBurnMintERC20](/src/interface/IBurnMintERC20.sol/interface.IBurnMintERC20.md), ERC20Permit, AccessControl
 
 **Title:**
 Spoke ERC20
@@ -21,34 +21,7 @@ bytes32 public constant MINTER_BURNER_ROLE = keccak256("MINTER_BURNER_ROLE")
 ```
 
 
-### RESTRICTER_ROLE
-Restricter role can change restricted status of accounts
-
-
-```solidity
-bytes32 public constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE")
-```
-
-
-### isRestricted
-Mapping of restricted accounts
-
-
-```solidity
-mapping(address => bool) public isRestricted
-```
-
-
 ## Functions
-### nonRestricted
-
-Reverts if account is restricted
-
-
-```solidity
-modifier nonRestricted(address account) ;
-```
-
 ### constructor
 
 Constructor
@@ -74,7 +47,7 @@ this function increases the total supply.
 
 
 ```solidity
-function mint(address account, uint256 amount) external nonRestricted(account) onlyRole(MINTER_BURNER_ROLE);
+function mint(address account, uint256 amount) external onlyRole(MINTER_BURNER_ROLE);
 ```
 **Parameters**
 
@@ -92,7 +65,7 @@ this function decreases the total supply.
 
 
 ```solidity
-function burn(uint256 amount) external nonRestricted(msg.sender);
+function burn(uint256 amount) external;
 ```
 **Parameters**
 
@@ -109,7 +82,7 @@ this function decreases the total supply.
 
 
 ```solidity
-function burn(address account, uint256 amount) external nonRestricted(account) onlyRole(MINTER_BURNER_ROLE);
+function burn(address account, uint256 amount) external onlyRole(MINTER_BURNER_ROLE);
 ```
 **Parameters**
 
@@ -127,7 +100,7 @@ this function decreases the total supply.
 
 
 ```solidity
-function burnFrom(address account, uint256 amount) external nonRestricted(account) onlyRole(MINTER_BURNER_ROLE);
+function burnFrom(address account, uint256 amount) external onlyRole(MINTER_BURNER_ROLE);
 ```
 **Parameters**
 
@@ -136,49 +109,4 @@ function burnFrom(address account, uint256 amount) external nonRestricted(accoun
 |`account`|`address`|The address to burn tokens from.|
 |`amount`|`uint256`|The number of tokens to be burned.|
 
-
-### setIsRestricted
-
-Sets or unsets an address as restricted
-
-
-```solidity
-function setIsRestricted(address account, bool newStatus) external onlyRole(RESTRICTER_ROLE);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`account`|`address`|The address to update|
-|`newStatus`|`bool`|The new restriction status|
-
-
-### transfer
-
-Override transfer function to prevent restricted accounts from transferring
-
-
-```solidity
-function transfer(address to, uint256 value)
-    public
-    override(IERC20, ERC20)
-    nonRestricted(msg.sender)
-    nonRestricted(to)
-    returns (bool);
-```
-
-### transferFrom
-
-Override transferFrom function to prevent restricted accounts from transferring
-
-
-```solidity
-function transferFrom(address from, address to, uint256 value)
-    public
-    override(IERC20, ERC20)
-    nonRestricted(from)
-    nonRestricted(to)
-    nonRestricted(msg.sender)
-    returns (bool);
-```
 

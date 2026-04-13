@@ -3,10 +3,12 @@ pragma solidity 0.8.30;
 
 import {AssetToken} from "../../src/AssetToken.sol";
 import {Controller} from "../../src/Controller.sol";
+import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IAccessControl} from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {MockERC4626} from "../mocks/MockERC4626.sol";
+import {StakedAsset} from "../../src/StakedAsset.sol";
 
 /// Base echidna contract containing commonly reuse data
 contract EchidnaBase {
@@ -32,10 +34,18 @@ contract EchidnaBase {
     // contracts
     AssetToken asset;
     Controller controller;
+    StakedAsset stakedAsset;
 
     constructor() {
-        asset = new AssetToken("AssetToken", "SYN", address(this));
-        controller = new Controller(address(asset), DEFAULT_RATIO, address(this), address(this));
+        asset = new AssetToken("AssetToken", "tAsset", address(this));
+        // deploy staking behind a proxy
+        address stakingImplementation = address(new StakedAsset());
+        bytes memory data = abi.encodeWithSelector(
+            StakedAsset.initialize.selector, "Staked Asset Token", "stAsset", asset, address(this), 0, address(0)
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(stakingImplementation, data);
+        stakedAsset = StakedAsset(address(proxy));
+        controller = new Controller(address(asset), address(stakedAsset), DEFAULT_RATIO, address(this), address(this));
         collateral = new MockERC20("CollateralToken", "CLT", 6);
         collateral2 = new MockERC20("CollateralToken2", "CLT2", 18);
         vault = new MockERC4626("Collateral Vault", "vCLT", collateral);

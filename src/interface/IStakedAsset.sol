@@ -28,14 +28,20 @@ interface IStakedAsset {
     error CooldownExceededMaxWithdraw();
     /// @notice Cooldown has not completed
     error CooldownInProgress();
+    /// @notice Instant redeem amount exceeds cap
+    error ExceedsInstantUnstakeCap();
     /// @notice Max cooldown period exceeded
     error ExceedsMaxCooldownPeriod();
+    /// @notice Exceeds max instant redeem fee
+    error ExceedsMaxInstantUnstakeFee();
     /// @notice Max vesting period exceeded
     error ExceedsMaxVestingPeriod();
     /// @notice Cannot cooldown zero assets or shares
     error InvalidCooldownAmount();
     /// @notice Cannot rescue asset token from staking contract
     error InvalidRescueToken();
+    /// @notice Cooldown does not exist for this account and ID
+    error NonexistentCooldown();
     /// @notice Only restricted account
     error NonRestrictedAccount();
     /// @notice Only zero address
@@ -44,6 +50,10 @@ interface IStakedAsset {
     error RequiresCooldown();
     /// @notice Min cooldown period subceeded
     error SubceedsMinVestingPeriod();
+    /// @notice Cooldown has already been unstaked or does not exist
+    error ZeroCooldownAssets();
+    /// @notice Fee recipient cannot be address(0) or this contract
+    error InvalidFeeRecipient();
 
     /// @notice Emitted when new rewards are received by this contract
     /// @param assets Amount of asset tokens rewarded
@@ -55,20 +65,33 @@ interface IStakedAsset {
     event VestingStarted(uint256 total, uint256 end);
 
     /// @notice Emitted when an account enters cooldown for `amount`
-    /// @param account Account which entered cooldown
+    /// @param owner Account which entered cooldown
+    /// @param shares Amount of shares redeemed to begin cooldown
     /// @param assets Amount of asset tokens to cooldown
-    event CooldownStarted(address indexed account, uint256 assets);
+    /// @param id Owner unique identifier for cooldown
+    /// @param cooldownEnd Timestamp at which assets can be unstaked
+    event CooldownStarted(address indexed owner, uint256 assets, uint256 shares, uint256 id, uint256 cooldownEnd);
 
     /// @notice Emitted when `from` unstakes and transfers `amount` to `to`
-    /// @param from Account which is unstaking
-    /// @param to Account to receive assets
+    /// @param owner Account which is unstaking assets
+    /// @param receiver Account to receive assets
     /// @param assets Amount of assets transferred
-    event Unstake(address indexed from, address to, uint256 assets);
+    /// @param id Owner unique identifier for this cooldown
+    event Unstake(address indexed owner, address receiver, uint256 assets, uint256 id);
 
-    /// @notice Emitted when an account cancels a cooldown
-    /// @param account Account which cancelled cooldown
+    /// @notice Emitted when `from` unstakes and transfers `amount` to `to`
+    /// @param owner Account which is unstaking assets
+    /// @param receiver Account to receive assets
+    /// @param assets Amount of assets transferred
+    /// @param shares Amount of shares redeemed
+    event InstantUnstake(address indexed owner, address receiver, uint256 assets, uint256 shares);
+
+    /// @notice Emitted when an account cancels a cooldown and recevies newly minted shares
+    /// @param owner Account which cancelled cooldown
     /// @param assets Amount of assets returned to the staking pool
-    event CooldownCancelled(address indexed account, uint256 assets);
+    /// @param shares Amount of new shares minted for owner
+    /// @param id Owner unique identifier for the cooldown which was cancelled
+    event CooldownCancelled(address indexed owner, uint256 assets, uint256 shares, uint256 id);
 
     /// @notice Emitted when the vesting period gets updated
     /// @param newVestingPeriod New vesting period
@@ -78,31 +101,61 @@ interface IStakedAsset {
     /// @param newCooldownPeriod New cooldown period
     event CooldownPeriodUpdated(uint256 newCooldownPeriod);
 
+    /// @notice Emitted when the instant unstake cap is updated
+    /// @param newInstantUnstakeCap New instant unstake cap
+    event InstantUnstakeCapChanged(uint256 newInstantUnstakeCap);
+
+    /// @notice Emitted when the instant unstake fee is updated
+    /// @param newInstantUnstakeFee New instant unstake fee
+    event InstantUnstakeFeeChanged(uint256 newInstantUnstakeFee);
+
+    /// @notice Emitted when the fee recipient is changed
+    /// @param newFeeRecipient New fee recipeint
+    event FeeRecipientUpdated(address newFeeRecipient);
+
     /// @notice Get pending rewards for this contract
     /// @return pending Pending unvested token reward
     function pendingRewards() external view returns (uint256 pending);
 
     /// @notice Enter cooldown for amount of `shares`
     /// Assets in cooldown are transferred to the silo contract and withdrawable at the end of cooldown
-    /// If a cooldown already exists, the cooldown asset amount is increased and cooldown resets
     /// @dev WARNING: Once an account enters cooldown, assets are locked and do not earn yield
     /// until the cooldown period has passed. Once cooldown has passed, call unstake() to withdraw tokens.
+    /// The cancelCooldown() function can be used to cancel an active cooldown and mint shares from the assets in cooldown.
     /// @param shares Amount of shares to enter cooldown
     /// @return assets Amount of assets withdrawn for cooldown
-    function cooldownShares(address owner, uint256 shares) external returns (uint256 assets);
+    /// @return id Owner unique identifier for this cooldown
+    function cooldownShares(uint256 shares) external returns (uint256 assets, uint256 id);
 
     /// @notice Enter cooldown for amount of `amount`
     /// Assets in cooldown are transferred the silo contract and withdrawable at the end of cooldown
-    /// If a cooldown already exists, the cooldown asset amount is increased and cooldown resets
     /// @dev WARNING: Once an account enters cooldown, assets are locked and do not earn yield
     /// until the cooldown period has passed. Once cooldown has passed, call unstake() to withdraw tokens.
+    /// The cancelCooldown() function can be used to cancel an active cooldown and mint shares from the assets in cooldown.
     /// @param assets Amount of asset tokens to enter cooldown
     /// @return shares Amount of shares redeemed for cooldown
-    function cooldownAssets(address owner, uint256 assets) external returns (uint256 shares);
+    /// @return id Owner unique identifier for this cooldown
+    function cooldownAssets(uint256 assets) external returns (uint256 shares, uint256 id);
 
-    /// @notice Unstake all assets that are in cooldown
+    /// @notice Cancel a cooldown for an account
+    /// @dev This will mint new shares using assets in the silo
+    /// @param id Owner unique identifier for this cooldown
+    /// @return shares Amount of shares minted to `owner` when cancelling cooldown
+    function cancelCooldown(uint256 id) external returns (uint256 shares);
+
+    /// @notice Unstake assets in cooldown for a specific ID
     /// @param to Account to receive assets
-    function unstake(address to) external;
+    /// @param id Unique identifier for account in cooldown
+    function unstake(address to, uint256 id) external;
+
+    /// @notice Force withdraw assets by bypassing cooldown
+    /// If set, enforces an instant unstaking cap and charges a fee
+    /// Can only be initiated by INSTANT_UNSTAKER_ROLE
+    /// @param assets Amount of assets to instant withdraw
+    /// @param receiver Account to receive assets
+    /// @param owner Account which hold staked assets
+    /// @return shares Shares redeemed by this function
+    function instantUnstake(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 
     /// @notice Adds new rewards to the contract and extends vesting period
     /// @dev WARNING: This resets the vesting end time to block.timestamp + vesting.period,

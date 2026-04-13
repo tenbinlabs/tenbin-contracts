@@ -1,5 +1,5 @@
 # IController
-[Git Source](https://github.com/tenbinlabs/contracts/blob/34d0d98c6959c0c67cf21488bdfb4b79f4ce3f2e/src/interface/IController.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/interface/IController.sol)
 
 **Title:**
 IController
@@ -74,9 +74,30 @@ function hashOrder(Order calldata order) external view returns (bytes32 orderHas
 |`orderHash`|`bytes32`|EIP712 typed data hash of `order`|
 
 
+### hashContext
+
+Get the EIP712 typed data hash of a context.
+
+
+```solidity
+function hashContext(Context calldata context) external view returns (bytes32 contextHash);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`context`|`Context`|Context data|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`contextHash`|`bytes32`|EIP712 typed data hash of `context`|
+
+
 ### verifyOrder
 
-Verify an order signed with EIP712
+Verify a signed EIP712 order
 
 
 ```solidity
@@ -98,6 +119,22 @@ function verifyOrder(Order calldata order, Signature calldata signature)
 |----|----|-----------|
 |`signer`|`address`|Signer of this order|
 |`orderHash`|`bytes32`|Order hash of verified order|
+
+
+### verifyContext
+
+Verify a signed EIP712 context. Reverts if context is not signed by MINTER_ROLE
+
+
+```solidity
+function verifyContext(Context calldata context, Signature calldata approval) external view;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`context`|`Context`|Context data|
+|`approval`|`Signature`|Signature of hashed context|
 
 
 ### verifyNonce
@@ -122,7 +159,12 @@ Mint asset tokens
 
 
 ```solidity
-function mint(Order calldata order, Signature calldata signature) external;
+function mint(
+    Order calldata order,
+    Signature calldata signature,
+    Context calldata context,
+    Signature calldata approval
+) external;
 ```
 **Parameters**
 
@@ -130,6 +172,8 @@ function mint(Order calldata order, Signature calldata signature) external;
 |----|----|-----------|
 |`order`|`Order`|Order data|
 |`signature`|`Signature`|Signature of hashed order|
+|`context`|`Context`|Context used to determine order execution options|
+|`approval`|`Signature`|ECDSA signature of context data|
 
 
 ### redeem
@@ -138,7 +182,12 @@ Redeem asset tokens
 
 
 ```solidity
-function redeem(Order calldata order, Signature calldata signature) external;
+function redeem(
+    Order calldata order,
+    Signature calldata signature,
+    Context calldata context,
+    Signature calldata approval
+) external;
 ```
 **Parameters**
 
@@ -146,6 +195,8 @@ function redeem(Order calldata order, Signature calldata signature) external;
 |----|----|-----------|
 |`order`|`Order`|Order data|
 |`signature`|`Signature`|ECDSA signature of hashed order|
+|`context`|`Context`|Context used to determine order execution options|
+|`approval`|`Signature`|ECDSA signature of context data|
 
 
 ## Events
@@ -155,12 +206,14 @@ Event emitted when an asset is minted
 
 ```solidity
 event Mint(
+    address executor,
     address indexed signer,
     uint256 nonce,
     address indexed payer,
     address indexed recipient,
     address collateralToken,
     uint256 collateralAmount,
+    address assetToken,
     uint256 mintAmount
 );
 ```
@@ -169,12 +222,14 @@ event Mint(
 
 |Name|Type|Description|
 |----|----|-----------|
+|`executor`|`address`|Account which executes the order|
 |`signer`|`address`|Signer account which signed the order|
 |`nonce`|`uint256`|Nonce used by signer|
 |`payer`|`address`|Payer account which provided collateral|
 |`recipient`|`address`|Recipient account which received assets|
 |`collateralToken`|`address`|Collateral used for this mint|
 |`collateralAmount`|`uint256`|Collateral amount sent|
+|`assetToken`|`address`|Asset token used for this mint|
 |`mintAmount`|`uint256`|Amount of asset tokens minted|
 
 ### Redeem
@@ -183,12 +238,14 @@ Event emitted when an asset is redeemed
 
 ```solidity
 event Redeem(
+    address executor,
     address indexed signer,
     uint256 nonce,
     address indexed payer,
     address indexed recipient,
     address collateralToken,
     uint256 collateralAmount,
+    address assetToken,
     uint256 redeemAmount
 );
 ```
@@ -197,12 +254,14 @@ event Redeem(
 
 |Name|Type|Description|
 |----|----|-----------|
+|`executor`|`address`|Account which executes the order|
 |`signer`|`address`|Signer account which signed the order|
 |`nonce`|`uint256`|Nonce used by signer|
 |`payer`|`address`|Payer account which provided assets|
 |`recipient`|`address`|Recipient account which received collateral|
 |`collateralToken`|`address`|Collateral used for this redeem|
 |`collateralAmount`|`uint256`|Collateral amount received|
+|`assetToken`|`address`|Asset token used for this redeem|
 |`redeemAmount`|`uint256`|Amount of asset redeemed|
 
 ### MintRedeemPauseStatusChanged
@@ -389,6 +448,30 @@ Unsupported collateral type
 error CollateralNotSupported();
 ```
 
+### ContextOrderHashMisMatch
+Context order hash does not match order hash
+
+
+```solidity
+error ContextOrderHashMisMatch();
+```
+
+### ExceedsBlockMintLimit
+Exceeds block mint limit
+
+
+```solidity
+error ExceedsBlockMintLimit();
+```
+
+### ExceedsBlockRedeemLimit
+Exceeds block redeem limit
+
+
+```solidity
+error ExceedsBlockRedeemLimit();
+```
+
 ### ExceedsOracleDeltaTolerance
 Order price exceeds oracle tolerance
 
@@ -405,12 +488,26 @@ Emergency Pause
 error FMLPause();
 ```
 
+### InvalidApproval
+
+```solidity
+error InvalidApproval();
+```
+
 ### InvalidAssetAmount
 Invalid asset amount
 
 
 ```solidity
 error InvalidAssetAmount();
+```
+
+### InvalidAssetToken
+Invalid asset token
+
+
+```solidity
+error InvalidAssetToken();
 ```
 
 ### InvalidCollateralAmount
@@ -427,6 +524,14 @@ Collateral token has an invalid number of decimals
 
 ```solidity
 error InvalidCollateralDecimals();
+```
+
+### InvalidERC712Signature
+Invalid EIP712 signature
+
+
+```solidity
+error InvalidERC712Signature();
 ```
 
 ### InvalidERC1271Signature
@@ -475,6 +580,22 @@ Invalid recipient account
 
 ```solidity
 error InvalidRecipient();
+```
+
+### InvalidSharePrice
+Invalid share price
+
+
+```solidity
+error InvalidSharePrice();
+```
+
+### InvalidSignatureType
+Invalid signature type
+
+
+```solidity
+error InvalidSignatureType();
 ```
 
 ### InvalidSigner
@@ -557,6 +678,7 @@ struct Order {
     address recipient;
     address collateral_token;
     uint256 collateral_amount;
+    address asset_token;
     uint256 asset_amount;
 }
 ```
@@ -572,7 +694,28 @@ struct Order {
 |`recipient`|`address`|Account to transfer tokens to|
 |`collateral_token`|`address`|Collateral token|
 |`collateral_amount`|`uint256`|Amount of collateral|
+|`asset_token`|`address`|Asset token for this order - either asset or staked asset|
 |`asset_amount`|`uint256`|Amount of asset tokens|
+
+### Context
+Context is signed by a minter and used during order execution
+
+
+```solidity
+struct Context {
+    bytes32 order_hash;
+    uint256 share_price;
+    bool is_curated;
+}
+```
+
+**Properties**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`order_hash`|`bytes32`|Hash of order for this context|
+|`share_price`|`uint256`|Share price used for atomic vault curation|
+|`is_curated`|`bool`|Flag to determine whether or not an order execution includes vault curation|
 
 ### Oracle
 Oracle data structure to hold oracle adapter and tolerance

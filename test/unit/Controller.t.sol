@@ -22,7 +22,7 @@ contract ControllerTest is BaseTest {
 
     function test_Revert_SetUp() public {
         vm.expectRevert(IController.InvalidRatio.selector);
-        new Controller(address(asset), 1e18 + 1, custodian, owner);
+        new Controller(address(asset), address(staking), 1e18 + 1, custodian, owner);
     }
 
     function test_SetUp() public view {
@@ -36,9 +36,6 @@ contract ControllerTest is BaseTest {
     }
 
     function test_Revert_AccessControl(address account) public {
-        IController.Order memory emptyOrder;
-        IController.Signature memory signature;
-
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         controller.setSignerStatus(account, true);
 
@@ -53,12 +50,6 @@ contract ControllerTest is BaseTest {
 
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         controller.setRatio(DEFAULT_RATIO);
-
-        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        controller.mint(emptyOrder, signature);
-
-        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        controller.redeem(emptyOrder, signature);
     }
 
     function test_GetAsset() public view {
@@ -66,7 +57,7 @@ contract ControllerTest is BaseTest {
     }
 
     function test_Version() public view {
-        assertEq("1.0.0", controller.version());
+        assertEq(keccak256(abi.encodePacked("1.2.0")), keccak256(abi.encodePacked(controller.version())));
     }
 
     function test_HashOrder() public view {
@@ -82,10 +73,25 @@ contract ControllerTest is BaseTest {
         assertEq(orderHash, expectedDigest, "EIP712 hash mismatch");
     }
 
+    function test_HashContext() public view {
+        IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        bytes32 orderHash = hashOrder(order);
+        IController.Context memory context = getContext(orderHash, 1e18, true);
+        bytes32 contextHash = hashContext(context);
+
+        // Manually compute EIP712 hash
+        bytes32 domainSeparator = controller.getDomainSeparator();
+        bytes32 structHash = keccak256(controller.encodeContext(context));
+
+        bytes32 expectedDigest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+
+        assertEq(contextHash, expectedDigest, "EIP712 hash mismatch");
+    }
+
     function test_EncodeOrder() public view {
         IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
         bytes32 orderTypeHash = keccak256(
-            "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount)"
+            "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,address asset_token,uint256 asset_amount)"
         );
         bytes memory expected = abi.encode(
             orderTypeHash,
@@ -96,10 +102,24 @@ contract ControllerTest is BaseTest {
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
+            order.asset_token,
             order.asset_amount
         );
 
         bytes memory actual = controller.encodeOrder(order);
+
+        assertEq(keccak256(actual), keccak256(expected), "Encoded bytes do not match expected encoding");
+    }
+
+    function test_EncodeContext() public view {
+        IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        bytes32 orderHash = hashOrder(order);
+        IController.Context memory context = getContext(orderHash, 1e18, true);
+
+        bytes32 contextTypeHash = keccak256("Context(bytes32 order_hash,uint256 share_price,bool is_curated)");
+        bytes memory expected = abi.encode(contextTypeHash, context.order_hash, context.share_price, context.is_curated);
+
+        bytes memory actual = controller.encodeContext(context);
 
         assertEq(keccak256(actual), keccak256(expected), "Encoded bytes do not match expected encoding");
     }
@@ -207,6 +227,23 @@ contract ControllerTest is BaseTest {
         vm.expectRevert(IController.InvalidRecipient.selector);
         controller.verifyOrder(order, signature);
 
+        // Invalid signature type
+        order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        signature = signOrder(payerKey, hashOrder(order));
+
+        bytes memory data = abi.encodeWithSelector(
+            controller.verifyOrder.selector,
+            order,
+            uint8(3), // invalid SignatureType
+            bytes("")
+        );
+
+        vm.expectRevert(IController.InvalidSignatureType.selector);
+        (bool success,) = address(controller).call(data);
+        assertFalse(success);
+
+        controller.verifyOrder(order, signature);
+
         // InvalidRecipient recipient
         vm.stopPrank();
         vm.prank(payer);
@@ -238,11 +275,18 @@ contract ControllerTest is BaseTest {
         vm.expectRevert(IController.InvalidCollateralAmount.selector);
         controller.verifyOrder(order, signature);
 
-        // InvalidAssetAmount
+        // InvalidAssetToken
+        order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        order.asset_token = address(collateral);
+        signature = signOrder(payerKey, hashOrder(order));
+        vm.startPrank(minter);
+        vm.expectRevert(IController.InvalidAssetToken.selector);
+        controller.verifyOrder(order, signature);
+
+        // Invalid asset amount
         order = getMintOrder(collateral, 10000e6, 3e18, 0);
         order.asset_amount = 0;
         signature = signOrder(payerKey, hashOrder(order));
-        vm.startPrank(minter);
         vm.expectRevert(IController.InvalidAssetAmount.selector);
         controller.verifyOrder(order, signature);
 
@@ -284,6 +328,118 @@ contract ControllerTest is BaseTest {
         vm.stopPrank();
     }
 
+    function test_verifyContext() public view {
+        IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        bytes32 orderHash = hashOrder(order);
+        IController.Context memory context = getContext(orderHash, 1e18, true);
+        bytes32 contextHash = hashContext(context);
+        IController.Signature memory signedContext = signContext(minterKey, contextHash);
+
+        // should succeed
+        controller.verifyContext(context, signedContext);
+    }
+
+    function test_Revert_VerifyContext() public {
+        IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        bytes32 orderHash = hashOrder(order);
+        IController.Context memory context = getContext(orderHash, 1e18, true);
+        bytes32 contextHash = hashContext(context);
+
+        // incorrect signer
+        IController.Signature memory signedContext = signContext(payerKey, contextHash);
+
+        // create bad EIP712 signature
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(payerKey, hashContext(context));
+        IController.Signature memory badSignature = IController.Signature({
+            signature_type: IController.SignatureType.EIP712, signature_bytes: abi.encodePacked(r, s, uint8(0x00))
+        });
+
+        // ensure bad signature is reverted
+        vm.expectRevert(ECDSA.ECDSAInvalidSignature.selector);
+        controller.verifyContext(context, badSignature);
+
+        (v, r, s) = vm.sign(minterKey, contextHash);
+        IController.Signature memory badSignatureType = IController.Signature({
+            signature_type: IController.SignatureType.ERC1271, signature_bytes: abi.encodePacked(r, s, v)
+        });
+
+        // fail if wrong signature type
+        vm.expectRevert(IController.InvalidSignatureType.selector);
+        controller.verifyContext(context, badSignatureType);
+
+        // incorrect signer
+        vm.expectRevert(IController.InvalidApproval.selector);
+        controller.verifyContext(context, signedContext);
+
+        // invalid signature length
+        signedContext.signature_bytes = "0x0";
+        vm.expectRevert(IController.InvalidERC712Signature.selector);
+        controller.verifyContext(context, signedContext);
+
+        // invalid share price
+        order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        orderHash = hashOrder(order);
+        context = getContext(orderHash, 0, true);
+        contextHash = hashContext(context);
+
+        // incorrect signer
+        signedContext = signContext(minterKey, contextHash);
+        vm.expectRevert(IController.InvalidSharePrice.selector);
+        controller.verifyContext(context, signedContext);
+    }
+
+    function test_Revert_Mint_ContextOrderHashMisMatch() public {
+        IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        IController.Order memory order2 = getMintOrder(collateral, 10000e6, 1e18, 0); // different hash
+        bytes32 orderHash = hashOrder(order);
+        bytes32 orderHash2 = hashOrder(order2);
+        IController.Context memory context = getContext(orderHash2, 1e18, true);
+        bytes32 contextHash = hashContext(context);
+
+        // whitelist payer and recipient
+        allowSigner(payer);
+        addRecipient(payer, recipient);
+
+        // mint some collateral tokens and approve controller
+        collateral.mint(payer, 10000e6);
+        approveController(collateral, payer, 10000e6);
+
+        // sign order and context hashes
+        IController.Signature memory signedOrder = signOrder(payerKey, orderHash);
+        IController.Signature memory signedContext = signContext(minterKey, contextHash);
+
+        // revert if order hash mismatch
+        vm.expectRevert(IController.ContextOrderHashMisMatch.selector);
+        vm.prank(minter);
+        controller.mint(order, signedOrder, context, signedContext);
+    }
+
+    function test_Revert_Redeem_ContextOrderHashMisMatch() public {
+        IController.Order memory order = getRedeemOrder(collateral, 40000e6, 10e18, 0);
+        IController.Order memory order2 = getRedeemOrder(collateral, 40000e6, 1e18, 0); // different hash
+        bytes32 orderHash = hashOrder(order);
+        bytes32 orderHash2 = hashOrder(order2);
+        IController.Context memory context = getContext(orderHash2, 1e18, true); // different hash
+        bytes32 contextHash = hashContext(context);
+
+        // whitelist payer and recipient
+        allowSigner(payer);
+        addRecipient(payer, recipient);
+
+        // mint some collateral tokens and approve controller
+        mintAsset(payer, 10e18);
+        approveController(asset, payer, 10e18);
+
+        // sign order and context hashes
+        IController.Signature memory signedOrder = signOrder(payerKey, orderHash);
+        IController.Signature memory signedContext = signContext(minterKey, contextHash);
+
+        // revert if order hash mismatch
+        vm.expectRevert(IController.ContextOrderHashMisMatch.selector);
+        vm.prank(minter);
+        controller.redeem(order, signedOrder, context, signedContext);
+    }
+
     function test_Revert_VerifyNonce(uint256 collateralAmount, uint256 assetAmount, uint256 ratio) public {
         // Set up scenario
         collateralAmount = bound(collateralAmount, 1, 1e40);
@@ -314,6 +470,12 @@ contract ControllerTest is BaseTest {
         IController.Signature memory mintSignature = signOrder(payerKey, controller.hashOrder(mintOrder));
         IController.Signature memory redeemSignature = signOrder(payerKey, controller.hashOrder(redeemOrder));
 
+        IController.Context memory mintContext = getContext(controller.hashOrder(mintOrder), 0, false);
+        IController.Signature memory mintApproval = signContext(minterKey, controller.hashContext(mintContext));
+
+        IController.Context memory redeemContext = getContext(controller.hashOrder(redeemOrder), 0, false);
+        IController.Signature memory redeemApproval = signContext(minterKey, controller.hashContext(redeemContext));
+
         allowSigner(payer);
         vm.prank(payer);
         controller.setRecipientStatus(recipient, true);
@@ -323,9 +485,9 @@ contract ControllerTest is BaseTest {
 
         vm.startPrank(minter);
         vm.expectPartialRevert(IERC20Errors.ERC20InsufficientBalance.selector);
-        controller.mint(mintOrder, mintSignature);
+        controller.mint(mintOrder, mintSignature, mintContext, mintApproval);
         vm.expectPartialRevert(IERC20Errors.ERC20InsufficientBalance.selector);
-        controller.redeem(redeemOrder, redeemSignature);
+        controller.redeem(redeemOrder, redeemSignature, redeemContext, redeemApproval);
         vm.stopPrank();
     }
 
@@ -339,8 +501,30 @@ contract ControllerTest is BaseTest {
         vm.prank(admin);
         controller.setRatio(ratio);
 
-        // mint tokens
-        performPayerMint(collateralAmount, assetAmount);
+        // mint collateral, approve controller, and allow payer to sign order
+        collateral.mint(payer, collateralAmount);
+        approveController(collateral, payer, collateralAmount);
+        allowSigner(payer);
+        vm.prank(payer);
+        controller.setRecipientStatus(recipient, true);
+
+        // create and sign mint order
+        IController.Order memory order = getMintOrder(collateral, collateralAmount, assetAmount, 0);
+        IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+
+        vm.expectEmit();
+        emit IController.Mint(
+            minter,
+            order.payer,
+            order.nonce,
+            order.payer,
+            order.recipient,
+            order.collateral_token,
+            order.collateral_amount,
+            order.asset_token,
+            order.asset_amount
+        );
+        mint(order, signature);
 
         // calculate custodian and manager amounts
         uint256 custodianAmount = Math.mulDiv(collateralAmount, controller.ratio(), 1e18);
@@ -353,7 +537,7 @@ contract ControllerTest is BaseTest {
         assertEq(asset.balanceOf(recipient), assetAmount, "Asset balance incorrect after mint");
     }
 
-    function test_Revert_Mint() public {
+    function test_Revert_Mint_Controller() public {
         // allow signer
         allowSigner(payer);
 
@@ -361,22 +545,44 @@ contract ControllerTest is BaseTest {
         IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
         order.recipient = payer;
         IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
-        // AccessControlUnauthorizedAccount (msg.sender is not MINTER_ROLE)
-        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        controller.mint(order, signature);
+        // Revert if signer is not MINTER ROLE and has no EIP712 signature
+        vm.expectRevert(IController.InvalidSignatureType.selector);
+        controller.mint(
+            order,
+            signature,
+            context,
+            IController.Signature({signature_type: IController.SignatureType.ERC1271, signature_bytes: new bytes(0)})
+        );
+
+        // Revert if signer has no token approval
+        vm.expectPartialRevert(IERC20Errors.ERC20InsufficientAllowance.selector);
+        controller.mint(order, signature, context, approval);
+
+        // Revert if signer is not minter role
+        IController.Signature memory badApproval = signContext(payerKey, controller.hashContext(context));
+        vm.prank(owner);
+        controller.revokeRole(MINTER_ROLE, minter);
+        vm.expectRevert(IController.InvalidApproval.selector);
+        controller.mint(order, signature, context, badApproval);
+
+        // restore role
+        vm.prank(owner);
+        controller.grantRole(MINTER_ROLE, minter);
 
         // MintRedeemPaused
         vm.prank(gatekeeper);
         controller.setPauseStatus(IController.ControllerPauseStatus.MintRedeemPause);
         vm.expectRevert(IController.MintRedeemPaused.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // FMLPause
         vm.prank(gatekeeper);
         controller.setPauseStatus(IController.ControllerPauseStatus.FMLPause);
         vm.expectRevert(IController.MintRedeemPaused.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // set pause status back to None
         vm.prank(gatekeeper);
@@ -385,16 +591,20 @@ contract ControllerTest is BaseTest {
         // InvalidOrderType
         order.order_type = IController.OrderType.Redeem;
         signature = signOrder(payerKey, hashOrder(order));
+        context = getContext(hashOrder(order), 0, false);
+        approval = signContext(minterKey, hashContext(context));
         vm.expectRevert(IController.InvalidOrderType.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // set correct order type
         order.order_type = IController.OrderType.Mint;
         signature = signOrder(payerKey, hashOrder(order));
+        context = getContext(hashOrder(order), 0, false);
+        approval = signContext(minterKey, hashContext(context));
 
         // ERC20 Insufficient Allowance (custodian transfer)
         vm.expectPartialRevert(IERC20Errors.ERC20InsufficientAllowance.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // mint 10% collateral to payer and approve controller
         collateral.mint(payer, 1000e6);
@@ -402,7 +612,7 @@ contract ControllerTest is BaseTest {
 
         // ERC20 Insufficient Balance (manager transfer)
         vm.expectRevert();
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // mint and approve remaining collateral
         collateral.mint(payer, 9000e6);
@@ -412,14 +622,62 @@ contract ControllerTest is BaseTest {
         vm.prank(owner);
         asset.setMinter(address(1));
         vm.expectRevert(AssetToken.OnlyMinter.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // return mint permissions to controller
         vm.prank(owner);
         asset.setMinter(address(controller));
 
         // mint should succeed
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
+    }
+
+    function test_Mint_Approval(uint256 collateralAmount, uint256 assetAmount) public {
+        // set bounds
+        collateralAmount = bound(collateralAmount, 1, 1e40);
+        assetAmount = bound(assetAmount, 1, 1e40);
+
+        // configure ratio
+        vm.prank(admin);
+        controller.setRatio(DEFAULT_RATIO);
+
+        // mint collateral, approve controller, and allow payer to sign order
+        collateral.mint(payer, collateralAmount);
+        approveController(collateral, payer, collateralAmount);
+        allowSigner(payer);
+        vm.prank(payer);
+        controller.setRecipientStatus(recipient, true);
+
+        // create and sign mint order
+        IController.Order memory order = getMintOrder(collateral, collateralAmount, assetAmount, 0);
+        IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
+
+        vm.expectEmit();
+        emit IController.Mint(
+            payer,
+            order.payer,
+            order.nonce,
+            order.payer,
+            order.recipient,
+            order.collateral_token,
+            order.collateral_amount,
+            order.asset_token,
+            order.asset_amount
+        );
+        vm.prank(payer);
+        controller.mint(order, signature, context, approval);
+
+        // calculate custodian and manager amounts
+        uint256 custodianAmount = Math.mulDiv(collateralAmount, controller.ratio(), 1e18);
+        uint256 managerAmount = collateralAmount - custodianAmount;
+
+        // check balances
+        assertEq(collateral.balanceOf(custodian), custodianAmount, "Custodian balance incorrect after mint");
+        assertEq(collateral.balanceOf(address(manager)), managerAmount, "Manager balance incorrect after mint");
+        assertEq(collateral.balanceOf(payer), 0, "Payer balance incorrect after mint");
+        assertEq(asset.balanceOf(recipient), assetAmount, "Asset balance incorrect after mint");
     }
 
     function test_Redeem(uint256 collateralAmount, uint256 assetAmount) public {
@@ -447,12 +705,14 @@ contract ControllerTest is BaseTest {
         IController.Signature memory orderSignature = signOrder(payerKey, controller.hashOrder(redeemOrder));
         vm.expectEmit();
         emit IController.Redeem(
+            minter,
             redeemOrder.payer,
             redeemOrder.nonce,
             redeemOrder.payer,
             redeemOrder.recipient,
             redeemOrder.collateral_token,
             redeemOrder.collateral_amount,
+            redeemOrder.asset_token,
             redeemOrder.asset_amount
         );
 
@@ -474,7 +734,136 @@ contract ControllerTest is BaseTest {
         }
     }
 
-    function test_Revert_Redeem() public {
+    function test_Redeem_StakedAsset(uint256 collateralAmount, uint256 assetAmount) public {
+        vm.prank(capAdjuster);
+        staking.setInstantUnstakeCap(type(uint256).max);
+
+        // set bounds
+        collateralAmount = bound(collateralAmount, 1, 1e25);
+        assetAmount = bound(assetAmount, 1, 1e25);
+
+        // setup
+        allowSigner(payer);
+        vm.prank(payer);
+        controller.setRecipientStatus(recipient, true);
+        mintAsset(payer, assetAmount);
+        collateral.mint(address(manager), collateralAmount);
+
+        // stake assets
+        vm.startPrank(payer);
+        asset.approve(address(staking), assetAmount);
+        staking.deposit(assetAmount, payer);
+        staking.approve(instantUnstaker, staking.balanceOf(payer));
+        vm.stopPrank();
+
+        // approve controller for burn
+        uint256 stakedBalance = staking.balanceOf(payer);
+        vm.prank(payer);
+        asset.approve(address(controller), assetAmount);
+        vm.prank(payer);
+        staking.approve(address(controller), stakedBalance);
+
+        // create redeem order
+        IController.Order memory redeemOrder = IController.Order({
+            order_type: IController.OrderType.Redeem,
+            expiry: block.timestamp + 1000,
+            nonce: 0,
+            payer: payer,
+            recipient: recipient,
+            collateral_token: address(collateral),
+            collateral_amount: collateralAmount,
+            asset_token: address(staking),
+            asset_amount: assetAmount
+        });
+        uint256 managerAmount = collateral.balanceOf(address(manager)) - redeemOrder.collateral_amount;
+        // sign redeem order
+        IController.Signature memory orderSignature = signOrder(payerKey, controller.hashOrder(redeemOrder));
+        vm.expectEmit();
+        emit IController.Redeem(
+            minter,
+            redeemOrder.payer,
+            redeemOrder.nonce,
+            redeemOrder.payer,
+            redeemOrder.recipient,
+            redeemOrder.collateral_token,
+            redeemOrder.collateral_amount,
+            redeemOrder.asset_token,
+            redeemOrder.asset_amount
+        );
+
+        // redeem should succeed
+        redeem(redeemOrder, orderSignature);
+
+        // check balances
+        assertEq(collateral.balanceOf(address(manager)), managerAmount, "Manager balance incorrect after redeem");
+        assertEq(collateral.balanceOf(payer), 0, "Payer collateral balance incorrect after redeem");
+        assertApproxEqAbs(
+            staking.balanceOf(payer), 0, VAULT_TOLERANCE, "Payer staked asset balance incorrect after redeem"
+        );
+        assertEq(
+            collateral.balanceOf(recipient), redeemOrder.collateral_amount, "Recipient balance incorrect after redeem"
+        );
+        try controller.verifyNonce(payer, 2) {}
+        catch (bytes memory) {
+            /*lowLevelData*/
+            fail("Invalid nonce after redeem");
+        }
+    }
+
+    function test_Redeem_Approval(uint256 collateralAmount, uint256 assetAmount) public {
+        // set bounds
+        collateralAmount = bound(collateralAmount, 1, 1e40);
+        assetAmount = bound(assetAmount, 1, 1e40);
+
+        // mint tokens with nonce = 0
+        performPayerMint(collateralAmount, assetAmount);
+
+        // approve controller for burn
+        vm.prank(recipient);
+        asset.safeTransfer(payer, assetAmount);
+        uint256 balance = asset.balanceOf(payer);
+        vm.prank(payer);
+        asset.approve(address(controller), balance);
+        uint256 custodianAmount = collateral.balanceOf(custodian);
+
+        // create, sign, and approve redeem order
+        IController.Order memory order = getRedeemOrder(collateral, collateralAmount - custodianAmount, assetAmount, 1);
+        uint256 managerAmount = collateral.balanceOf(address(manager)) - order.collateral_amount;
+        IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
+
+        vm.expectEmit();
+        emit IController.Redeem(
+            payer,
+            order.payer,
+            order.nonce,
+            order.payer,
+            order.recipient,
+            order.collateral_token,
+            order.collateral_amount,
+            order.asset_token,
+            order.asset_amount
+        );
+
+        // redeem should succeed
+        vm.prank(payer);
+        controller.redeem(order, signature, context, approval);
+
+        // check balances
+        assertEq(collateral.balanceOf(custodian), custodianAmount, "Custodian balance incorrect after redeem");
+        assertEq(collateral.balanceOf(address(manager)), managerAmount, "Manager balance incorrect after redeem");
+        assertEq(collateral.balanceOf(payer), 0, "Payer collateral balance incorrect after redeem");
+        assertEq(asset.balanceOf(payer), 0, "Payer asset balance incorrect after redeem");
+        assertEq(collateral.balanceOf(recipient), order.collateral_amount, "Recipient balance incorrect after redeem");
+        try controller.verifyNonce(payer, 2) {}
+        catch (bytes memory) {
+            /*lowLevelData*/
+            fail("Invalid nonce after redeem");
+        }
+    }
+
+    function test_Revert_Redeem_Controller() public {
         // mint tokens
         uint256 collateralAmount = 10000e6;
         uint256 assetAmount = 3e18;
@@ -488,24 +877,176 @@ contract ControllerTest is BaseTest {
         asset.approve(address(controller), balance);
 
         // create redeem order with new nonce
-        IController.Order memory redeemOrder = getRedeemOrder(collateral, 3000e6, 1e18, 1);
-        IController.Signature memory orderSignature = signOrder(payerKey, controller.hashOrder(redeemOrder));
+        IController.Order memory order = getRedeemOrder(collateral, 3000e6, 1e18, 1);
+        IController.Order memory order2 = getRedeemOrder(collateral, 4000e6, 1e18, 1);
+        IController.Signature memory signature = signOrder(payerKey, controller.hashOrder(order));
+        IController.Context memory context = getContext(controller.hashOrder(order2), 0, false); // context hash mismatch
+        IController.Signature memory approval = signContext(minterKey, controller.hashContext(context));
 
-        IController.Order memory badOrder = redeemOrder;
+        // Revert if context order hash mismatch
+        vm.expectRevert(IController.ContextOrderHashMisMatch.selector);
+        controller.redeem(order, signature, context, approval);
+
+        // Make context order hash match
+        context = getContext(controller.hashOrder(order), 0, false); // context hash match
+        approval = signContext(minterKey, controller.hashContext(context));
+
+        // Revert if signature has incorrect type
+        vm.expectRevert(IController.InvalidSignatureType.selector);
+        controller.redeem(
+            order,
+            signature,
+            context,
+            IController.Signature({signature_type: IController.SignatureType.ERC1271, signature_bytes: new bytes(0)})
+        );
+
+        // create approval signed by non-minter role
+        IController.Signature memory badApproval = signContext(payerKey, controller.hashContext(context));
+
+        // Revert if approval is not signed by minter role
+        vm.expectRevert(IController.InvalidApproval.selector);
+        controller.redeem(order, signature, context, badApproval);
+
+        // Revert if signer nor approver are not MINTER ROLE
+        vm.prank(owner);
+        controller.revokeRole(MINTER_ROLE, minter);
+        vm.expectRevert(IController.InvalidApproval.selector);
+        controller.redeem(order, signature, context, approval);
+
+        // restore role
+        vm.prank(owner);
+        controller.grantRole(MINTER_ROLE, minter);
+
+        // set order type to mint
+        IController.Order memory badOrder = order;
         badOrder.order_type = IController.OrderType.Mint;
 
+        // revert if invalid order type
         vm.prank(minter);
         vm.expectRevert(IController.InvalidOrderType.selector);
-        controller.redeem(redeemOrder, orderSignature);
+        controller.redeem(badOrder, signature, context, approval);
 
-        IController.Order memory nonceOrder = getRedeemOrder(collateral, 3000e6, 1e18, 2);
-        IController.Signature memory nonceSignature = signOrder(payerKey, controller.hashOrder(nonceOrder));
+        // create new valid order and context
+        order = getRedeemOrder(collateral, 3000e6, 1e18, 2);
+        signature = signOrder(payerKey, controller.hashOrder(order));
+        context = getContext(controller.hashOrder(order), 0, false); // context hash mismatch
+        approval = signContext(minterKey, controller.hashContext(context));
 
+        // perform valid redeem
         vm.prank(minter);
-        controller.redeem(nonceOrder, nonceSignature);
+        controller.redeem(order, signature, context, approval);
+
+        // cannot replay order and context
         vm.prank(minter);
         vm.expectRevert(IController.InvalidNonce.selector);
-        controller.redeem(nonceOrder, nonceSignature);
+        controller.redeem(order, signature, context, approval);
+    }
+
+    function test_Curated_Mint_Deposit(uint256 collateralAmount, uint256 assetAmount, uint256 ratio) public {
+        // set bounds
+        collateralAmount = bound(collateralAmount, 1, 1e40);
+        assetAmount = bound(assetAmount, 1, 1e40);
+        ratio = bound(ratio, 0, 1e18 - 1);
+
+        // configure ratio
+        vm.prank(admin);
+        controller.setRatio(ratio);
+
+        // mint collateral, approve controller, and allow payer to sign order
+        collateral.mint(payer, collateralAmount);
+        approveController(collateral, payer, collateralAmount);
+        allowSigner(payer);
+        vm.prank(payer);
+        controller.setRecipientStatus(recipient, true);
+
+        // create and sign mint order
+        IController.Order memory order = getMintOrder(collateral, collateralAmount, assetAmount, 0);
+        IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+
+        IController.Context memory context = getContext(hashOrder(order), 1, true);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
+        vm.startPrank(minter);
+        vm.expectEmit();
+        emit IController.Mint(
+            minter,
+            order.payer,
+            order.nonce,
+            order.payer,
+            order.recipient,
+            order.collateral_token,
+            order.collateral_amount,
+            order.asset_token,
+            order.asset_amount
+        );
+        controller.mint(order, signature, context, approval);
+        vm.stopPrank();
+
+        // calculate custodian and manager amounts
+        uint256 custodianAmount = Math.mulDiv(collateralAmount, controller.ratio(), 1e18);
+        uint256 managerAmount = collateralAmount - custodianAmount;
+
+        // check balances
+        assertEq(collateral.balanceOf(custodian), custodianAmount, "Custodian balance incorrect after mint");
+        assertEq(collateral.balanceOf(address(manager)), 0, "Manager balance incorrect after mint");
+        assertEq(collateral.balanceOf(payer), 0, "Payer balance incorrect after mint");
+        assertEq(asset.balanceOf(recipient), assetAmount, "Asset balance incorrect after mint");
+
+        assertEq(collateral.balanceOf(address(vault)), managerAmount, "Vault balance incorrect after curated mint");
+        assertEq(vault.totalAssets(), managerAmount, "Vault total assets incorrect after curated mint");
+        assertEq(manager.pendingRevenue(address(collateral)), 0, "Manager pending revenue incorrect after curated mint");
+        assertEq(vault.balanceOf(address(manager)), managerAmount, "Manager share balance incorrect after curated mint");
+    }
+
+    function test_Curated_Withdraw_Redeem(uint256 collateralAmount, uint256 assetAmount, uint256 ratio) public {
+        // set bounds
+        collateralAmount = bound(collateralAmount, 1, 1e40);
+        assetAmount = bound(assetAmount, 1, 1e40);
+        ratio = bound(ratio, 0, 1e18 - 1);
+
+        test_Curated_Mint_Deposit(collateralAmount, assetAmount, ratio);
+
+        // approve controller for burn
+        vm.prank(recipient);
+        asset.safeTransfer(payer, assetAmount);
+        uint256 balance = asset.balanceOf(payer);
+        vm.prank(payer);
+        asset.approve(address(controller), balance);
+        uint256 custodianAmount = collateral.balanceOf(custodian);
+
+        // create redeem order
+        IController.Order memory redeemOrder =
+            getRedeemOrder(collateral, collateralAmount - custodianAmount, assetAmount, 1);
+
+        // sign redeem order
+        IController.Signature memory orderSignature = signOrder(payerKey, controller.hashOrder(redeemOrder));
+
+        // redeem should succeed
+        IController.Context memory context =
+            getContext(controller.hashOrder(redeemOrder), redeemOrder.collateral_amount, true);
+        IController.Signature memory approval = signContext(minterKey, controller.hashContext(context));
+        vm.prank(minter);
+        controller.redeem(redeemOrder, orderSignature, context, approval);
+
+        // check balances
+        assertEq(collateral.balanceOf(custodian), custodianAmount, "Custodian balance incorrect after redeem");
+        assertEq(collateral.balanceOf(address(manager)), 0, "Manager balance incorrect after redeem");
+        assertEq(collateral.balanceOf(payer), 0, "Payer collateral balance incorrect after redeem");
+        assertEq(asset.balanceOf(payer), 0, "Payer asset balance incorrect after redeem");
+        assertEq(
+            collateral.balanceOf(recipient), redeemOrder.collateral_amount, "Recipient balance incorrect after redeem"
+        );
+
+        try controller.verifyNonce(payer, 2) {}
+        catch (bytes memory) {
+            /*lowLevelData*/
+            fail("Invalid nonce after redeem");
+        }
+
+        assertEq(vault.balanceOf(address(manager)), 0, "Manager incorrect shares balance after curated redeem");
+        assertEq(collateral.balanceOf(address(manager)), 0, "Manager incorrect collateral balance after curated redeem");
+        assertEq(
+            manager.pendingRevenue(address(collateral)), 0, "Manager incorrect pending revenue after curated redeem"
+        );
     }
 
     function test_SetSignerStatus(address account) public {
@@ -581,10 +1122,10 @@ contract ControllerTest is BaseTest {
         // ensure mint & redemptions revert
         vm.startPrank(minter);
         vm.expectRevert(IController.MintRedeemPaused.selector);
-        controller.mint(order, signature);
+        controller.mint(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
 
         vm.expectRevert(IController.MintRedeemPaused.selector);
-        controller.redeem(order, signature);
+        controller.redeem(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
         vm.stopPrank();
 
         // emergency pause
@@ -596,10 +1137,10 @@ contract ControllerTest is BaseTest {
         // ensure mint & redemptions revert
         vm.startPrank(minter);
         vm.expectRevert(IController.MintRedeemPaused.selector);
-        controller.mint(order, signature);
+        controller.mint(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
 
         vm.expectRevert(IController.MintRedeemPaused.selector);
-        controller.redeem(order, signature);
+        controller.redeem(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
         vm.stopPrank();
     }
 
@@ -696,6 +1237,68 @@ contract ControllerTest is BaseTest {
         assertEq(collateral.balanceOf(address(manager)), collateralAmount);
     }
 
+    function test_BlockMintLimit() public {
+        vm.prank(owner);
+        controller.setBlockMintLimit(1e18);
+
+        // can mint up to limit
+        collateral.mint(payer, 4000e18);
+        allowSigner(payer);
+        addRecipient(payer, recipient);
+        approveController(collateral, payer, 4000e18);
+        IController.Order memory order = getMintOrder(collateral, 4000e18, 1e18, 0);
+        mint(order, signOrder(payerKey, hashOrder(order)));
+    }
+
+    function test_Revert_BlockMintLimit() public {
+        vm.prank(owner);
+        controller.setBlockMintLimit(1e18 - 1);
+
+        // minting just above mint limit fails
+        collateral.mint(payer, 4000e18);
+        allowSigner(payer);
+        addRecipient(payer, recipient);
+        approveController(collateral, payer, 4000e18);
+        IController.Order memory order = getMintOrder(collateral, 4000e18, 1e18, 0);
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory signedOrder = signOrder(payerKey, hashOrder(order));
+        IController.Signature memory signedContext = signContext(minterKey, hashContext(context));
+        vm.expectRevert(IController.ExceedsBlockMintLimit.selector);
+        controller.mint(order, signedOrder, context, signedContext);
+    }
+
+    function test_BlockRedeemLimit() public {
+        vm.prank(owner);
+        controller.setBlockRedeemLimit(1e18);
+
+        // can redeem up to limit
+        mintAsset(payer, 1e18);
+        collateral.mint(address(manager), 4000e18);
+        allowSigner(payer);
+        addRecipient(payer, recipient);
+        approveController(asset, payer, 1e18);
+        IController.Order memory order = getRedeemOrder(collateral, 4000e18, 1e18, 0);
+        redeem(order, signOrder(payerKey, hashOrder(order)));
+    }
+
+    function test_Revert_BlockRedeemLimit() public {
+        vm.prank(owner);
+        controller.setBlockRedeemLimit(1e18 - 1);
+
+        // redeeming slightly above limit fails
+        mintAsset(payer, 1e18);
+        collateral.mint(address(manager), 4000e18);
+        allowSigner(payer);
+        addRecipient(payer, recipient);
+        approveController(asset, payer, 1e18);
+        IController.Order memory order = getRedeemOrder(collateral, 4000e18, 1e18, 0);
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory signedOrder = signOrder(payerKey, hashOrder(order));
+        IController.Signature memory signedContext = signContext(minterKey, hashContext(context));
+        vm.expectRevert(IController.ExceedsBlockRedeemLimit.selector);
+        controller.redeem(order, signedOrder, context, signedContext);
+    }
+
     function test_Multicall(
         uint256 collateralAmount0,
         uint256 collateralAmount1,
@@ -736,6 +1339,7 @@ contract ControllerTest is BaseTest {
             recipient: recipient,
             collateral_token: address(collateral),
             collateral_amount: collateralAmount0,
+            asset_token: address(asset),
             asset_amount: assetAmount0
         });
         IController.Order memory order1 = IController.Order({
@@ -746,46 +1350,60 @@ contract ControllerTest is BaseTest {
             recipient: recipient,
             collateral_token: address(collateral),
             collateral_amount: collateralAmount1,
+            asset_token: address(asset),
             asset_amount: assetAmount1
         });
 
+        // generate signatures
         IController.Signature memory signature0 = signOrder(payerKey, controller.hashOrder(order0));
         IController.Signature memory signature1 = signOrder(payerKey, controller.hashOrder(order1));
+        IController.Signature memory approval0 =
+            signContext(minterKey, controller.hashContext(getContext(controller.hashOrder(order0), 0, false)));
+        IController.Signature memory approval1 =
+            signContext(minterKey, controller.hashContext(getContext(controller.hashOrder(order1), 0, false)));
+
         // create data to batch both orders for multicall
         bytes[] memory batchOrders = new bytes[](2);
-        batchOrders[0] = abi.encodeWithSelector(IController.mint.selector, order0, signature0);
-        batchOrders[1] = abi.encodeWithSelector(IController.mint.selector, order1, signature1);
+        batchOrders[0] = abi.encodeWithSelector(
+            IController.mint.selector, order0, signature0, getContext(controller.hashOrder(order0), 0, false), approval0
+        );
+        batchOrders[1] = abi.encodeWithSelector(
+            IController.mint.selector, order1, signature1, getContext(controller.hashOrder(order1), 0, false), approval1
+        );
         // call mint function through multicall
         vm.prank(minter);
         vm.expectEmit();
         emit IController.Mint(
+            minter,
             order0.payer,
             order0.nonce,
             order0.payer,
             order0.recipient,
             order0.collateral_token,
             order0.collateral_amount,
+            order0.asset_token,
             order0.asset_amount
         );
         emit IController.Mint(
+            minter,
             order1.payer,
             order1.nonce,
             order1.payer,
             order1.recipient,
             order1.collateral_token,
             order1.collateral_amount,
+            order1.asset_token,
             order1.asset_amount
         );
         controller.multicall(batchOrders);
 
         // calculate custodian and manager amounts
         uint256 custodianAmount = Math.mulDiv(total, controller.ratio(), 1e18);
-        uint256 managerAmount = total - custodianAmount;
 
         // check balances
         assertApproxEqAbs(collateral.balanceOf(custodian), custodianAmount, 1, "Custodian balance incorrect after mint");
         assertApproxEqAbs(
-            collateral.balanceOf(address(manager)), managerAmount, 1, "Manager balance incorrect after mint"
+            collateral.balanceOf(address(manager)), total - custodianAmount, 1, "Manager balance incorrect after mint"
         );
         assertEq(collateral.balanceOf(payer), 0, "Payer balance incorrect after mint");
         assertEq(asset.balanceOf(recipient), assetAmount0 + assetAmount1, "Asset balance incorrect after mint");
@@ -793,7 +1411,7 @@ contract ControllerTest is BaseTest {
 
     function test_Revert_Multicall() public {
         bytes[] memory badMulticall = new bytes[](2);
-        badMulticall[0] = abi.encodeWithSelector(IController.mint.selector, 0x00, 0x00);
+        badMulticall[0] = abi.encodeWithSelector(IController.mint.selector, 0x00, 0x00, 0x00);
         vm.expectRevert();
         controller.multicall(badMulticall);
     }
@@ -892,8 +1510,7 @@ contract ControllerTest is BaseTest {
 
         // set answer below order price and perform mint
         aggregator.setAnswer(999e18);
-        vm.prank(minter);
-        controller.mint(order, signature);
+        mint(order, signature);
 
         // create another mint order
         order = getMintOrder(collateral, 1000e6, 1e18, 1);
@@ -901,8 +1518,7 @@ contract ControllerTest is BaseTest {
 
         // set answer above order price and perform mint
         aggregator.setAnswer(1100e18);
-        vm.prank(minter);
-        controller.mint(order, signature);
+        mint(order, signature);
     }
 
     function test_OracleAdapter_Decimals(uint8 decimals) public {
@@ -954,6 +1570,8 @@ contract ControllerTest is BaseTest {
         // create and sign mint order
         IController.Order memory order = getMintOrder(collateral, 1000e6, 1e18, 0);
         IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
         // set adapter and tolerance
         setOracle(address(oracleAdapter), 1e17);
@@ -961,7 +1579,7 @@ contract ControllerTest is BaseTest {
         // set answer 1 wei below tolerance and expect revert
         aggregator.setAnswer(900e18 - ADAPTER_PRECISION);
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // set answer 1 wei above tolerance and perform mint
         aggregator.setAnswer(1100e18 + ADAPTER_PRECISION);
@@ -975,15 +1593,17 @@ contract ControllerTest is BaseTest {
 
         // set adapter and tolerance
         setOracle(address(oracleAdapter), 1e18); // 100%
-        order = order = getMintOrder(collateral, collateralAmount, assetAmount, 0);
+        order = getMintOrder(collateral, collateralAmount, assetAmount, 0);
         order.nonce = 1;
         signature = signOrder(payerKey, hashOrder(order));
+        context = getContext(hashOrder(order), 0, false);
+        approval = signContext(minterKey, hashContext(context));
 
         aggregator.setAnswer(oraclePrice);
 
         // delta = |1000-100|/100 = 900/100 = 9.0 > 1
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
     }
 
     // fuzz tolerance and collateralAmount where oracle price matches order price
@@ -1047,6 +1667,63 @@ contract ControllerTest is BaseTest {
         mint(order, signature);
     }
 
+    // fuzz tolerance and collateralAmount where oracle price matches order price
+    function test_fuzz_OracleAdapter_Redeem_Staked(uint96 tolerance, uint256 assetAmount) public {
+        // bound fuzz inputs
+        tolerance = uint96(bound(tolerance, 0, MAX_ORACLE_TOLERANCE)); // 1e10-1e18
+        assetAmount = bound(assetAmount, 1, 1e22);
+
+        // mint assets and stake them, perform approvals
+        mintAsset(payer, assetAmount);
+        vm.prank(payer);
+        asset.approve(address(staking), assetAmount);
+        vm.prank(payer);
+        uint256 shares = staking.deposit(assetAmount, payer);
+        approveController(staking, payer, shares);
+        approveController(asset, payer, shares);
+
+        // allow signer and recipient
+        allowSigner(payer);
+        vm.prank(payer);
+        controller.setRecipientStatus(recipient, true);
+
+        // simulate arbitrary increase in share price to 1.5e18
+        mintAsset(address(staking), assetAmount / 2);
+
+        // value of collateral based on share price
+        uint256 collateralValue = staking.convertToAssets(shares);
+        collateral.mint(address(manager), collateralValue);
+
+        // create and sign mint order
+        IController.Order memory order = IController.Order({
+            order_type: IController.OrderType.Redeem,
+            nonce: 0,
+            expiry: block.timestamp + 1,
+            payer: payer,
+            recipient: recipient,
+            collateral_token: address(collateral),
+            collateral_amount: collateralValue,
+            asset_token: address(staking),
+            asset_amount: shares
+        });
+        IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        uint256 normalizedCollateral = order.collateral_amount * 1e12;
+        uint256 sharePrice = staking.convertToAssets(1e18);
+        uint256 assetTokenAmount = Math.mulDiv(order.asset_amount, sharePrice, 1e18);
+        uint256 expectedPrice = Math.mulDiv(normalizedCollateral, 1e18, assetTokenAmount);
+
+        // set adapter and tolerance
+        setOracle(address(oracleAdapter), tolerance);
+
+        // set instant unstake cap
+        vm.prank(capAdjuster);
+        staking.setInstantUnstakeCap(order.asset_amount);
+
+        // set answer and perform redeem - should succeed for all tolerances
+        aggregator.setAnswer(expectedPrice);
+        redeem(order, signature);
+    }
+
     function test_fuzz_Revert_OracleAdapter(uint96 tolerance, uint256 collateralAmount) public {
         // set fuzzing bounds
         tolerance = uint96(bound(tolerance, 0, MAX_ORACLE_TOLERANCE - ADAPTER_PRECISION));
@@ -1066,6 +1743,8 @@ contract ControllerTest is BaseTest {
         // create and sign mint order
         IController.Order memory order = getMintOrder(collateral, collateralAmount, assetAmount, 0);
         IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
         // set adapter and tolerance
         setOracle(address(oracleAdapter), tolerance);
@@ -1076,7 +1755,7 @@ contract ControllerTest is BaseTest {
 
         // should revert given tolerance is higher than price delta
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // set new oracle price slightly below tolerance
         uint256 oracleLowBoundary = Math.mulDiv(oraclePrice, 1e18, 1e18 + tolerance);
@@ -1084,7 +1763,7 @@ contract ControllerTest is BaseTest {
 
         // should revert given tolerance is lower than price delta
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
     }
 
     function test_fuzz_OracleAdapter_Decimals(uint96 tolerance, uint256 collateralAmount, uint8 decimals) public {
@@ -1117,6 +1796,8 @@ contract ControllerTest is BaseTest {
         // create and sign mint order
         IController.Order memory order = getMintOrder(collateral3, collateralAmount, assetAmount, 0);
         IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
         // set adapter and tolerance
         setOracle(address(oracleAdapter), tolerance);
@@ -1128,7 +1809,7 @@ contract ControllerTest is BaseTest {
         // should succeed for all tolerances
         aggregator.setAnswer(newOraclePrice);
         vm.prank(minter);
-        controller.mint(order, signature);
+        controller.mint(order, signature, context, approval);
     }
 
     function test_Oracle_MintSmallAmount() public {
@@ -1157,7 +1838,7 @@ contract ControllerTest is BaseTest {
 
         vm.prank(minter);
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
-        controller.mint(order, signature);
+        controller.mint(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
     }
 
     function test_Oracle_RedeemSmallAmount() public {
@@ -1179,7 +1860,7 @@ contract ControllerTest is BaseTest {
         IController.Signature memory orderSignature = signOrder(payerKey, controller.hashOrder(redeemOrder));
         vm.prank(minter);
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
-        controller.redeem(redeemOrder, orderSignature);
+        controller.redeem(redeemOrder, orderSignature, EMPTY_CONTEXT, EMPTY_APPROVAL);
     }
 
     function test_ExposedVerifyNonce() public {
@@ -1215,10 +1896,12 @@ contract ControllerTest is BaseTest {
         // signer 1 can submit an order
         IController.Order memory order = performPayerMint(collateralAmount, assetAmount);
         IController.Signature memory signature = signOrder(signer2Key, hashOrder(order));
+        IController.Context memory context = getContext(hashOrder(order), 0, false);
+        IController.Signature memory approval = signContext(minterKey, hashContext(context));
 
         // signer 2 can't replay the same order
         vm.expectRevert(IController.InvalidNonce.selector);
-        mint(order, signature);
+        controller.mint(order, signature, context, approval);
 
         // can't replay redeem order
         // approve controller for burn
@@ -1241,10 +1924,12 @@ contract ControllerTest is BaseTest {
 
         // sign same redeem order
         IController.Signature memory orderSignature2 = signOrder(signer2Key, controller.hashOrder(redeemOrder));
+        IController.Context memory context2 = getContext(hashOrder(redeemOrder), 0, false);
+        IController.Signature memory approval2 = signContext(minterKey, hashContext(context2));
 
         // redeem should succeed
         vm.expectRevert(IController.InvalidNonce.selector);
-        redeem(redeemOrder, orderSignature2);
+        controller.redeem(redeemOrder, orderSignature2, context2, approval2);
     }
 
     function test_invalidateNonce() public {
@@ -1273,12 +1958,14 @@ contract ControllerTest is BaseTest {
 
         vm.expectEmit();
         emit IController.Mint(
+            minter,
             order.payer,
             order.nonce,
             order.payer,
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
+            order.asset_token,
             order.asset_amount
         );
         mint(order, signature);

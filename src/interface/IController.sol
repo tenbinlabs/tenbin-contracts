@@ -36,6 +36,7 @@ interface IController {
     /// @param recipient Account to transfer tokens to
     /// @param collateral_token Collateral token
     /// @param collateral_amount Amount of collateral
+    /// @param asset_token Asset token for this order - either asset or staked asset
     /// @param asset_amount Amount of asset tokens
     struct Order {
         OrderType order_type;
@@ -45,7 +46,18 @@ interface IController {
         address recipient;
         address collateral_token;
         uint256 collateral_amount;
+        address asset_token;
         uint256 asset_amount;
+    }
+
+    /// @notice Context is signed by a minter and used during order execution
+    /// @param order_hash Hash of order for this context
+    /// @param share_price Share price used for atomic vault curation
+    /// @param is_curated Flag to determine whether or not an order execution includes vault curation
+    struct Context {
+        bytes32 order_hash;
+        uint256 share_price;
+        bool is_curated;
     }
 
     /// @notice Oracle data structure to hold oracle adapter and tolerance
@@ -68,37 +80,45 @@ interface IController {
 
     /// @notice Event emitted when an asset is minted
     /// @param signer Signer account which signed the order
+    /// @param executor Account which executes the order
     /// @param nonce Nonce used by signer
     /// @param payer Payer account which provided collateral
     /// @param recipient Recipient account which received assets
     /// @param collateralToken Collateral used for this mint
     /// @param collateralAmount Collateral amount sent
+    /// @param assetToken Asset token used for this mint
     /// @param mintAmount Amount of asset tokens minted
     event Mint(
+        address executor,
         address indexed signer,
         uint256 nonce,
         address indexed payer,
         address indexed recipient,
         address collateralToken,
         uint256 collateralAmount,
+        address assetToken,
         uint256 mintAmount
     );
 
     /// @notice Event emitted when an asset is redeemed
+    /// @param executor Account which executes the order
     /// @param signer Signer account which signed the order
     /// @param nonce Nonce used by signer
     /// @param payer Payer account which provided assets
     /// @param recipient Recipient account which received collateral
     /// @param collateralToken Collateral used for this redeem
     /// @param collateralAmount Collateral amount received
+    /// @param assetToken Asset token used for this redeem
     /// @param redeemAmount Amount of asset redeemed
     event Redeem(
+        address executor,
         address indexed signer,
         uint256 nonce,
         address indexed payer,
         address indexed recipient,
         address collateralToken,
         uint256 collateralAmount,
+        address assetToken,
         uint256 redeemAmount
     );
 
@@ -159,16 +179,28 @@ interface IController {
 
     /// @notice Unsupported collateral type
     error CollateralNotSupported();
+    /// @notice Context order hash does not match order hash
+    error ContextOrderHashMisMatch();
+    /// @notice Exceeds block mint limit
+    error ExceedsBlockMintLimit();
+    /// @notice Exceeds block redeem limit
+    error ExceedsBlockRedeemLimit();
     /// @notice Order price exceeds oracle tolerance
     error ExceedsOracleDeltaTolerance();
     /// @notice Emergency Pause
     error FMLPause();
+    // @notice Invalid approval signature
+    error InvalidApproval();
     /// @notice Invalid asset amount
     error InvalidAssetAmount();
+    /// @notice Invalid asset token
+    error InvalidAssetToken();
     /// @notice Invalid collateral amount
     error InvalidCollateralAmount();
     /// @notice Collateral token has an invalid number of decimals
     error InvalidCollateralDecimals();
+    /// @notice Invalid EIP712 signature
+    error InvalidERC712Signature();
     /// @notice Invalid ERC1271 signature
     error InvalidERC1271Signature();
     /// @notice Invalid nonce
@@ -181,6 +213,10 @@ interface IController {
     error InvalidPayer();
     /// @notice Invalid recipient account
     error InvalidRecipient();
+    /// @notice Invalid share price
+    error InvalidSharePrice();
+    /// @notice Invalid signature type
+    error InvalidSignatureType();
     /// @notice Invalid signer
     error InvalidSigner();
     /// @notice Mint and Redemption Paused
@@ -211,7 +247,12 @@ interface IController {
     /// @return orderHash EIP712 typed data hash of `order`
     function hashOrder(Order calldata order) external view returns (bytes32 orderHash);
 
-    /// @notice Verify an order signed with EIP712
+    /// @notice Get the EIP712 typed data hash of a context.
+    /// @param context Context data
+    /// @return contextHash EIP712 typed data hash of `context`
+    function hashContext(Context calldata context) external view returns (bytes32 contextHash);
+
+    /// @notice Verify a signed EIP712 order
     /// @param order Order data
     /// @param signature Signature of hashed order
     /// @return signer Signer of this order
@@ -221,6 +262,11 @@ interface IController {
         view
         returns (address signer, bytes32 orderHash);
 
+    /// @notice Verify a signed EIP712 context. Reverts if context is not signed by MINTER_ROLE
+    /// @param context Context data
+    /// @param approval Signature of hashed context
+    function verifyContext(Context calldata context, Signature calldata approval) external view;
+
     /// @notice Verify a signer nonce.
     /// @param account to verify for
     /// @param nonce Nonce to check
@@ -229,10 +275,24 @@ interface IController {
     /// @notice Mint asset tokens
     /// @param order Order data
     /// @param signature Signature of hashed order
-    function mint(Order calldata order, Signature calldata signature) external;
+    /// @param context Context used to determine order execution options
+    /// @param approval ECDSA signature of context data
+    function mint(
+        Order calldata order,
+        Signature calldata signature,
+        Context calldata context,
+        Signature calldata approval
+    ) external;
 
     /// @notice Redeem asset tokens
     /// @param order Order data
     /// @param signature ECDSA signature of hashed order
-    function redeem(Order calldata order, Signature calldata signature) external;
+    /// @param context Context used to determine order execution options
+    /// @param approval ECDSA signature of context data
+    function redeem(
+        Order calldata order,
+        Signature calldata signature,
+        Context calldata context,
+        Signature calldata approval
+    ) external;
 }

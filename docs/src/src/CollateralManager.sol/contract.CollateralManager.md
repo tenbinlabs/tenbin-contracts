@@ -1,5 +1,5 @@
 # CollateralManager
-[Git Source](https://github.com/tenbinlabs/contracts/blob/34d0d98c6959c0c67cf21488bdfb4b79f4ce3f2e/src/CollateralManager.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/CollateralManager.sol)
 
 **Inherits:**
 [ICollateralManager](/src/interface/ICollateralManager.sol/interface.ICollateralManager.md), UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuardTransient
@@ -330,7 +330,7 @@ function setRevenueModule(address newRevenueModule)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`newRevenueModule`|`address`|New swap module|
+|`newRevenueModule`|`address`|New revenue module|
 
 
 ### setPauseStatus
@@ -565,27 +565,6 @@ function swap(bytes calldata parameters, bytes calldata data)
 |----|----|-----------|
 |`parameters`|`bytes`||
 |`data`|`bytes`|Additional data passed to swap module|
-
-
-### claimMorphoRewards
-
-Claim rewards from Morpho's Universal Rewards Distributor
-
-
-```solidity
-function claimMorphoRewards(address distributor, address reward, uint256 claimable, bytes32[] calldata proof)
-    external
-    nonReentrant
-    onlyRevenueModule;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`distributor`|`address`|The URD contract address|
-|`reward`|`address`|The reward token address (e.g., MORPHO)|
-|`claimable`|`uint256`|The total claimable amount from merkle tree|
-|`proof`|`bytes32[]`|The merkle proof for this claim|
 
 
 ### _totalAssets
