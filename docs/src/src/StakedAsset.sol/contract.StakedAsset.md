@@ -1,5 +1,5 @@
 # StakedAsset
-[Git Source](https://github.com/tenbinlabs/contracts/blob/34d0d98c6959c0c67cf21488bdfb4b79f4ce3f2e/src/StakedAsset.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/StakedAsset.sol)
 
 **Inherits:**
 [IStakedAsset](/src/interface/IStakedAsset.sol/interface.IStakedAsset.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), UUPSUpgradeable, ERC20PermitUpgradeable, ERC4626Upgradeable, AccessControlUpgradeable
@@ -21,13 +21,13 @@ Allows staking an asset token for a staking token
 Rewards can be sent to this contract to reward stakers proportionally to their stake
 Includes a vesting period over which pending rewards are linearly vested
 Whenever a reward is paid to the contract, the vesting period resets
-Includes a cooldown period over which a user must wait between cooldown and withdrawing
+Includes a cooldown period over which a user must wait between cooldown and withdraw
 When cooldownPeriod > 0, the normal withdraw() and redeem() functions will revert
 Users call cooldownShares() and cooldownAssets() to initiate cooldown
-If a cooldown already exists for a user, initiating cooldown again with additional assets will reset the cooldown time
+Users can have multiple cooldowns at once denominated by cooldownIds[account]
 Users do not earn rewards for assets during the cooldown period
 Assets in cooldown are stored in a Silo contract until cooldown is complete
-After the cooldown is completed, users can call unstake() to claim their asset tokens
+After the cooldown is completed, users can call unstake(id) to claim their asset tokens
 In order to avoid a first depositor donation attack a minimum stake should be made in the same transaction as the contract deployment
 This is a UUPS upgradeable contract meant to be deployed behind an ERC1967 Proxy
 
@@ -60,6 +60,24 @@ bytes32 constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE")
 ```
 
 
+### INSTANT_UNSTAKER_ROLE
+Instant redeemer role can redeem shares on behalf of an owner and bypass the cooldown period
+
+
+```solidity
+bytes32 constant INSTANT_UNSTAKER_ROLE = keccak256("INSTANT_UNSTAKER_ROLE")
+```
+
+
+### CAP_ADJUSTER_ROLE
+Cap adjuster role can change instant redemption caps
+
+
+```solidity
+bytes32 constant CAP_ADJUSTER_ROLE = keccak256("CAP_ADJUSTER_ROLE")
+```
+
+
 ### MAX_COOLDOWN_PERIOD
 Max cooldown period
 
@@ -87,6 +105,24 @@ uint256 public constant MIN_VESTING_PERIOD = 1200 seconds
 ```
 
 
+### FEE_PRECISION
+Precision for fee calculations
+
+
+```solidity
+uint256 constant FEE_PRECISION = 1e18
+```
+
+
+### MAX_INSTANT_UNSTAKE_FEE
+Max instant unstaking fee = 100%
+
+
+```solidity
+uint256 constant MAX_INSTANT_UNSTAKE_FEE = 1e18
+```
+
+
 ### silo
 AssetSilo holds assets during cooldown
 
@@ -101,7 +137,16 @@ Amount of shares in cooldown for an account
 
 
 ```solidity
-mapping(address => Cooldown) public cooldowns
+mapping(address => mapping(uint256 => Cooldown)) public cooldowns
+```
+
+
+### cooldownIds
+Next cooldown ID for an account
+
+
+```solidity
+mapping(address => uint256) cooldownIds
 ```
 
 
@@ -129,6 +174,33 @@ Keep track of restricted addresses
 
 ```solidity
 mapping(address => bool) public isRestricted
+```
+
+
+### instantUnstakeCap
+Cap for instant unstaking. When an instant unstake is performed, this value is decremented
+
+
+```solidity
+uint256 public instantUnstakeCap
+```
+
+
+### instantUnstakeFee
+Instant unstaking fee charged in assets
+
+
+```solidity
+uint256 public instantUnstakeFee
+```
+
+
+### feeRecipient
+Account which receives instant unstaking fees
+
+
+```solidity
+address public feeRecipient
 ```
 
 
@@ -166,11 +238,14 @@ Initializer for this contract
 
 
 ```solidity
-function initialize(string memory name_, string memory symbol_, address asset_, address owner_)
-    external
-    initializer
-    nonZeroAddress(asset_)
-    nonZeroAddress(owner_);
+function initialize(
+    string memory name_,
+    string memory symbol_,
+    address asset_,
+    address owner_,
+    uint256 _instantUnstakeFee,
+    address _feeRecipient
+) external initializer nonZeroAddress(asset_) nonZeroAddress(owner_);
 ```
 **Parameters**
 
@@ -180,6 +255,8 @@ function initialize(string memory name_, string memory symbol_, address asset_, 
 |`symbol_`|`string`|Symbol for this token|
 |`asset_`|`address`|Asset to stake and reward|
 |`owner_`|`address`|Default admin role for this contract|
+|`_instantUnstakeFee`|`uint256`||
+|`_feeRecipient`|`address`||
 
 
 ### pendingRewards
@@ -201,24 +278,19 @@ function pendingRewards() external view returns (uint256 amount);
 
 Enter cooldown for amount of `shares`
 Assets in cooldown are transferred to the silo contract and withdrawable at the end of cooldown
-If a cooldown already exists, the cooldown asset amount is increased and cooldown resets
 
 WARNING: Once an account enters cooldown, assets are locked and do not earn yield
 until the cooldown period has passed. Once cooldown has passed, call unstake() to withdraw tokens.
+The cancelCooldown() function can be used to cancel an active cooldown and mint shares from the assets in cooldown.
 
 
 ```solidity
-function cooldownShares(address owner, uint256 shares)
-    external
-    nonRestricted(msg.sender)
-    nonRestricted(owner)
-    returns (uint256 assets);
+function cooldownShares(uint256 shares) external nonRestricted(msg.sender) returns (uint256 assets, uint256 id);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`owner`|`address`||
 |`shares`|`uint256`|Amount of shares to enter cooldown|
 
 **Returns**
@@ -226,30 +298,26 @@ function cooldownShares(address owner, uint256 shares)
 |Name|Type|Description|
 |----|----|-----------|
 |`assets`|`uint256`|Amount of assets withdrawn for cooldown|
+|`id`|`uint256`|Owner unique identifier for this cooldown|
 
 
 ### cooldownAssets
 
 Enter cooldown for amount of `amount`
 Assets in cooldown are transferred the silo contract and withdrawable at the end of cooldown
-If a cooldown already exists, the cooldown asset amount is increased and cooldown resets
 
 WARNING: Once an account enters cooldown, assets are locked and do not earn yield
 until the cooldown period has passed. Once cooldown has passed, call unstake() to withdraw tokens.
+The cancelCooldown() function can be used to cancel an active cooldown and mint shares from the assets in cooldown.
 
 
 ```solidity
-function cooldownAssets(address owner, uint256 assets)
-    external
-    nonRestricted(msg.sender)
-    nonRestricted(owner)
-    returns (uint256 shares);
+function cooldownAssets(uint256 assets) external nonRestricted(msg.sender) returns (uint256 shares, uint256 id);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`owner`|`address`||
 |`assets`|`uint256`|Amount of asset tokens to enter cooldown|
 
 **Returns**
@@ -257,6 +325,30 @@ function cooldownAssets(address owner, uint256 assets)
 |Name|Type|Description|
 |----|----|-----------|
 |`shares`|`uint256`|Amount of shares redeemed for cooldown|
+|`id`|`uint256`|Owner unique identifier for this cooldown|
+
+
+### cancelCooldown
+
+Cancel a cooldown for an account
+
+This will mint new shares using assets in the silo
+
+
+```solidity
+function cancelCooldown(uint256 id) external nonRestricted(msg.sender) returns (uint256 shares);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`id`|`uint256`|Owner unique identifier for this cooldown|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`shares`|`uint256`|Amount of shares minted to `owner` when cancelling cooldown|
 
 
 ### unstake
@@ -265,26 +357,49 @@ Unstake shares that are in cooldown
 
 
 ```solidity
-function unstake(address to) external nonRestricted(msg.sender) nonRestricted(to) nonZeroAddress(to);
+function unstake(address receiver, uint256 id)
+    external
+    nonRestricted(msg.sender)
+    nonRestricted(receiver)
+    nonZeroAddress(receiver);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`to`|`address`|Account to transfer assets to|
+|`receiver`|`address`|Account to transfer assets to|
+|`id`|`uint256`||
 
 
-### cancelCooldown
+### instantUnstake
 
-Cancel a cooldown for an account
-
-This will mint new shares using assets in the silo
-An account can only cancel its entire cooldown amount
+Force withdraw assets by bypassing cooldown
+If set, enforces an instant unstaking cap and charges a fee
+Can only be initiated by INSTANT_UNSTAKER_ROLE
 
 
 ```solidity
-function cancelCooldown() external nonRestricted(msg.sender);
+function instantUnstake(uint256 assets, address owner, address receiver)
+    external
+    onlyRole(INSTANT_UNSTAKER_ROLE)
+    nonRestricted(owner)
+    nonRestricted(receiver)
+    returns (uint256 shares);
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`assets`|`uint256`|Amount of assets to instant withdraw|
+|`owner`|`address`|Account which hold staked assets|
+|`receiver`|`address`|Account to receive assets|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`shares`|`uint256`|Shares redeemed by this function|
+
 
 ### reward
 
@@ -354,6 +469,51 @@ function setIsRestricted(address account, bool newStatus) external onlyRole(REST
 |`newStatus`|`bool`|The new restriction status|
 
 
+### setInstantUnstakeCap
+
+Set instant unstake cap
+
+
+```solidity
+function setInstantUnstakeCap(uint256 cap) external onlyRole(CAP_ADJUSTER_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`cap`|`uint256`|New instant unstake cap|
+
+
+### setInstantUnstakeFee
+
+Set instant unstake fee as a percentage where 1e18 = 100%
+
+
+```solidity
+function setInstantUnstakeFee(uint256 fee) external onlyRole(DEFAULT_ADMIN_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`fee`|`uint256`|Instant unstaking fee|
+
+
+### setFeeRecipient
+
+Set an account to receive fees from instant unstaking
+
+
+```solidity
+function setFeeRecipient(address newFeeRecipient) external onlyRole(DEFAULT_ADMIN_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newFeeRecipient`|`address`|New recipient for unstaking fees|
+
+
 ### transferRestrictedAssets
 
 Withdraw assets from a restricted account.
@@ -362,7 +522,7 @@ Always redeems the full balance of the restricted account
 
 
 ```solidity
-function transferRestrictedAssets(address from, address to)
+function transferRestrictedAssets(address from, address to, bool isCooldown, uint256 id)
     external
     nonZeroAddress(to)
     onlyRole(DEFAULT_ADMIN_ROLE);
@@ -373,6 +533,8 @@ function transferRestrictedAssets(address from, address to)
 |----|----|-----------|
 |`from`|`address`|Restricted account to redeem shares from|
 |`to`|`address`|Account to transfer assets to|
+|`isCooldown`|`bool`|Flag to specify if restricted account is in cooldown|
+|`id`|`uint256`|Id of cooldown|
 
 
 ### deposit

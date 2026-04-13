@@ -3,8 +3,8 @@
 endpoint_url = "${SEPOLIA_RPC_URL}"
 
 [11155111.string]
-asset_name = "Test Asset"
-asset_symbol = "tAsset"
+asset_name = "Tenbin Gold"
+asset_symbol = "tGLD"
 
 [11155111.address]
 admin_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"

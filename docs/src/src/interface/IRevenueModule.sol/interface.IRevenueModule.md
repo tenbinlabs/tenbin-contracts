@@ -1,5 +1,5 @@
 # IRevenueModule
-[Git Source](https://github.com/tenbinlabs/contracts/blob/34d0d98c6959c0c67cf21488bdfb4b79f4ce3f2e/src/interface/IRevenueModule.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/interface/IRevenueModule.sol)
 
 **Title:**
 IRevenueModule
@@ -101,25 +101,6 @@ function delegateSigner(address signer, bool status) external;
 |----|----|-----------|
 |`signer`|`address`|Signer account|
 |`status`|`bool`|Whether or not this signer is delegated|
-
-
-### claimMorphoRewards
-
-Claim rewards from Morpho's Universal Rewards Distributor
-
-
-```solidity
-function claimMorphoRewards(address distributor, address rewardToken, uint256 claimable, bytes32[] calldata proof)
-    external;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`distributor`|`address`|The URD contract address|
-|`rewardToken`|`address`|The reward token address (e.g., MORPHO)|
-|`claimable`|`uint256`|The total claimable amount from merkle tree|
-|`proof`|`bytes32[]`|The merkle proof for this claim|
 
 
 ## Events

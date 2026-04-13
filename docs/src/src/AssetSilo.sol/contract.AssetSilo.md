@@ -1,5 +1,5 @@
 # AssetSilo
-[Git Source](https://github.com/tenbinlabs/contracts/blob/34d0d98c6959c0c67cf21488bdfb4b79f4ce3f2e/src/AssetSilo.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/AssetSilo.sol)
 
 **Title:**
 AssetSilo
@@ -66,7 +66,7 @@ Cancel cooldown for an account by minting new shares
 
 
 ```solidity
-function cancel(address account, uint256 amount) external;
+function cancel(address account, uint256 amount) external returns (uint256 shares);
 ```
 **Parameters**
 
@@ -74,6 +74,12 @@ function cancel(address account, uint256 amount) external;
 |----|----|-----------|
 |`account`|`address`|Account to mint new staking shares for|
 |`amount`|`uint256`|Amount of assets to deposit|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`shares`|`uint256`|Amount of shares minted by this cancellation|
 
 
 ## Errors
