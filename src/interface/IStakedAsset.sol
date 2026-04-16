@@ -151,14 +151,14 @@ interface IStakedAsset {
     /// @notice Force withdraw assets by bypassing cooldown
     /// If set, enforces an instant unstaking cap and charges a fee
     /// Can only be initiated by INSTANT_UNSTAKER_ROLE
-    /// @param assets Amount of assets to instant withdraw
+    /// @param shares Amount of assets to instant withdraw
     /// @param receiver Account to receive assets
     /// @param owner Account which hold staked assets
-    /// @return shares Shares redeemed by this function
+    /// @return assets Assets returned by this function
     /// @return assetFee Amount of asset fee charged by this function
-    function instantUnstake(uint256 assets, address receiver, address owner)
+    function instantUnstake(uint256 shares, address receiver, address owner)
         external
-        returns (uint256 shares, uint256 assetFee);
+        returns (uint256 assets, uint256 assetFee);
 
     /// @notice Adds new rewards to the contract and extends vesting period
     /// @dev WARNING: This resets the vesting end time to block.timestamp + vesting.period,

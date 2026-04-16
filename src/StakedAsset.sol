@@ -97,7 +97,7 @@ contract StakedAsset is
     mapping(address => mapping(uint256 => Cooldown)) public cooldowns;
 
     /// @notice Next cooldown ID for an account
-    mapping(address => uint256) cooldownIds;
+    mapping(address => uint256) public cooldownIds;
 
     /// @notice Cooldown period for unstaking in seconds
     uint256 public cooldownPeriod;
@@ -235,13 +235,14 @@ contract StakedAsset is
     }
 
     /// @inheritdoc IStakedAsset
-    function instantUnstake(uint256 assets, address receiver, address owner)
+    function instantUnstake(uint256 shares, address receiver, address owner)
         external
         onlyRole(INSTANT_UNSTAKER_ROLE)
         nonRestricted(owner)
         nonRestricted(receiver)
-        returns (uint256 shares, uint256 fee)
+        returns (uint256 assets, uint256 fee)
     {
+        assets = previewRedeem(shares);
         if (assets > instantUnstakeCap) revert ExceedsInstantUnstakeCap();
         instantUnstakeCap -= assets;
 
@@ -249,11 +250,11 @@ contract StakedAsset is
         fee = 0;
         if (instantUnstakeFee > 0 && feeRecipient != address(0)) {
             fee = Math.mulDiv(instantUnstakeFee, assets, FEE_PRECISION);
-            shares += super.withdraw(fee, feeRecipient, owner);
+            super.withdraw(fee, feeRecipient, owner);
         }
 
         // withdraw remaining assets to receiver
-        shares += super.withdraw(assets - fee, receiver, owner);
+        super.withdraw(assets - fee, receiver, owner);
         emit InstantUnstake(owner, receiver, assets, shares);
     }
 

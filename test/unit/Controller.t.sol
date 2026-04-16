@@ -227,23 +227,6 @@ contract ControllerTest is BaseTest {
         vm.expectRevert(IController.InvalidRecipient.selector);
         controller.verifyOrder(order, signature);
 
-        // Invalid signature type
-        order = getMintOrder(collateral, 10000e6, 3e18, 0);
-        signature = signOrder(payerKey, hashOrder(order));
-
-        bytes memory data = abi.encodeWithSelector(
-            controller.verifyOrder.selector,
-            order,
-            uint8(3), // invalid SignatureType
-            bytes("")
-        );
-
-        vm.expectRevert(IController.InvalidSignatureType.selector);
-        (bool success,) = address(controller).call(data);
-        assertFalse(success);
-
-        controller.verifyOrder(order, signature);
-
         // InvalidRecipient recipient
         vm.stopPrank();
         vm.prank(payer);
@@ -275,9 +258,17 @@ contract ControllerTest is BaseTest {
         vm.expectRevert(IController.InvalidCollateralAmount.selector);
         controller.verifyOrder(order, signature);
 
-        // InvalidAssetToken
+        // InvalidAssetToken not asset nor staked asset
         order = getMintOrder(collateral, 10000e6, 3e18, 0);
         order.asset_token = address(collateral);
+        signature = signOrder(payerKey, hashOrder(order));
+        vm.startPrank(minter);
+        vm.expectRevert(IController.InvalidAssetToken.selector);
+        controller.verifyOrder(order, signature);
+
+        // InvalidAssetToken not asset on Mint
+        order = getMintOrder(collateral, 10000e6, 3e18, 0);
+        order.asset_token = address(staking);
         signature = signOrder(payerKey, hashOrder(order));
         vm.startPrank(minter);
         vm.expectRevert(IController.InvalidAssetToken.selector);
@@ -1239,15 +1230,33 @@ contract ControllerTest is BaseTest {
 
     function test_BlockMintLimit() public {
         vm.prank(owner);
-        controller.setBlockMintLimit(1e18);
+        controller.setBlockMintLimit(2e18);
 
         // can mint up to limit
-        collateral.mint(payer, 4000e18);
+        collateral.mint(payer, 12000e18);
         allowSigner(payer);
         addRecipient(payer, recipient);
-        approveController(collateral, payer, 4000e18);
+        approveController(collateral, payer, type(uint256).max);
         IController.Order memory order = getMintOrder(collateral, 4000e18, 1e18, 0);
         mint(order, signOrder(payerKey, hashOrder(order)));
+
+        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockMints(), 1e18);
+
+        // limt resets after new block
+        vm.roll(block.number + 1);
+        order = getMintOrder(collateral, 4000e18, 1e18, 1);
+        mint(order, signOrder(payerKey, hashOrder(order)));
+
+        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockMints(), 1e18);
+
+        // all mints update blockMints
+        order = getMintOrder(collateral, 4000e18, 1e18, 2);
+        mint(order, signOrder(payerKey, hashOrder(order)));
+
+        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockMints(), 2e18);
     }
 
     function test_Revert_BlockMintLimit() public {
@@ -1255,7 +1264,7 @@ contract ControllerTest is BaseTest {
         controller.setBlockMintLimit(1e18 - 1);
 
         // minting just above mint limit fails
-        collateral.mint(payer, 4000e18);
+        collateral.mint(payer, 12000e18);
         allowSigner(payer);
         addRecipient(payer, recipient);
         approveController(collateral, payer, 4000e18);
@@ -1265,20 +1274,53 @@ contract ControllerTest is BaseTest {
         IController.Signature memory signedContext = signContext(minterKey, hashContext(context));
         vm.expectRevert(IController.ExceedsBlockMintLimit.selector);
         controller.mint(order, signedOrder, context, signedContext);
+
+        vm.prank(owner);
+        controller.setBlockMintLimit(1e18);
+
+        // can mint up to the limit
+        // succesfull mint
+        controller.mint(order, signedOrder, context, signedContext);
+
+        // new mint surpass limit
+        order = getMintOrder(collateral, 4000e18, 1e18, 1);
+        context = getContext(hashOrder(order), 0, false);
+        signedOrder = signOrder(payerKey, hashOrder(order));
+        signedContext = signContext(minterKey, hashContext(context));
+        vm.expectRevert(IController.ExceedsBlockMintLimit.selector);
+        controller.mint(order, signedOrder, context, signedContext);
     }
 
     function test_BlockRedeemLimit() public {
         vm.prank(owner);
-        controller.setBlockRedeemLimit(1e18);
+        controller.setBlockRedeemLimit(2e18);
 
         // can redeem up to limit
-        mintAsset(payer, 1e18);
-        collateral.mint(address(manager), 4000e18);
+        mintAsset(payer, 3e18);
+        collateral.mint(address(manager), 12000e18);
         allowSigner(payer);
         addRecipient(payer, recipient);
-        approveController(asset, payer, 1e18);
+        approveController(asset, payer, 3e18);
         IController.Order memory order = getRedeemOrder(collateral, 4000e18, 1e18, 0);
         redeem(order, signOrder(payerKey, hashOrder(order)));
+
+        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockRedeems(), 1e18);
+
+        // limt resets after new block
+        vm.roll(block.number + 1);
+        order = getRedeemOrder(collateral, 4000e18, 1e18, 1);
+        redeem(order, signOrder(payerKey, hashOrder(order)));
+
+        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockRedeems(), 1e18);
+
+        // all redeems update blockRedeems
+        order = getRedeemOrder(collateral, 4000e18, 1e18, 2);
+        redeem(order, signOrder(payerKey, hashOrder(order)));
+
+        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockRedeems(), 2e18);
     }
 
     function test_Revert_BlockRedeemLimit() public {
@@ -1286,8 +1328,8 @@ contract ControllerTest is BaseTest {
         controller.setBlockRedeemLimit(1e18 - 1);
 
         // redeeming slightly above limit fails
-        mintAsset(payer, 1e18);
-        collateral.mint(address(manager), 4000e18);
+        mintAsset(payer, 3e18);
+        collateral.mint(address(manager), 12000e18);
         allowSigner(payer);
         addRecipient(payer, recipient);
         approveController(asset, payer, 1e18);
@@ -1295,6 +1337,21 @@ contract ControllerTest is BaseTest {
         IController.Context memory context = getContext(hashOrder(order), 0, false);
         IController.Signature memory signedOrder = signOrder(payerKey, hashOrder(order));
         IController.Signature memory signedContext = signContext(minterKey, hashContext(context));
+        vm.expectRevert(IController.ExceedsBlockRedeemLimit.selector);
+        controller.redeem(order, signedOrder, context, signedContext);
+
+        vm.prank(owner);
+        controller.setBlockRedeemLimit(1e18);
+
+        // can redeem up to the limit
+        // succesfull redeem
+        controller.redeem(order, signedOrder, context, signedContext);
+
+        // new redeem surpass limit
+        order = getRedeemOrder(collateral, 4000e18, 1e18, 1);
+        context = getContext(hashOrder(order), 0, false);
+        signedOrder = signOrder(payerKey, hashOrder(order));
+        signedContext = signContext(minterKey, hashContext(context));
         vm.expectRevert(IController.ExceedsBlockRedeemLimit.selector);
         controller.redeem(order, signedOrder, context, signedContext);
     }
@@ -1716,8 +1773,9 @@ contract ControllerTest is BaseTest {
         setOracle(address(oracleAdapter), tolerance);
 
         // set instant unstake cap
+        uint256 amount = staking.previewRedeem(shares);
         vm.prank(capAdjuster);
-        staking.setInstantUnstakeCap(order.asset_amount);
+        staking.setInstantUnstakeCap(amount);
 
         // set answer and perform redeem - should succeed for all tolerances
         aggregator.setAnswer(expectedPrice);

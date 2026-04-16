@@ -19,20 +19,20 @@
                 "asset_symbol": "tGLD",
                 "deployer": "0x224D7291D3E05d848B35364836Dfa9a01e3Ba69b",
                 "deployment_block": 24422885,
-                "domain_separator": "0x350d47647672b350708cb2589fb6c95910a332ac246233acb4dd38e702909d10",
+                "domain_separator": "0x7c08a7747f52d03de2cd98f295a399ffc9a6aaca27e9d4f71c256d04e763887a",
                 "staked_asset_name": "Staked Tenbin Gold",
                 "staked_asset_symbol": "stGLD",
-                "version": "1.1.0"
+                "version": "1.2.0"
             },
             "contracts": {
                 "asset_token": "0x6a547b25534234bb79CE6961a23Db13DE154b6F4",
                 "collateral": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
                 "collateral_manager": "0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa",
-                "controller": "0x65ccf79c05930F58d15dD721Eea2EAcD2Df2D06d",
+                "controller": "0xF24ceF8227A3126e49Ff272cDC06FC16A97c8967",
                 "custodian_module": "0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89",
                 "multicall": "0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8",
                 "oracle_adapter": "0xA944664E98FF8CD1743149A62Da3F3F23297E7C1",
-                "revenue_module": "0xE2C80cA47016Ad79942c52Ae0cB59132D245F6EB",
+                "revenue_module": "0x6DF8FF2FE0296Fe46b3Cc350EF76E31E388F2256",
                 "silo": "0xA924A7493782c11b4E408B072367A0Fc02556092",
                 "staked_asset": "0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4",
                 "swap_module": "0xB426bcB6028Ba1fBB746a8af11859D97007BE594"
