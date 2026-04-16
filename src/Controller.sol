@@ -139,10 +139,10 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     Oracle public oracle;
 
     /// @notice Asset mint limit per block
-    uint256 blockMintLimit;
+    uint256 public blockMintLimit;
 
     /// @notice Asset redeem limit per block
-    uint256 blockRedeemLimit;
+    uint256 public blockRedeemLimit;
 
     /// @notice Asset amount minted for a block. Used to enforce mint limits.
     uint256 blockMints;
@@ -432,7 +432,8 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
         uint256 assetFee = 0;
         // handle redemption for staked assets
         if (order.asset_token == stakedAsset) {
-            // ignore shares under the assumption share price never increases for staked asset
+            // TODO: should we pass a min/max assets in context to avoid share price manipulation?
+            // asset_amount in this case refers to the share_amount
             (, assetFee) = IStakedAsset(stakedAsset).instantUnstake(order.asset_amount, order.payer, order.payer);
         }
 
@@ -483,8 +484,6 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
             } else {
                 revert InvalidERC1271Signature();
             }
-        } else {
-            revert InvalidSignatureType();
         }
 
         // get signer and recipient details
@@ -518,8 +517,9 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
             // if redeeming staked assets, use converted asset amount based on share price
             uint256 assetTokenAmount;
             if (order.asset_token == stakedAsset) {
-                uint256 sharePrice = IERC4626(stakedAsset).convertToAssets(1e18);
-                assetTokenAmount = Math.mulDiv(order.asset_amount, sharePrice, 1e18);
+                // convert to assets if redeeming staked assets
+                // in this case, asset_amount is the number of shares of staked assets
+                assetTokenAmount = IERC4626(stakedAsset).convertToAssets(order.asset_amount);
             } else {
                 assetTokenAmount = order.asset_amount;
             }

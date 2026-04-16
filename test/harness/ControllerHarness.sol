@@ -11,4 +11,16 @@ contract ControllerHarness is Controller {
     function exposedVerifyNonce(address signer, uint256 nonce) external view {
         _verifyNonce(signer, nonce);
     }
+
+    function exposedBlockNumber() external view returns (uint256) {
+        return blockNumber;
+    }
+
+    function exposedBlockMints() external view returns (uint256) {
+        return blockMints;
+    }
+
+    function exposedBlockRedeems() external view returns (uint256) {
+        return blockRedeems;
+    }
 }
