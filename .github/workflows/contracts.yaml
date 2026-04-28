@@ -10,6 +10,7 @@ on:
 env:
   FOUNDRY_PROFILE: ci
   MAINNET_RPC_URL: ${{ secrets.MAINNET_FORK_URL }}
+  TEST_MNEMONIC: ${{ secrets.TEST_MNEMONIC }}
 
 jobs:
   check:
