@@ -23,7 +23,6 @@ gas_reports = [
   "SwapModule",
   "SwapModuleHarness"
 ]
-
 fs_permissions = [{ access = "read-write", path = "./" }]
 
 # compile production contracts with via-ir
@@ -41,7 +40,8 @@ exclude_lints = [
   "mixed-case-variable",
   "screaming-snake-case-immutable",
   "asm-keccak256",
-  "unwrapped-modifier-logic"
+  "unwrapped-modifier-logic",
+  "block-timestamp"
 ]
 
 [fuzz]

@@ -32,14 +32,14 @@ interface IStakedAsset {
     error ExceedsInstantUnstakeCap();
     /// @notice Max cooldown period exceeded
     error ExceedsMaxCooldownPeriod();
-    /// @notice Exceeds max instant redeem fee
-    error ExceedsMaxInstantUnstakeFee();
     /// @notice Max vesting period exceeded
     error ExceedsMaxVestingPeriod();
     /// @notice Cannot cooldown zero assets or shares
     error InvalidCooldownAmount();
     /// @notice Cannot rescue asset token from staking contract
     error InvalidRescueToken();
+    /// @notice Cannot reward zero assets
+    error InvalidRewardAmount();
     /// @notice Cooldown does not exist for this account and ID
     error NonexistentCooldown();
     /// @notice Only restricted account
@@ -52,8 +52,6 @@ interface IStakedAsset {
     error SubceedsMinVestingPeriod();
     /// @notice Cooldown has already been unstaked or does not exist
     error ZeroCooldownAssets();
-    /// @notice Fee recipient cannot be address(0) or this contract
-    error InvalidFeeRecipient();
 
     /// @notice Emitted when new rewards are received by this contract
     /// @param assets Amount of asset tokens rewarded
@@ -105,14 +103,6 @@ interface IStakedAsset {
     /// @param newInstantUnstakeCap New instant unstake cap
     event InstantUnstakeCapChanged(uint256 newInstantUnstakeCap);
 
-    /// @notice Emitted when the instant unstake fee is updated
-    /// @param newInstantUnstakeFee New instant unstake fee
-    event InstantUnstakeFeeChanged(uint256 newInstantUnstakeFee);
-
-    /// @notice Emitted when the fee recipient is changed
-    /// @param newFeeRecipient New fee recipeint
-    event FeeRecipientUpdated(address newFeeRecipient);
-
     /// @notice Get pending rewards for this contract
     /// @return pending Pending unvested token reward
     function pendingRewards() external view returns (uint256 pending);
@@ -151,18 +141,17 @@ interface IStakedAsset {
     /// @notice Force withdraw assets by bypassing cooldown
     /// If set, enforces an instant unstaking cap and charges a fee
     /// Can only be initiated by INSTANT_UNSTAKER_ROLE
-    /// @param shares Amount of assets to instant withdraw
+    /// @param assets Amount of assets to withdraw
     /// @param receiver Account to receive assets
     /// @param owner Account which hold staked assets
-    /// @return assets Assets returned by this function
-    /// @return assetFee Amount of asset fee charged by this function
-    function instantUnstake(uint256 shares, address receiver, address owner)
-        external
-        returns (uint256 assets, uint256 assetFee);
+    /// @return shares Shares redeemed by this function
+    function instantUnstake(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 
     /// @notice Adds new rewards to the contract and extends vesting period
     /// @dev WARNING: This resets the vesting end time to block.timestamp + vesting.period,
-    /// which can delay distribution of previously pending rewards
+    /// which can delay distribution of previously pending rewards.
+    /// Rewarding the contract excessively and with low reward amounts can cause vesting to reset and extend currently vesting rewards.
+    /// Rewards should be distributed infrequently (once per 1-3 days) and in consistent amounts to ensure smooth vesting.
     /// @param assets Amount of asset tokens to transfer to this contract as a reward
     function reward(uint256 assets) external;
 }

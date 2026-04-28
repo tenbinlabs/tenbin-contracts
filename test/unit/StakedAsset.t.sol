@@ -26,37 +26,21 @@ contract StakedAssetTest is BaseTest {
 
         // cannot initialize again
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        staking.initialize("Staked Asset", "stAST", address(asset), owner, 0, address(revenueModule));
+        staking.initialize("Staked Asset", "stAST", address(asset), owner);
 
         // cannot initialize implementation
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        stakingImplementation.initialize("Staked Asset", "stAST", address(asset), owner, 0, address(revenueModule));
+        stakingImplementation.initialize("Staked Asset", "stAST", address(asset), owner);
 
         // test failed initialization cases
-        bytes memory data =
-            abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(0), address(this), 0, address(0));
+        bytes memory data = abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(0), address(this));
         vm.expectRevert(IStakedAsset.NonZeroAddress.selector);
         StakedAsset(address(new ERC1967Proxy(address(stakingImplementation), data)));
 
-        data =
-            abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(asset), address(0), 0, address(0));
+        data = abi.encodeWithSelector(StakedAsset.initialize.selector, "", "", address(asset), address(0));
         vm.expectRevert(IStakedAsset.NonZeroAddress.selector);
         StakedAsset(address(new ERC1967Proxy(address(stakingImplementation), data)));
-
-        data = abi.encodeWithSelector(
-            StakedAsset.initialize.selector, "", "", address(asset), address(1), type(uint256).max, address(1)
-        );
-        vm.expectRevert(IStakedAsset.ExceedsMaxInstantUnstakeFee.selector);
-        StakedAsset(address(new ERC1967Proxy(address(stakingImplementation), data)));
-
-        ERC1967Proxy proxy = new ERC1967Proxy(address(stakingImplementation), "");
-        StakedAsset stakedAsset = StakedAsset(address(proxy));
-        vm.expectRevert(IStakedAsset.InvalidFeeRecipient.selector);
-        stakedAsset.initialize("Staked Asset", "stAST", address(asset), owner, 0, address(proxy));
-
         assertEq(staking.instantUnstakeCap(), 0);
-        assertEq(staking.instantUnstakeFee(), 0);
-        assertEq(staking.feeRecipient(), address(revenueModule));
     }
 
     function test_Revert_StakedAsset_UpgradeToAndCall() public {
@@ -227,7 +211,7 @@ contract StakedAssetTest is BaseTest {
         assertEq(assets, 1000e18);
     }
 
-    function test_Revert_Unstake_Access() public {
+    function test_Revert_Unstake() public {
         // setup
         mintAsset(user, 1000e18);
         vm.prank(admin);
@@ -270,6 +254,11 @@ contract StakedAssetTest is BaseTest {
 
         assertEq(staking.balanceOf(user), 0);
         assertEq(asset.balanceOf(user), 1000e18);
+
+        // Cannot unstake already unstaked cooldown
+        vm.prank(user);
+        vm.expectRevert(IStakedAsset.ZeroCooldownAssets.selector);
+        staking.unstake(user, 0);
     }
 
     function test_Revert_RestrictedRegistry_Transfer() public {
@@ -485,6 +474,10 @@ contract StakedAssetTest is BaseTest {
     function test_Revert_Reward() public {
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         staking.reward(1000e18);
+
+        vm.prank(rewarder);
+        vm.expectRevert(IStakedAsset.InvalidRewardAmount.selector);
+        staking.reward(0);
     }
 
     function test_Reward() public {
@@ -619,13 +612,15 @@ contract StakedAssetTest is BaseTest {
         vm.expectRevert(IStakedAsset.ExceedsMaxVestingPeriod.selector);
         staking.setVestingPeriod(91 days);
 
+        // cannot subceed min vesting period
         vm.prank(admin);
         vm.expectRevert(IStakedAsset.SubceedsMinVestingPeriod.selector);
         staking.setVestingPeriod(800 seconds);
 
-        // set vesting
+        // cannot set 0 vesting period
         vm.prank(admin);
-        staking.setVestingPeriod(7 days);
+        vm.expectRevert(IStakedAsset.SubceedsMinVestingPeriod.selector);
+        staking.setVestingPeriod(0 seconds);
     }
 
     function test_Vesting() public {
@@ -1216,37 +1211,31 @@ contract StakedAssetTest is BaseTest {
         // setup
         vm.prank(capAdjuster);
         staking.setInstantUnstakeCap(10e18);
-        vm.prank(owner);
-        staking.setInstantUnstakeFee(1e17);
-        mintAsset(user, 3e18);
+        mintAsset(user, 2e18);
         vm.prank(user);
-        asset.approve(address(staking), 3e18);
+        asset.approve(address(staking), 2e18);
         vm.prank(user);
-        staking.deposit(3e18, user);
+        staking.deposit(2e18, user);
         vm.prank(user);
-        staking.approve(instantUnstaker, 3e18);
-
-        // unstake with fee
-        vm.prank(instantUnstaker);
-        staking.instantUnstake(1e18, user, user);
-        assertApproxEqAbs(asset.balanceOf(user), 0.9e18, VAULT_TOLERANCE);
-        assertApproxEqAbs(asset.balanceOf(address(revenueModule)), 0.1e18, VAULT_TOLERANCE);
-        assertApproxEqAbs(staking.balanceOf(user), 2e18, VAULT_TOLERANCE);
-
-        // unstake with no fee
-        vm.prank(owner);
-        staking.setInstantUnstakeFee(0);
+        staking.approve(instantUnstaker, 2e18);
 
         vm.prank(instantUnstaker);
-        staking.instantUnstake(1e18, user, user);
-        assertApproxEqAbs(asset.balanceOf(user), 1.9e18, VAULT_TOLERANCE);
-        assertApproxEqAbs(asset.balanceOf(address(revenueModule)), 0.1e18, VAULT_TOLERANCE);
+        uint256 shares = staking.instantUnstake(1e18, user, user);
+        assertApproxEqAbs(shares, 1e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(asset.balanceOf(user), 1e18, VAULT_TOLERANCE);
         assertApproxEqAbs(staking.balanceOf(user), 1e18, VAULT_TOLERANCE);
+
+        // simulate increase in share price and unstake again
+        mintAsset(address(staking), 1e18);
+
+        vm.prank(instantUnstaker);
+        shares = staking.instantUnstake(1e18, user, user);
+        assertApproxEqAbs(shares, 0.5e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(asset.balanceOf(user), 2e18, VAULT_TOLERANCE);
+        assertApproxEqAbs(staking.balanceOf(user), 0.5e18, VAULT_TOLERANCE);
     }
 
     function test_Revert_InstantUnstake() public {
-        vm.prank(owner);
-        staking.setInstantUnstakeFee(1e17); // 10%
         vm.prank(capAdjuster);
         staking.setInstantUnstakeCap(10e18);
         vm.prank(restricter);
@@ -1271,9 +1260,33 @@ contract StakedAssetTest is BaseTest {
         staking.instantUnstake(11e18, user, user);
 
         // insufficient balance
-        vm.expectPartialRevert(ERC4626.ERC4626ExceededMaxWithdraw.selector);
+        vm.expectPartialRevert(ERC4626.ERC4626ExceededMaxRedeem.selector);
         staking.instantUnstake(1e18, user, user);
         vm.stopPrank();
+    }
+
+    function test_fuzz_InstantUnstake(uint256 instantUnstakeCap, uint256 amount) public {
+        instantUnstakeCap = bound(instantUnstakeCap, 1e18, 1e40);
+        amount = bound(amount, 1, instantUnstakeCap);
+
+        // setup
+        vm.prank(capAdjuster);
+        staking.setInstantUnstakeCap(instantUnstakeCap);
+        mintAsset(user, amount);
+        vm.prank(user);
+        asset.approve(address(staking), amount);
+        vm.prank(user);
+        staking.deposit(amount, user);
+        vm.prank(user);
+        staking.approve(instantUnstaker, amount);
+
+        // unstake
+        vm.prank(instantUnstaker);
+
+        staking.instantUnstake(amount, user, user);
+        assertApproxEqAbs(staking.instantUnstakeCap(), instantUnstakeCap - amount, VAULT_TOLERANCE);
+        assertApproxEqAbs(asset.balanceOf(user), amount, VAULT_TOLERANCE);
+        assertApproxEqAbs(staking.balanceOf(user), 0, VAULT_TOLERANCE);
     }
 
     function test_SetInstantUnstakeCap() public {
@@ -1285,38 +1298,5 @@ contract StakedAssetTest is BaseTest {
     function test_Revert_SetInstantUnstakeCap() public {
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         staking.setInstantUnstakeCap(1000e18);
-    }
-
-    function test_SetInstantUnstakeFee() public {
-        vm.prank(owner);
-        staking.setInstantUnstakeFee(2e17);
-        assertEq(staking.instantUnstakeFee(), 2e17);
-    }
-
-    function test_Revert_SetInstantUnstakeFee() public {
-        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        staking.setInstantUnstakeFee(2e17);
-        vm.prank(owner);
-        vm.expectRevert(IStakedAsset.ExceedsMaxInstantUnstakeFee.selector);
-        staking.setInstantUnstakeFee(1e18 + 1);
-    }
-
-    function test_SetFeeRecipient() public {
-        vm.prank(owner);
-        staking.setFeeRecipient(feeRecipient);
-        assertEq(staking.feeRecipient(), feeRecipient);
-    }
-
-    function test_Revert_SetFeeRecipient() public {
-        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        staking.setFeeRecipient(feeRecipient);
-
-        vm.expectRevert(IStakedAsset.InvalidFeeRecipient.selector);
-        vm.prank(owner);
-        staking.setFeeRecipient(address(0));
-
-        vm.expectRevert(IStakedAsset.InvalidFeeRecipient.selector);
-        vm.prank(owner);
-        staking.setFeeRecipient(address(staking));
     }
 }

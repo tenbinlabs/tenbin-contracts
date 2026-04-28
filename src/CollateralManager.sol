@@ -1,3 +1,13 @@
+///   __/\\\\\\\\\\\\\\\__________________________/\\\____________________________
+///    _\///////\\\/////__________________________\/\\\____________________________
+///     _______\/\\\_______________________________\/\\\_________/\\\_______________
+///      _______\/\\\______/\\\\\\\\___/\\/\\\\\\___\/\\\________\///___/\\/\\\\\\___
+///       _______\/\\\____/\\\/////\\\_\/\\\////\\\__\/\\\\\\\\\___/\\\_\/\\\////\\\__
+///        _______\/\\\___/\\\\\\\\\\\__\/\\\__\//\\\_\/\\\////\\\_\/\\\_\/\\\__\//\\\_
+///         _______\/\\\__\//\\///////___\/\\\___\/\\\_\/\\\__\/\\\_\/\\\_\/\\\___\/\\\_
+///          _______\/\\\___\//\\\\\\\\\\_\/\\\___\/\\\_\/\\\\\\\\\__\/\\\_\/\\\___\/\\\_
+///           _______\///_____\//////////__\///____\///__\/////////___\///__\///____\///__
+
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
@@ -126,7 +136,12 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
     /// @dev Initializer for this contract
     /// @param controller_ Controller for this contract
     /// @param owner_ Initial owner for default admin role
-    function initialize(address controller_, address owner_) external initializer nonZeroAddress(controller_) {
+    function initialize(address controller_, address owner_)
+        external
+        initializer
+        nonZeroAddress(controller_)
+        nonZeroAddress(owner_)
+    {
         controller = controller_;
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, owner_);
@@ -163,6 +178,7 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         if (address(vault) == address(0)) revert CollateralNotSupported();
         IERC20(collateral).forceApprove(controller, 0);
         IERC20(collateral).forceApprove(address(vault), 0);
+        pendingRevenue[collateral] = 0;
         lastTotalAssets[collateral] = 0;
         collaterals.remove(collateral);
         delete vaults[collateral];
@@ -342,7 +358,7 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         emit RevenueWithdraw(collateral, amount);
     }
 
-    /// ICollateralManager
+    /// @inheritdoc ICollateralManager
     function convertRevenue(address collateral, uint256 amount) external notPaused onlyRole(REBALANCER_ROLE) {
         IERC4626 vault = vaults[collateral];
         if (address(vault) == address(0)) revert CollateralNotSupported();

@@ -5,6 +5,8 @@ endpoint_url="wss://localhost:8545"
 [31337.string]
 asset_name = "Test Asset"
 asset_symbol = "tAsset"
+mint_limit = "3000000000000000000000"   # 3000 asset tokens
+redeem_limit = "3000000000000000000000" # 3000 asset tokens
 
 [31337.address]
 admin_role = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"

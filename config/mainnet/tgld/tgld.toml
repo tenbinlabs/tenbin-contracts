@@ -7,15 +7,17 @@ asset_name = "Tenbin Gold"
 asset_symbol = "tGLD"
 staked_asset_name = "Staked Tenbin Gold"
 staked_asset_symbol = "stGLD"
+mint_limit = "3000000000000000000000"   # 3000 asset tokens
+redeem_limit = "3000000000000000000000" # 3000 asset tokens
 
 [mainnet.uint]
-cooldown_period = 604_800               # 7 days
-min_swap_price = 0                      # 0
-oracle_tolerance = 50_000000000000000   # 5%
-ratio = 170_000000000000000             # 17%
-rebalance_cap = 100_000_000_000000      # 100m
-swap_cap = 0                            # 0
-vesting_period = 259_200                # 3 days
+cooldown_period = 604_800                   # 7 days
+min_swap_price = 0                          # 0
+oracle_tolerance = 50_000000000000000       # 5%
+ratio = 170_000000000000000                 # 17%
+rebalance_cap = 100_000_000_000000          # 100m
+swap_cap = 0                                # 0
+vesting_period = 259_200                    # 3 days
 
 [mainnet.address]
 one_inch_router = "0x111111125421cA6dc452d289314280a0f8842A65"

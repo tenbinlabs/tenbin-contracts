@@ -187,9 +187,8 @@ contract BaseTest is Test {
         vault = new MockERC4626("Collateral Vault", "vCLT", collateral);
         vault2 = new MockERC4626("Collateral Vault 2", "vCLT2", collateral2);
         address stakingImplementation = address(new StakedAssetHarness());
-        bytes memory data = abi.encodeWithSelector(
-            StakedAsset.initialize.selector, "Staked Asset", "stAST", address(asset), owner, 0, address(revenueModule)
-        );
+        bytes memory data =
+            abi.encodeWithSelector(StakedAsset.initialize.selector, "Staked Asset", "stAST", address(asset), owner);
         ERC1967Proxy proxy = new ERC1967Proxy(stakingImplementation, data);
         staking = StakedAssetHarness(address(proxy));
         controller = new ControllerHarness(address(asset), address(staking), DEFAULT_RATIO, custodian, owner);
@@ -265,8 +264,8 @@ contract BaseTest is Test {
         controller.grantRole(SIGNER_MANAGER_ROLE, signerManager);
         controller.grantRole(RESTRICTER_ROLE, restricter);
         // disable block mint & redeem limit
-        controller.setBlockMintLimit(type(uint256).max);
-        controller.setBlockRedeemLimit(type(uint256).max);
+        controller.setBlockMintLimit(type(uint128).max);
+        controller.setBlockRedeemLimit(type(uint128).max);
     }
 
     // helper function to configure manager
@@ -300,7 +299,6 @@ contract BaseTest is Test {
         staking.grantRole(CAP_ADJUSTER_ROLE, capAdjuster);
         staking.grantRole(INSTANT_UNSTAKER_ROLE, instantUnstaker);
         staking.grantRole(INSTANT_UNSTAKER_ROLE, address(controller));
-        staking.setFeeRecipient(address(revenueModule));
         vm.stopPrank();
 
         // approvals
@@ -419,7 +417,7 @@ contract BaseTest is Test {
             recipient: recipient,
             collateral_token: address(collateralToken),
             collateral_amount: collateralAmount,
-            asset_token: address(asset),
+            order_token: address(asset),
             asset_amount: mintAmount
         });
     }
@@ -438,7 +436,7 @@ contract BaseTest is Test {
             recipient: recipient,
             collateral_token: address(collateralToken),
             collateral_amount: collateralAmount,
-            asset_token: address(asset),
+            order_token: address(asset),
             asset_amount: redeemAmount
         });
     }
@@ -513,7 +511,7 @@ contract BaseTest is Test {
         swapData = abi.encode(data.executor, desc, new bytes(0));
     }
 
-    function getTestBroadcaster() internal view returns (address account) {
+    function getTestBroadcaster() internal view virtual returns (address account) {
         string memory mnemonic = vm.envString("TEST_MNEMONIC");
         console2.log("TEST_MNEMONIC: ", mnemonic);
         string memory derivationPath = "m/44'/60'/0'/0";

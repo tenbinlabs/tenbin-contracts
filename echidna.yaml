@@ -1,5 +1,7 @@
 corpusDir: "echidna-corpus"
 allContracts: true
 testLimit: 100000
-coverage: false
+coverage: true
 stopOnFail: false
+testMode: "foundry"
+seqLen: 50

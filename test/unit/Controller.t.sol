@@ -57,7 +57,7 @@ contract ControllerTest is BaseTest {
     }
 
     function test_Version() public view {
-        assertEq(keccak256(abi.encodePacked("1.2.0")), keccak256(abi.encodePacked(controller.version())));
+        assertEq(keccak256(abi.encodePacked("1.4.0")), keccak256(abi.encodePacked(controller.version())));
     }
 
     function test_HashOrder() public view {
@@ -91,7 +91,7 @@ contract ControllerTest is BaseTest {
     function test_EncodeOrder() public view {
         IController.Order memory order = getMintOrder(collateral, 10000e6, 3e18, 0);
         bytes32 orderTypeHash = keccak256(
-            "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,address asset_token,uint256 asset_amount)"
+            "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,address order_token,uint256 asset_amount)"
         );
         bytes memory expected = abi.encode(
             orderTypeHash,
@@ -102,7 +102,7 @@ contract ControllerTest is BaseTest {
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
-            order.asset_token,
+            order.order_token,
             order.asset_amount
         );
 
@@ -260,18 +260,18 @@ contract ControllerTest is BaseTest {
 
         // InvalidAssetToken not asset nor staked asset
         order = getMintOrder(collateral, 10000e6, 3e18, 0);
-        order.asset_token = address(collateral);
+        order.order_token = address(collateral);
         signature = signOrder(payerKey, hashOrder(order));
         vm.startPrank(minter);
-        vm.expectRevert(IController.InvalidAssetToken.selector);
+        vm.expectRevert(IController.InvalidOrderToken.selector);
         controller.verifyOrder(order, signature);
 
         // InvalidAssetToken not asset on Mint
         order = getMintOrder(collateral, 10000e6, 3e18, 0);
-        order.asset_token = address(staking);
+        order.order_token = address(staking);
         signature = signOrder(payerKey, hashOrder(order));
         vm.startPrank(minter);
-        vm.expectRevert(IController.InvalidAssetToken.selector);
+        vm.expectRevert(IController.InvalidOrderToken.selector);
         controller.verifyOrder(order, signature);
 
         // Invalid asset amount
@@ -512,7 +512,6 @@ contract ControllerTest is BaseTest {
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
-            order.asset_token,
             order.asset_amount
         );
         mint(order, signature);
@@ -654,7 +653,6 @@ contract ControllerTest is BaseTest {
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
-            order.asset_token,
             order.asset_amount
         );
         vm.prank(payer);
@@ -703,7 +701,6 @@ contract ControllerTest is BaseTest {
             redeemOrder.recipient,
             redeemOrder.collateral_token,
             redeemOrder.collateral_amount,
-            redeemOrder.asset_token,
             redeemOrder.asset_amount
         );
 
@@ -763,7 +760,7 @@ contract ControllerTest is BaseTest {
             recipient: recipient,
             collateral_token: address(collateral),
             collateral_amount: collateralAmount,
-            asset_token: address(staking),
+            order_token: address(staking),
             asset_amount: assetAmount
         });
         uint256 managerAmount = collateral.balanceOf(address(manager)) - redeemOrder.collateral_amount;
@@ -778,7 +775,6 @@ contract ControllerTest is BaseTest {
             redeemOrder.recipient,
             redeemOrder.collateral_token,
             redeemOrder.collateral_amount,
-            redeemOrder.asset_token,
             redeemOrder.asset_amount
         );
 
@@ -833,7 +829,6 @@ contract ControllerTest is BaseTest {
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
-            order.asset_token,
             order.asset_amount
         );
 
@@ -966,7 +961,6 @@ contract ControllerTest is BaseTest {
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
-            order.asset_token,
             order.asset_amount
         );
         controller.mint(order, signature, context, approval);
@@ -1073,6 +1067,7 @@ contract ControllerTest is BaseTest {
     }
 
     function test_SetDelegateStatus(address account) public {
+        //Set allowed signer as delegate
         allowSigner(payer);
         vm.prank(account);
         vm.expectEmit();
@@ -1089,6 +1084,15 @@ contract ControllerTest is BaseTest {
 
         isDelegate = controller.delegates(account, payer);
         assertEq(isDelegate, false);
+
+        // remove signer from allowed signers
+        vm.prank(signerManager);
+        controller.setSignerStatus(payer, false);
+
+        // Allows account to revoke delegation
+        vm.prank(account);
+        emit IController.DelegateStatusChanged(account, payer, false);
+        controller.setDelegateStatus(payer, false);
     }
 
     function test_Revert_SetDelegateStatus(address account) public {
@@ -1098,6 +1102,26 @@ contract ControllerTest is BaseTest {
 
         bool isDelegate = controller.delegates(payer, account);
         assertEq(isDelegate, false);
+    }
+
+    function test_SetBlockMintLimit(uint128 amount) public {
+        vm.prank(owner);
+        controller.setBlockMintLimit(amount);
+    }
+
+    function test_Revert_SetBlockMintLimit() public {
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        controller.setBlockMintLimit(1);
+    }
+
+    function test_SetBlockRedeemLimit(uint128 amount) public {
+        vm.prank(owner);
+        controller.setBlockRedeemLimit(amount);
+    }
+
+    function test_Revert_SetBlockRedeemLimit() public {
+        vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
+        controller.setBlockRedeemLimit(1);
     }
 
     function test_SetPauseStatus() public {
@@ -1240,7 +1264,7 @@ contract ControllerTest is BaseTest {
         IController.Order memory order = getMintOrder(collateral, 4000e18, 1e18, 0);
         mint(order, signOrder(payerKey, hashOrder(order)));
 
-        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockNumberMint(), block.number);
         assertEq(controller.exposedBlockMints(), 1e18);
 
         // limt resets after new block
@@ -1248,14 +1272,14 @@ contract ControllerTest is BaseTest {
         order = getMintOrder(collateral, 4000e18, 1e18, 1);
         mint(order, signOrder(payerKey, hashOrder(order)));
 
-        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockNumberMint(), block.number);
         assertEq(controller.exposedBlockMints(), 1e18);
 
         // all mints update blockMints
         order = getMintOrder(collateral, 4000e18, 1e18, 2);
         mint(order, signOrder(payerKey, hashOrder(order)));
 
-        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockNumberMint(), block.number);
         assertEq(controller.exposedBlockMints(), 2e18);
     }
 
@@ -1304,7 +1328,7 @@ contract ControllerTest is BaseTest {
         IController.Order memory order = getRedeemOrder(collateral, 4000e18, 1e18, 0);
         redeem(order, signOrder(payerKey, hashOrder(order)));
 
-        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockNumberRedeem(), block.number);
         assertEq(controller.exposedBlockRedeems(), 1e18);
 
         // limt resets after new block
@@ -1312,14 +1336,14 @@ contract ControllerTest is BaseTest {
         order = getRedeemOrder(collateral, 4000e18, 1e18, 1);
         redeem(order, signOrder(payerKey, hashOrder(order)));
 
-        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockNumberRedeem(), block.number);
         assertEq(controller.exposedBlockRedeems(), 1e18);
 
         // all redeems update blockRedeems
         order = getRedeemOrder(collateral, 4000e18, 1e18, 2);
         redeem(order, signOrder(payerKey, hashOrder(order)));
 
-        assertEq(controller.exposedBlockNumber(), block.number);
+        assertEq(controller.exposedBlockNumberRedeem(), block.number);
         assertEq(controller.exposedBlockRedeems(), 2e18);
     }
 
@@ -1368,7 +1392,7 @@ contract ControllerTest is BaseTest {
         collateralAmount1 = bound(collateralAmount1, 1, 1e40);
         assetAmount0 = bound(assetAmount0, 1, 1e40);
         assetAmount1 = bound(assetAmount1, 1, 1e40);
-        ratio = bound(ratio, 0, 1e18 - 1);
+        ratio = bound(ratio, 0, 1e18);
 
         // configure ratio
         vm.prank(admin);
@@ -1396,7 +1420,7 @@ contract ControllerTest is BaseTest {
             recipient: recipient,
             collateral_token: address(collateral),
             collateral_amount: collateralAmount0,
-            asset_token: address(asset),
+            order_token: address(asset),
             asset_amount: assetAmount0
         });
         IController.Order memory order1 = IController.Order({
@@ -1407,7 +1431,7 @@ contract ControllerTest is BaseTest {
             recipient: recipient,
             collateral_token: address(collateral),
             collateral_amount: collateralAmount1,
-            asset_token: address(asset),
+            order_token: address(asset),
             asset_amount: assetAmount1
         });
 
@@ -1438,7 +1462,6 @@ contract ControllerTest is BaseTest {
             order0.recipient,
             order0.collateral_token,
             order0.collateral_amount,
-            order0.asset_token,
             order0.asset_amount
         );
         emit IController.Mint(
@@ -1449,7 +1472,6 @@ contract ControllerTest is BaseTest {
             order1.recipient,
             order1.collateral_token,
             order1.collateral_amount,
-            order1.asset_token,
             order1.asset_amount
         );
         controller.multicall(batchOrders);
@@ -1727,10 +1749,11 @@ contract ControllerTest is BaseTest {
     // fuzz tolerance and collateralAmount where oracle price matches order price
     function test_fuzz_OracleAdapter_Redeem_Staked(uint96 tolerance, uint256 assetAmount) public {
         // bound fuzz inputs
-        tolerance = uint96(bound(tolerance, 0, MAX_ORACLE_TOLERANCE)); // 1e10-1e18
-        assetAmount = bound(assetAmount, 1, 1e22);
+        tolerance = uint96(bound(tolerance, 1e11, MAX_ORACLE_TOLERANCE));
+        assetAmount = bound(assetAmount, 1e8, 1e22);
+        uint256 collateralAmount = 1000e6; // fixed collateral amount
 
-        // mint assets and stake them, perform approvals
+        // setup
         mintAsset(payer, assetAmount);
         vm.prank(payer);
         asset.approve(address(staking), assetAmount);
@@ -1738,47 +1761,40 @@ contract ControllerTest is BaseTest {
         uint256 shares = staking.deposit(assetAmount, payer);
         approveController(staking, payer, shares);
         approveController(asset, payer, shares);
+        vm.prank(capAdjuster);
+        staking.setInstantUnstakeCap(type(uint256).max);
 
         // allow signer and recipient
         allowSigner(payer);
         vm.prank(payer);
         controller.setRecipientStatus(recipient, true);
 
-        // simulate arbitrary increase in share price to 1.5e18
+        // simulate 50% arbitrary increase in share price
         mintAsset(address(staking), assetAmount / 2);
 
-        // value of collateral based on share price
-        uint256 collateralValue = staking.convertToAssets(shares);
-        collateral.mint(address(manager), collateralValue);
+        // mint collateral to be available for redemptions
+        collateral.mint(address(manager), collateralAmount);
 
-        // create and sign mint order
-        IController.Order memory order = IController.Order({
-            order_type: IController.OrderType.Redeem,
-            nonce: 0,
-            expiry: block.timestamp + 1,
-            payer: payer,
-            recipient: recipient,
-            collateral_token: address(collateral),
-            collateral_amount: collateralValue,
-            asset_token: address(staking),
-            asset_amount: shares
-        });
+        // set asset amount and oracle price
+        uint256 collateralAmount18 = collateralAmount * 1e12;
+
+        // shares required after 50% prime bump
+        uint256 sharesToRedeem = staking.previewWithdraw(assetAmount);
+
+        // create redeem order
+        IController.Order memory order = getRedeemOrder(collateral, collateralAmount, sharesToRedeem, 0);
+        order.order_token = address(staking);
+
+        // set answer and perform redeem - should succeed for all tolerances
+        uint256 oraclePrice = Math.mulDiv(collateralAmount18, 1e18, sharesToRedeem);
+        aggregator.setAnswer(oraclePrice);
+
+        // sign redeem order
         IController.Signature memory signature = signOrder(payerKey, hashOrder(order));
-        uint256 normalizedCollateral = order.collateral_amount * 1e12;
-        uint256 sharePrice = staking.convertToAssets(1e18);
-        uint256 assetTokenAmount = Math.mulDiv(order.asset_amount, sharePrice, 1e18);
-        uint256 expectedPrice = Math.mulDiv(normalizedCollateral, 1e18, assetTokenAmount);
 
         // set adapter and tolerance
         setOracle(address(oracleAdapter), tolerance);
 
-        // set instant unstake cap
-        uint256 amount = staking.previewRedeem(shares);
-        vm.prank(capAdjuster);
-        staking.setInstantUnstakeCap(amount);
-
-        // set answer and perform redeem - should succeed for all tolerances
-        aggregator.setAnswer(expectedPrice);
         redeem(order, signature);
     }
 
@@ -2023,7 +2039,6 @@ contract ControllerTest is BaseTest {
             order.recipient,
             order.collateral_token,
             order.collateral_amount,
-            order.asset_token,
             order.asset_amount
         );
         mint(order, signature);

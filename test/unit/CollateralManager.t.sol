@@ -44,6 +44,10 @@ contract CollateralManagerTest is BaseTest {
         bytes memory data = abi.encodeWithSelector(CollateralManager.initialize.selector, address(0), address(this));
         vm.expectRevert(ICollateralManager.NonZeroAddress.selector);
         CollateralManager(address(new ERC1967Proxy(address(managerImplementation), data)));
+
+        data = abi.encodeWithSelector(CollateralManager.initialize.selector, address(this), address(0));
+        vm.expectRevert(ICollateralManager.NonZeroAddress.selector);
+        CollateralManager(address(new ERC1967Proxy(address(managerImplementation), data)));
     }
 
     function test_Revert_CollateralManager_UpgradeToAndCall() public {
@@ -333,12 +337,28 @@ contract CollateralManagerTest is BaseTest {
     }
 
     function test_RemoveCollateral() public {
+        // ensure pending revenue > 0 before removal
+        // deposit 200
+        vm.startPrank(curator);
+        collateral.mint(address(manager), 2000e6);
+        manager.deposit(address(collateral), 2000e6, 0);
+
+        // simulate earning 2000 interest and withdraw 500
+        collateral.mint(address(vault), 2000e6);
+        manager.withdraw(address(collateral), 500e6, UINT256_MAX);
+        assertGt(manager.pendingRevenue(address(collateral)), 0);
+        vm.stopPrank();
+
         vm.prank(owner);
         vm.expectEmit();
         emit ICollateralManager.CollateralRemoved(address(collateral), address(vault));
         manager.removeCollateral(address(collateral));
+
         assertEq(manager.lastTotalAssets(address(collateral)), 0);
         assertEq(address(manager.vaults(address(collateral))), address(0));
+        assertEq(manager.pendingRevenue(address(collateral)), 0);
+        assertEq(collateral.allowance(address(manager), address(controller)), 0);
+        assertEq(collateral.allowance(address(manager), address(vault)), 0);
     }
 
     function test_Revert_RedeemLegacyShares() public {
