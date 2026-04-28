@@ -388,8 +388,7 @@ contract StakedAssetPause is IERC20, IERC4626, IStakedAsset, UUPSUpgradeable, Ac
         external
         pure
         returns (
-            uint256, /*shares*/
-            uint256 /*fee*/
+            uint256 /*shares*/
         )
     {
         revert ContractPaused();

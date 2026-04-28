@@ -1,11 +1,21 @@
 # CollateralManager
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/CollateralManager.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/CollateralManager.sol)
 
 **Inherits:**
 [ICollateralManager](/src/interface/ICollateralManager.sol/interface.ICollateralManager.md), UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuardTransient
 
 **Title:**
 Collateral Manager
+
+__/\\\\\\\\\\\\\\\__________________________/\\\____________________________
+_\///////\\\/////__________________________\/\\\____________________________
+_______\/\\\_______________________________\/\\\_________/\\\_______________
+_______\/\\\______/\\\\\\\\___/\\/\\\\\\___\/\\\________\///___/\\/\\\\\\___
+_______\/\\\____/\\\/////\\\_\/\\\////\\\__\/\\\\\\\\\___/\\\_\/\\\////\\\__
+_______\/\\\___/\\\\\\\\\\\__\/\\\__\//\\\_\/\\\////\\\_\/\\\_\/\\\__\//\\\_
+_______\/\\\__\//\\///////___\/\\\___\/\\\_\/\\\__\/\\\_\/\\\_\/\\\___\/\\\_
+_______\/\\\___\//\\\\\\\\\\_\/\\\___\/\\\_\/\\\\\\\\\__\/\\\_\/\\\___\/\\\_
+_______\///_____\//////////__\///____\///__\/////////___\///__\///____\///__
 
 The collateral manager holds collateral backing assets in the Tenbin protocol
 The purpose of the manager is to earn yield on collateral and provide liquidity for orders
@@ -25,7 +35,7 @@ convertRevenue()    -> convert revenue to collateral, effectively giving up reve
 This is a UUPS upgradeable contract meant to be deployed behind an ERC1967 Proxy
 
 
-## State Variables
+## Constants
 ### ADMIN_ROLE
 Admin role can add new collateral types
 
@@ -69,6 +79,7 @@ bytes32 public constant CAP_ADJUSTER_ROLE = keccak256("CAP_ADJUSTER_ROLE")
 ```
 
 
+## State Variables
 ### controller
 Controller associated with this contract
 
@@ -217,7 +228,11 @@ Initializer for this contract
 
 
 ```solidity
-function initialize(address controller_, address owner_) external initializer nonZeroAddress(controller_);
+function initialize(address controller_, address owner_)
+    external
+    initializer
+    nonZeroAddress(controller_)
+    nonZeroAddress(owner_);
 ```
 **Parameters**
 
@@ -524,12 +539,20 @@ function withdrawRevenue(address collateral, uint256 amount) external nonReentra
 
 ### convertRevenue
 
-ICollateralManager
+Convert revenue to collateral by declining to take revenue
+Used as an accounting method to "realize" revenue and offset operational costs
 
 
 ```solidity
 function convertRevenue(address collateral, uint256 amount) external notPaused onlyRole(REBALANCER_ROLE);
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`collateral`|`address`|Collateral token to convert|
+|`amount`|`uint256`|Amount of revenue to convert|
+
 
 ### rebalance
 

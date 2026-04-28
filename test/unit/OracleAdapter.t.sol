@@ -31,12 +31,6 @@ contract OracleAdapterTest is Test {
         adapter.getPrice();
 
         aggregator.switchIsFresh();
-
-        // round correctness
-        aggregator.setRoundId(2);
-        vm.expectRevert(IOracleAdapter.IncorrectOracleRound.selector);
-        adapter.getPrice();
-
         aggregator.setRoundId(1);
 
         // invalid price

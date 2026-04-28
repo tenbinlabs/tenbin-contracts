@@ -1,5 +1,5 @@
 # SpokeERC20Restricted
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/external/chainlink/SpokeERC20Restricted.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/external/chainlink/SpokeERC20Restricted.sol)
 
 **Inherits:**
 [IBurnMintERC20](/src/interface/IBurnMintERC20.sol/interface.IBurnMintERC20.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), ERC20Permit, AccessControl
@@ -11,7 +11,7 @@ ERC20 for deployment on "spoke" chains. Facilitates cross-chain tokens by allowi
 "mint-and-burn" operations on non-ethereum chains.
 
 
-## State Variables
+## Constants
 ### MINTER_BURNER_ROLE
 Minter role can mint and burn tokens
 
@@ -30,6 +30,7 @@ bytes32 public constant RESTRICTER_ROLE = keccak256("RESTRICTER_ROLE")
 ```
 
 
+## State Variables
 ### isRestricted
 Mapping of restricted accounts
 

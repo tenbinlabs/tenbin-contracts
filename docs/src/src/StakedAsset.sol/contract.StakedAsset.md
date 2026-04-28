@@ -1,5 +1,5 @@
 # StakedAsset
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/StakedAsset.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/StakedAsset.sol)
 
 **Inherits:**
 [IStakedAsset](/src/interface/IStakedAsset.sol/interface.IStakedAsset.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), UUPSUpgradeable, ERC20PermitUpgradeable, ERC4626Upgradeable, AccessControlUpgradeable
@@ -21,18 +21,23 @@ Allows staking an asset token for a staking token
 Rewards can be sent to this contract to reward stakers proportionally to their stake
 Includes a vesting period over which pending rewards are linearly vested
 Whenever a reward is paid to the contract, the vesting period resets
+Once the vesting period is set, it cannot be set below MIN_VESTING_PERIOD.
 Includes a cooldown period over which a user must wait between cooldown and withdraw
 When cooldownPeriod > 0, the normal withdraw() and redeem() functions will revert
 Users call cooldownShares() and cooldownAssets() to initiate cooldown
 Users can have multiple cooldowns at once denominated by cooldownIds[account]
 Users do not earn rewards for assets during the cooldown period
 Assets in cooldown are stored in a Silo contract until cooldown is complete
-After the cooldown is completed, users can call unstake(id) to claim their asset tokens
+After a cooldown is completed, users can call unstake(id) to claim their asset tokens
+The INSTANT_UNSTAKER_ROLE can unstake tokens on behalf of an account with approval
+Typically the instant unstake function is used by the Controller contract to process staked asset redemptions
+Instant unstaking includes an instant unstake cap which is depleted as assets are instantly unstaked
+The CAP_ADJUSTER_ROLE can adjust the instant unstake cap
 In order to avoid a first depositor donation attack a minimum stake should be made in the same transaction as the contract deployment
 This is a UUPS upgradeable contract meant to be deployed behind an ERC1967 Proxy
 
 
-## State Variables
+## Constants
 ### REWARDER_ROLE
 Rewarder role transfers asset tokens into the contract
 
@@ -105,24 +110,7 @@ uint256 public constant MIN_VESTING_PERIOD = 1200 seconds
 ```
 
 
-### FEE_PRECISION
-Precision for fee calculations
-
-
-```solidity
-uint256 constant FEE_PRECISION = 1e18
-```
-
-
-### MAX_INSTANT_UNSTAKE_FEE
-Max instant unstaking fee = 100%
-
-
-```solidity
-uint256 constant MAX_INSTANT_UNSTAKE_FEE = 1e18
-```
-
-
+## State Variables
 ### silo
 AssetSilo holds assets during cooldown
 
@@ -146,7 +134,7 @@ Next cooldown ID for an account
 
 
 ```solidity
-mapping(address => uint256) cooldownIds
+mapping(address => uint256) public cooldownIds
 ```
 
 
@@ -186,24 +174,6 @@ uint256 public instantUnstakeCap
 ```
 
 
-### instantUnstakeFee
-Instant unstaking fee charged in assets
-
-
-```solidity
-uint256 public instantUnstakeFee
-```
-
-
-### feeRecipient
-Account which receives instant unstaking fees
-
-
-```solidity
-address public feeRecipient
-```
-
-
 ## Functions
 ### nonZeroAddress
 
@@ -238,14 +208,11 @@ Initializer for this contract
 
 
 ```solidity
-function initialize(
-    string memory name_,
-    string memory symbol_,
-    address asset_,
-    address owner_,
-    uint256 _instantUnstakeFee,
-    address _feeRecipient
-) external initializer nonZeroAddress(asset_) nonZeroAddress(owner_);
+function initialize(string memory name_, string memory symbol_, address asset_, address owner_)
+    external
+    initializer
+    nonZeroAddress(asset_)
+    nonZeroAddress(owner_);
 ```
 **Parameters**
 
@@ -255,8 +222,6 @@ function initialize(
 |`symbol_`|`string`|Symbol for this token|
 |`asset_`|`address`|Asset to stake and reward|
 |`owner_`|`address`|Default admin role for this contract|
-|`_instantUnstakeFee`|`uint256`||
-|`_feeRecipient`|`address`||
 
 
 ### pendingRewards
@@ -379,7 +344,7 @@ Can only be initiated by INSTANT_UNSTAKER_ROLE
 
 
 ```solidity
-function instantUnstake(uint256 assets, address owner, address receiver)
+function instantUnstake(uint256 assets, address receiver, address owner)
     external
     onlyRole(INSTANT_UNSTAKER_ROLE)
     nonRestricted(owner)
@@ -390,9 +355,9 @@ function instantUnstake(uint256 assets, address owner, address receiver)
 
 |Name|Type|Description|
 |----|----|-----------|
-|`assets`|`uint256`|Amount of assets to instant withdraw|
-|`owner`|`address`|Account which hold staked assets|
+|`assets`|`uint256`|Amount of assets to withdraw|
 |`receiver`|`address`|Account to receive assets|
+|`owner`|`address`|Account which hold staked assets|
 
 **Returns**
 
@@ -406,7 +371,9 @@ function instantUnstake(uint256 assets, address owner, address receiver)
 Adds new rewards to the contract and extends vesting period
 
 WARNING: This resets the vesting end time to block.timestamp + vesting.period,
-which can delay distribution of previously pending rewards
+which can delay distribution of previously pending rewards.
+Rewarding the contract excessively and with low reward amounts can cause vesting to reset and extend currently vesting rewards.
+Rewards should be distributed infrequently (once per 1-3 days) and in consistent amounts to ensure smooth vesting.
 
 
 ```solidity
@@ -482,36 +449,6 @@ function setInstantUnstakeCap(uint256 cap) external onlyRole(CAP_ADJUSTER_ROLE);
 |Name|Type|Description|
 |----|----|-----------|
 |`cap`|`uint256`|New instant unstake cap|
-
-
-### setInstantUnstakeFee
-
-Set instant unstake fee as a percentage where 1e18 = 100%
-
-
-```solidity
-function setInstantUnstakeFee(uint256 fee) external onlyRole(DEFAULT_ADMIN_ROLE);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`fee`|`uint256`|Instant unstaking fee|
-
-
-### setFeeRecipient
-
-Set an account to receive fees from instant unstaking
-
-
-```solidity
-function setFeeRecipient(address newFeeRecipient) external onlyRole(DEFAULT_ADMIN_ROLE);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`newFeeRecipient`|`address`|New recipient for unstaking fees|
 
 
 ### transferRestrictedAssets

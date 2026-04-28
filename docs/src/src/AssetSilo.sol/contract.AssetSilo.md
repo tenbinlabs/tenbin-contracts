@@ -1,5 +1,5 @@
 # AssetSilo
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/AssetSilo.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/AssetSilo.sol)
 
 **Title:**
 AssetSilo
@@ -8,7 +8,7 @@ Stores assets in cooldown for Tenbin protocol staking
 Allows for canceling a cooldown by minting new staked assets
 
 
-## State Variables
+## Constants
 ### staking
 Staking contract
 

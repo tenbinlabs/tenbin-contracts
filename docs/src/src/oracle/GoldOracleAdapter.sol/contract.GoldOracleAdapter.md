@@ -1,5 +1,5 @@
 # GoldOracleAdapter
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/oracle/GoldOracleAdapter.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/oracle/GoldOracleAdapter.sol)
 
 **Inherits:**
 [IOracleAdapter](/src/interface/IOracleAdapter.sol/interface.IOracleAdapter.md)
@@ -10,7 +10,7 @@ Gold Oracle Adapter
 Normalize oracle data from a Chainlink aggregator into a standard representation
 
 
-## State Variables
+## Constants
 ### DECIMALS_OFFSET
 Difference between oracle decimals and 1e18
 

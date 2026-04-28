@@ -44,6 +44,8 @@ contract DeployBase is BaseScript, Config {
         uint256 rebalance_cap;
         uint256 swap_cap;
         uint256 vesting_period;
+        uint128 mint_limit;
+        uint128 redeem_limit;
     }
 
     /// @notice Roles loaded from config file
@@ -72,6 +74,8 @@ contract DeployBase is BaseScript, Config {
         // load parameters
         params.custodian = config.get("custodian").toAddress();
         params.multisig = config.get("multisig").toAddress();
+        params.mint_limit = uint128(vm.parseUint(config.get("mint_limit").toString()));
+        params.redeem_limit = uint128(vm.parseUint(config.get("redeem_limit").toString()));
 
         // load string
         params.asset_name = config.get("asset_name").toString();
@@ -112,9 +116,11 @@ contract DeployBase is BaseScript, Config {
 
     function getGlobalObject() internal returns (string memory globalObj) {
         string memory globalKey = "global";
+        address[] memory empty;
         globalObj = "{}";
 
         globalObj = vm.serializeAddress(globalKey, "admin_multisig", roles.admin_role);
+        globalObj = vm.serializeAddress(globalKey, "custodians", empty);
         globalObj = vm.serializeAddress(globalKey, "dev_multisig", roles.cap_adjuster_role);
         globalObj = vm.serializeAddress(globalKey, "owner_multisig", roles.default_admin_role);
         globalObj = vm.serializeAddress(globalKey, "tenbin_multisig", params.multisig);

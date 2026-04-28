@@ -1,5 +1,5 @@
 # CustodianModule
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/CustodianModule.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/CustodianModule.sol)
 
 **Inherits:**
 AccessControl
@@ -13,7 +13,7 @@ Custodian accounts are whitelisted by an administrator
 A keeper role can automate transferring collateral to different custodians
 
 
-## State Variables
+## Constants
 ### CUSTODIAN_KEEPER_ROLE
 Keeper role can distribute tokens to approved custodian accounts
 
@@ -23,6 +23,7 @@ bytes32 public constant CUSTODIAN_KEEPER_ROLE = keccak256("CUSTODIAN_KEEPER_ROLE
 ```
 
 
+## State Variables
 ### custodians
 Approved custodian accounts
 

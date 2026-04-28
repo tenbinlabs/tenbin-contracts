@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 
 import {AssetToken} from "../../../src/AssetToken.sol";
-import {StakedAsset} from "../../../src/StakedAsset.sol";
+import {StakedAssetHarness} from "../../harness/StakedAssetHarness.sol";
 import {Test} from "forge-std/Test.sol";
 
 /// @dev Handler to interact with the staking contract and save snapshots for invariant testing
@@ -10,11 +10,13 @@ contract StakedAssetHandler is Test {
     address admin;
     address rewarder;
     address user;
-    uint256 public blockAtCooldown;
-    StakedAsset staking;
+    mapping(uint256 => uint256) public blockAtCooldown;
+    StakedAssetHarness staking;
     AssetToken asset;
+    bool public idDecreased;
+    uint256 public totalIntantUnStaked;
 
-    constructor(address _admin, address _rewarder, address _user, StakedAsset _staking, AssetToken _asset) {
+    constructor(address _admin, address _rewarder, address _user, StakedAssetHarness _staking, AssetToken _asset) {
         admin = _admin;
         rewarder = _rewarder;
         user = _user;
@@ -33,39 +35,52 @@ contract StakedAssetHandler is Test {
     }
 
     function reward(uint256 rewardAmount) public {
-        rewardAmount = bound(rewardAmount, 0, 1e40);
-        mintAsset(user, rewardAmount);
+        rewardAmount = bound(rewardAmount, 0, 1e18); //Avoid rewarding giant amounts
         mintAsset(rewarder, rewardAmount);
-
-        // deposit
-        vm.prank(user);
-        staking.deposit(rewardAmount, user);
 
         vm.prank(rewarder);
         staking.reward(rewardAmount);
     }
 
-    function cooldownShares(uint256 shares) public {
-        shares = bound(shares, 1e18, 1e40);
-        stake(shares);
+    function cooldownShares(uint256 assets) public returns (uint256 id) {
+        uint256 shares = stake(assets);
+        assets = staking.convertToAssets(shares);
+        uint256 prev = staking.cooldownIds(user);
 
         // initiate cooldown
         vm.prank(user);
-        staking.cooldownShares(shares);
+        (, id) = staking.cooldownShares(shares);
+        if (!idDecreased && staking.cooldownIds(user) < prev) idDecreased = true;
+        blockAtCooldown[id] = block.number;
+
+        // fast forward to end of cooldown
+        vm.warp(block.timestamp + 7 days);
+    }
+
+    function cooldownAssets(uint256 assets) public returns (uint256 id) {
+        uint256 shares = stake(assets);
+        assets = staking.convertToAssets(shares);
+        uint256 prev = staking.cooldownIds(user);
+
+        // initiate cooldown
+        vm.prank(user);
+        (, id) = staking.cooldownAssets(assets);
+        if (!idDecreased && staking.cooldownIds(user) < prev) idDecreased = true;
+        blockAtCooldown[id] = block.number;
 
         // fast forward to end of cooldown
         vm.warp(block.timestamp + 7 days);
     }
 
     function unstake(uint256 shares) public {
-        cooldownShares(shares);
+        uint256 id = block.number % 2 == 0 ? cooldownAssets(staking.previewWithdraw(shares)) : cooldownShares(shares); //randomly call cooldownAssets or cooldownShares
 
         // fast forward to end of cooldown
         vm.warp(block.timestamp + 7 days);
 
         // unstake
         vm.prank(user);
-        staking.unstake(user, 0);
+        staking.unstake(user, id);
     }
 
     function withdraw(uint256 assets) public {
@@ -98,14 +113,33 @@ contract StakedAssetHandler is Test {
     }
 
     // helper to ensure stake balance
-    function stake(uint256 amount) internal {
+    function stake(uint256 amount) internal returns (uint256 shares) {
         // setup
+        // Makes sure is enough to at least mint one share
+        if (asset.balanceOf(address(staking)) > 0) {
+            uint256 sharePrice = staking.convertToAssets(1);
+            amount = bound(amount, sharePrice, asset.totalSupply());
+        } else {
+            // if no shares it would return the share price as 0
+            amount = bound(amount, 1e18, 1e40);
+        }
         mintAsset(user, amount);
         vm.prank(admin);
         staking.setCooldownPeriod(7 days);
 
         // deposit
         vm.prank(user);
-        staking.deposit(amount, user);
+        shares = staking.deposit(amount, user);
+    }
+
+    function instantUnstake(uint256 assets) external {
+        // setup
+        uint256 shares = stake(assets);
+        assets = staking.convertToAssets(shares);
+        vm.prank(user);
+        staking.approve(address(this), assets);
+
+        shares = staking.instantUnstake(assets, user, user);
+        totalIntantUnStaked += assets;
     }
 }

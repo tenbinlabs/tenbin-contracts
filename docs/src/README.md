@@ -159,7 +159,7 @@ Use `--broadcast` to broadcast
 
 1) Ensure `CONFIG_DIR`, `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and `ETHERSCAN_API_KEY` are correctly set up.
 
-2) Run `FOUNDRY_PROFILE=production forge script script/DeployProduction.s.sol $CONFIG_DIR --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+2) Run `FOUNDRY_PROFILE=production forge script script/DeployProduction.s.sol $CONFIG_DIR --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
 
 Use `--broadcast` to broadcast.
 
@@ -203,7 +203,7 @@ An asset token represents an asset in the Tenbin protocol. The AssetToken contra
 
 # Controller
 
-The controller contract is responsible for minting and redeeming assets. Mint and redemptions are encoded as an Order. Orders are signed by KYC-approved signers and specify order details such as collateral amount, asset amount, and deadline. To successfully execute an order, a minter account calls the `mint` or `redeem` with an order and signature. Orders are executed atomically: collateral is transferred and tokens are minted/burned in a single transaction. All orders are executed by a minter key stored in a hardware security module and controlled by the Tenbin backend.
+The controller contract is responsible for minting and redeeming assets. Mint and redemptions are encoded as an Order. Orders are signed by KYC-approved signers and specify order details such as collateral amount, asset amount, and deadline. All orders must include a context signed by a minter key stored in a hardware security module and controlled by the Tenbin backend. Orders are executed either by a minter key or an approved signer. Orders are executed atomically: collateral is transferred and tokens are minted/burned in a single transaction. 
 
 ### Order Fields
 
@@ -216,7 +216,7 @@ The controller contract is responsible for minting and redeeming assets. Mint an
         address recipient;          // Account to receive tokens
         address collateral_token;   // Collateral used for this order
         uint256 collateral_amount;  // Amount of collateral tokens
-        address asset_token;        // Specify AssetToken or StakedAsset address when redeeming
+        address order_token;        // Specify AssetToken or StakedAsset
         uint256 asset_amount;       // Amount of asset tokens
     }
 ```
@@ -225,7 +225,7 @@ The controller contract is responsible for minting and redeeming assets. Mint an
 
 1. Order signer goes through KYC and is added to the allowed signers list.
 2. An order signer submits an `order` and signed order `signature` to the back end
-3. The back end processes the order and provides a `context` and signed `approval`
+3. The back end processes the order and provides a `context` and signed context `approval`
 4. Token are transferred accordingly and payer nonce is marked as used.
 
 ### Allowed Signers
@@ -240,6 +240,10 @@ Signers can set which accounts can receive tokens when an order is executed. Thi
 
 Any account can delegate a signer to sign orders on its behalf. During execution of an order, the payer is checked against the delegates for a signer. This allows for EOAs or smart contracts to let a signer sign an order where the delegate pays for the order. An account can add a delegate signer by calling `setDelegateStatus()`.
 
+### User Executed Orders
+
+As long as an order is valid with a valid signature, context, and approval, any account can execute an order. All orders need an approval signed by the MINTER_ROLE to be valid. This design allows for users to execute their own orders rather then relying on a dedicated account to execute orders.
+
 ### Collateral Ratio
 
 The controller has a collateral ratio which specifies the percentage of collateral which is sent to `custodian` and `manager`. The custodian amount represents the portion of collateral which is moved off-chain to fund futures hedge positions. The manager amount represents the portion of collateral designated to earn on-chain yield. When a mint occurs, the total collateral amount is split according to the`ratio` value set in the Controller.
@@ -252,13 +256,19 @@ The custodian module receives collateral during a mint order. Custodians are add
 
 The controller has a configurable oracle adapter which can provide a price when executing orders. When enabled, the oracle price acts as a backstop to prevent order pricing from exceeding a threshold. The oracle DOES NOT determine the price of assets, rather it acts as a security measure to prevent minting and redeeming assets at a price off-peg. For example, with the oracle configured it is impossible to mint new assets with a price of $0.
 
+### On Demand Curation
+
+The `Context` struct allows passing in a flag to indicate an order should be curated as part of the transaction. When performing an on demand curation, the CollateralManager `withdraw()` or `deposit()` function is called before a redemption or after a mint, respectively. An additional `share_price` is passed along with curated orders to act as a slippage guard when interacting with the CollateralManager vaults.
+
 ### Mint and Redemption Limits
 
 Mint and redemption limits are configurable per block. If set to type(uint).max, limits are not enforced.
 
 ### Staked Asset Redemption
 
-Staked assets can be redeemed directly through the controller by specifying `asset_token` in the Order struct. Redeeming staked assets also requires the payer approves the controller to spend staked assets on its behalf. During staked asset redemption, assets are instantly unstaked by the controller and pricing is determined by the back end pricing engine.
+Staked assets can be redeemed directly through the controller by specifying the staked asset address as `order_token` in the Order struct. Redeeming staked assets also requires the payer approves the controller to spend staked assets on its behalf. During staked asset redemption, assets are instantly unstaked by the controller and pricing is determined by the back end pricing engine.
+
+**Note: the asset_amount specified in order.asset_amount refers to the asset token amount burned, and is used for pricing. The actual number of shares redeemed is determined by the staking contract via `previewWithdraw(asset_amount)`**
 
 ### RestrictedRegistry
 
@@ -278,13 +288,15 @@ The main actions that can be performed by the collateral manager are:
 
 ### Deposit and Withdraw
 
-The two main functions provided by the collateral manager are `deposit()`and `withdraw()`. Each collateral has a unique vault dedicated to earning yield for that collateral type. Depositing will deposit collateral into the vault in exchange for vault shares. Withdrawing will redeem vault shares in exchange for the underlying collateral.
+The two main functions provided by the collateral manager are `deposit()`and `withdraw()`. Each collateral has a unique vault dedicated to earning yield for that collateral type. Depositing will deposit collateral into the vault in exchange for vault shares. Withdrawing will redeem vault shares in exchange for the underlying collateral. Deposit and withdraw functions include a share price which acts as a slippage guard when performing curations.
 
 ### Liquidity Management
 
 The most important role of the manager is to ensure there is sufficient liquidity to redeem assets. Collateral that is in the collateral manager is approved to be transferred by the controller when a redemption order is filled. If there is insufficient collateral in the manager, a redemption is not possible.
 
-In order for Tenbin to optimize yield versus liquidity, a curator role is assigned by the manager to perform deposits and withdrawals. By using a multicall contract, it is possible to bundle deposits and withdrawals with mints and redemptions atomically. For example: `[mint(), deposit()]` or `[withdraw(), redeem()]`. 
+In order for Tenbin to optimize yield versus liquidity, a curator role is assigned by the manager to perform deposits and withdrawals. By using a multicall contract, it is possible to bundle deposits and withdrawals with mints and redemptions atomically. For example: `[mint(), deposit()]` or `[withdraw(), redeem()]`.
+
+Additionally, the Controller contract has the ability of performing curations as part of a mint or redemption. This allows for users to execute their own orders where the controller performs curation actions. This allows for the maximum amount of yield to be earned by the protocol while maintaining flexibility for users. Curation options for controller-curated orders are limited to `deposit()` and `withdraw()`.
 
 ### Collateral Rebalancing
 
@@ -326,19 +338,21 @@ The asset value of a staking token can only increase over time. When unstaking, 
 
 ### Vesting
 
-A vesting period is used for rewards in order to prevent abuse of the staking contract. The vesting period encourages depositors to remain staked through the vesting period. This mechanism prevents negative MEV actions such as sandwiching reward transactions. 
+A vesting period is used for rewards in order to prevent abuse of the staking contract. The vesting period encourages depositors to remain staked through the vesting period. This mechanism prevents negative MEV actions such as sandwiching reward transactions. Once the vesting period is set, it cannot be set below MIN_VESTING_PERIOD.
 
-Additionally vesting spreads out rewards over a longer period of time in order to reduce reward volatility. For some assets, minting reward tokens is not always possible due to futures off-market hours. Using a longer vesting period allows stakers to earn a consistent yield despite possibly inconsistent reward schedules and amounts.
+Vesting spreads out rewards over a longer period of time in order to reduce reward volatility. For some assets, minting reward tokens is not always possible due to futures off-market hours. Using a longer vesting period allows stakers to earn a consistent yield despite possibly inconsistent reward schedules and amounts. 
+
+**note** Rewarding the contract excessively and with low reward amounts can cause vesting to reset and extend currently vesting rewards. Rewards should be distributed infrequently (once per 1-3 days) and in consistent amounts to ensure smooth vesting.
 
 ### Cooldown
 
-A cooldown period is present in the staking contract to encourage assets to remain staked and allow response time for liquidity management. When a staker calls the `cooldownShares()` or `cooldownAssets` function, staked tokens are burned and transferred to the AssetSilo contract. An account can have multiple cooldowns at once as determined by a unique set of IDs per account. After the cooldown end time has passed, a user can call `unstake(id)` to withdraw the underlying asset tokens.
+A cooldown period is present in the staking contract to encourage assets to remain staked and allow response time for liquidity management. When a staker calls the `cooldownShares()` or `cooldownAssets()` function, staked tokens are burned and transferred to the AssetSilo contract. An account can have multiple cooldowns at once as determined by a unique set of IDs per account. After the cooldown end time has passed, a user can call `unstake(id)` to withdraw the underlying asset tokens.
 
 In order to withdraw tokens, a staker needs to call `cooldown()` and wait until the cooldown period has passed to withdraw their stake. A cooldown can be cancelled by calling `cancelCooldown(id)`. When cancelling a cooldown, new shares are minted via the AssetSilo contract and transferred to the account which cancelled the cooldown.
 
 ### Instant Unstaking
 
-Instant unstaking is possible via a privileged role. Typically, the Controller is allowed to instant unstake when executing redemptions for staked assets. There is an instantUnstakeCap which sets a limit on the total amount that can be instantly unstaked. An optional instant unstaking fee which, when enabled, will transfer a percentage of assets to a fee recipient. This fee is disabled by default.
+Instant unstaking is possible via a privileged role. Typically, the Controller is allowed to instant unstake when executing redemptions for staked assets. There is an instantUnstakeCap which sets a limit on the total amount that can be instantly unstaked. The instant unstake function takes in an `asset` amount and calculates how many shares to redeem via `previewWithdraw(assets)`.
 
 ### Restricted Registry
 

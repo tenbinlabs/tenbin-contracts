@@ -4,17 +4,15 @@ pragma solidity 0.8.30;
 import {AssetToken} from "../../../src/AssetToken.sol";
 import {Controller} from "../../../src/Controller.sol";
 import {IController} from "../../../src/interface/IController.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {StakedAsset} from "../../../src/StakedAsset.sol";
 import {Test} from "forge-std/Test.sol";
 
 /// @dev Handler to interact with the controller and save snapshots for invariant testing
 contract ControllerHandler is Test {
     using SafeERC20 for AssetToken;
-
-    // TODO: use real approval and context
-    IController.Signature EMPTY_APPROVAL;
-    IController.Context EMPTY_CONTEXT;
 
     struct Config {
         address payer;
@@ -24,28 +22,26 @@ contract ControllerHandler is Test {
         address gatekeeper;
         address admin;
         uint256 payerKey;
+        uint256 minterKey;
         Controller controller;
         AssetToken asset;
         MockERC20 collateral;
+        StakedAsset staking;
+        IERC4626 vault;
     }
 
     //deploy
     Config cfg;
-    uint256 public totalMintCollateral = 0;
+    uint256 public totalMintCollateral;
     uint256 public totalRedeemCollateral = 0;
     uint256 public lastCustodianBalance;
-    uint256 public lastManagerBalance;
-    uint256 public lastMintAmount;
     uint256 public lastAssetSupply;
     uint256 public totalAssetSupplyMint;
-    uint256 public lastCollateralSupply;
+    uint256 public sentToManager;
+    bool public didSupplyChanged;
     uint128 internal nonce = 0;
 
     constructor(Config memory config) {
-        EMPTY_APPROVAL =
-            IController.Signature({signature_type: IController.SignatureType.EIP712, signature_bytes: new bytes(0)});
-        EMPTY_CONTEXT = IController.Context({order_hash: 0x00, share_price: 0, is_curated: false});
-
         cfg = Config({
             payer: config.payer,
             recipient: config.recipient,
@@ -54,15 +50,16 @@ contract ControllerHandler is Test {
             gatekeeper: config.gatekeeper,
             admin: config.admin,
             payerKey: config.payerKey,
+            minterKey: config.minterKey,
             controller: config.controller,
             asset: config.asset,
-            collateral: config.collateral
+            collateral: config.collateral,
+            staking: config.staking,
+            vault: config.vault
         });
 
-        lastManagerBalance = cfg.collateral.balanceOf(cfg.controller.manager());
         lastCustodianBalance = cfg.collateral.balanceOf(cfg.controller.custodian());
         lastAssetSupply = cfg.asset.totalSupply();
-        lastCollateralSupply = cfg.collateral.totalSupply();
 
         vm.prank(cfg.signerManager);
         cfg.controller.setSignerStatus(cfg.payer, true);
@@ -82,7 +79,7 @@ contract ControllerHandler is Test {
     }
 
     // mint
-    function mint(uint256 collateralAmount, uint256 assetAmount) public {
+    function mint(uint256 collateralAmount, uint256 assetAmount, bool isUserExecutedOrder, bool isCurated) public {
         // set bounds
         collateralAmount = bound(collateralAmount, 100, 1e40); // lower bound set at 100 to avoid small amounts
         assetAmount = bound(assetAmount, 100, 1e40);
@@ -104,41 +101,85 @@ contract ControllerHandler is Test {
             recipient: cfg.recipient,
             collateral_token: address(cfg.collateral),
             collateral_amount: collateralAmount,
-            asset_token: address(cfg.asset),
+            order_token: address(cfg.asset),
             asset_amount: assetAmount
         });
-        IController.Signature memory signature;
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(cfg.payerKey, cfg.controller.hashOrder(order));
-        signature = IController.Signature({
+
+        bytes32 orderHash = cfg.controller.hashOrder(order);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(cfg.payerKey, orderHash);
+        IController.Signature memory signature = IController.Signature({
             signature_type: IController.SignatureType.EIP712, signature_bytes: abi.encodePacked(r, s, v)
         });
-        lastCustodianBalance = cfg.collateral.balanceOf(cfg.controller.custodian());
-        lastManagerBalance = cfg.collateral.balanceOf(cfg.controller.manager());
-        lastAssetSupply = cfg.asset.totalSupply();
-        lastCollateralSupply = cfg.collateral.totalSupply();
+        IController.Context memory context =
+            IController.Context({order_hash: orderHash, share_price: isCurated ? 1 : 0, is_curated: isCurated});
+        (v, r, s) = vm.sign(cfg.minterKey, cfg.controller.hashContext(context));
+        IController.Signature memory approval = IController.Signature({
+            signature_type: IController.SignatureType.EIP712, signature_bytes: abi.encodePacked(r, s, v)
+        });
 
-        vm.prank(cfg.minter);
-        cfg.controller.mint(order, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
+        lastCustodianBalance = cfg.collateral.balanceOf(cfg.controller.custodian());
+        lastAssetSupply = cfg.asset.totalSupply();
+        uint256 prevBalance = cfg.collateral.balanceOf(cfg.controller.manager());
+        uint256 prevSupply = cfg.collateral.totalSupply();
+
+        if (isUserExecutedOrder) {
+            vm.prank(cfg.payer);
+        } else {
+            vm.prank(cfg.minter);
+        }
+        cfg.controller.mint(order, signature, context, approval);
         nonce++;
-        lastMintAmount = collateralAmount;
+
+        didSupplyChanged = didSupplyChanged ? didSupplyChanged : cfg.collateral.totalSupply() != prevSupply;
         totalAssetSupplyMint = cfg.asset.totalSupply();
         totalMintCollateral += collateralAmount;
+        sentToManager += cfg.collateral.balanceOf(cfg.controller.manager()) - prevBalance;
     }
 
     // redeem
-    function redeem(uint256 collateralAmount, uint256 assetAmount) public {
+    function redeem(
+        uint256 collateralAmount,
+        uint256 assetAmount,
+        bool isStakedAsset,
+        bool isUserExecutedOrder,
+        bool isCurated
+    ) public {
         if (cfg.collateral.totalSupply() == 0) return; //nothing to redeem
         // set bounds
         collateralAmount = bound(collateralAmount, 1, cfg.collateral.totalSupply());
         assetAmount = bound(assetAmount, 1, cfg.asset.totalSupply());
         // requisites for successful redeem
-        mint(collateralAmount, assetAmount);
+        mint(collateralAmount, assetAmount, false, isCurated);
+        // ensure payer funds to pay for redeem
+        vm.prank(cfg.asset.minter());
+        cfg.asset.mint(cfg.payer, assetAmount);
+
         // approve controller for burn
-        vm.prank(cfg.recipient);
-        cfg.asset.safeTransfer(cfg.payer, assetAmount);
-        uint256 balance = cfg.asset.balanceOf(cfg.payer);
         vm.prank(cfg.payer);
-        cfg.asset.approve(address(cfg.controller), balance);
+        cfg.asset.approve(address(cfg.controller), cfg.asset.balanceOf(cfg.recipient));
+
+        if (isStakedAsset) {
+            // stake assets
+            vm.startPrank(cfg.payer);
+            cfg.asset.approve(address(cfg.staking), assetAmount);
+            cfg.staking.deposit(assetAmount, cfg.payer);
+            cfg.staking.approve(address(cfg.controller), cfg.staking.balanceOf(cfg.payer));
+            vm.stopPrank();
+
+            // approve controller for burn
+            uint256 stakedBalance = cfg.staking.balanceOf(cfg.payer);
+            vm.prank(cfg.payer);
+            cfg.asset.approve(address(cfg.controller), assetAmount);
+            vm.prank(cfg.payer);
+            cfg.staking.approve(address(cfg.controller), stakedBalance);
+        }
+
+        // Avoid redeeming more than onchain liquidity
+        if (isCurated && collateralAmount > (cfg.collateral.balanceOf(address(cfg.vault)))) {
+            collateralAmount = cfg.collateral.balanceOf(address(cfg.vault));
+        } else if (!isCurated && collateralAmount > (cfg.collateral.balanceOf(address(cfg.controller.manager())))) {
+            collateralAmount = cfg.collateral.balanceOf(address(cfg.controller.manager()));
+        }
 
         IController.Order memory redeemOrder = IController.Order({
             order_type: IController.OrderType.Redeem,
@@ -148,33 +189,48 @@ contract ControllerHandler is Test {
             recipient: cfg.recipient,
             collateral_token: address(cfg.collateral),
             collateral_amount: collateralAmount,
-            asset_token: address(cfg.asset),
+            order_token: isStakedAsset ? address(cfg.staking) : address(cfg.asset),
             asset_amount: assetAmount
         });
 
         // sign redeem order
-        IController.Signature memory signature;
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(cfg.payerKey, cfg.controller.hashOrder(redeemOrder));
-        signature = IController.Signature({
+        bytes32 orderHash = cfg.controller.hashOrder(redeemOrder);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(cfg.payerKey, orderHash);
+        IController.Signature memory signature = IController.Signature({
             signature_type: IController.SignatureType.EIP712, signature_bytes: abi.encodePacked(r, s, v)
         });
-        lastCollateralSupply = cfg.collateral.totalSupply();
+        IController.Context memory context = IController.Context({
+            order_hash: orderHash, share_price: isCurated ? type(uint256).max : 0, is_curated: isCurated
+        });
+        (v, r, s) = vm.sign(cfg.minterKey, cfg.controller.hashContext(context));
+        IController.Signature memory approval = IController.Signature({
+            signature_type: IController.SignatureType.EIP712, signature_bytes: abi.encodePacked(r, s, v)
+        });
+        uint256 prevSupply = cfg.collateral.totalSupply();
+        uint256 prevBalance = cfg.collateral.balanceOf(cfg.controller.manager());
 
-        vm.prank(cfg.minter);
-        cfg.controller.redeem(redeemOrder, signature, EMPTY_CONTEXT, EMPTY_APPROVAL);
+        if (isUserExecutedOrder) {
+            vm.prank(cfg.payer);
+        } else {
+            vm.prank(cfg.minter);
+        }
+        cfg.controller.redeem(redeemOrder, signature, context, approval);
         nonce++;
 
+        didSupplyChanged = didSupplyChanged ? didSupplyChanged : cfg.collateral.totalSupply() != prevSupply;
         lastAssetSupply = cfg.asset.totalSupply();
+        sentToManager -= prevBalance - cfg.collateral.balanceOf(cfg.controller.manager());
         totalRedeemCollateral += collateralAmount;
     }
 
     // pause
     function setPauseStatus(uint256 rawStatus) public {
-        uint256 bounded = bound(rawStatus, 0, uint256(type(IController.ControllerPauseStatus).max));
+        // Reduce pausing contract most times to get the least amount of revert scenarios
+        uint256 bounded =
+            block.number % 3 == 0 ? bound(rawStatus, 0, uint256(type(IController.ControllerPauseStatus).max)) : 0;
         IController.ControllerPauseStatus newStatus = IController.ControllerPauseStatus(bounded);
 
         if (cfg.controller.pauseStatus() != newStatus) {
-            lastCollateralSupply = cfg.collateral.totalSupply();
             lastAssetSupply = cfg.asset.totalSupply();
             vm.prank(cfg.gatekeeper);
             cfg.controller.setPauseStatus(newStatus);

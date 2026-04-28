@@ -1,5 +1,5 @@
 # SwapModule
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/SwapModule.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/SwapModule.sol)
 
 **Inherits:**
 [ISwapModule](/src/interface/ISwapModule.sol/interface.ISwapModule.md)
@@ -11,7 +11,7 @@ The Swap Module is responsible for handling swaps using external protocols
 This contract is permissioned so only a manager can call the swap function
 
 
-## State Variables
+## Constants
 ### _NO_PARTIAL_FILLS_FLAG
 1inch swap partial fills flag
 

@@ -72,6 +72,7 @@ contract DeployDevelopmentForkTest is ForkBaseTest, Config {
         assertEq(deployment.staking.hasRole(REWARDER_ROLE, address(deployment.revenue_module)), true);
         assertEq(deployment.staking.hasRole(ADMIN_ROLE, config.get("admin_role").toAddress()), true);
         assertEq(deployment.staking.hasRole(RESTRICTER_ROLE, config.get("restricter_role").toAddress()), true);
+        assertEq(deployment.staking.hasRole(INSTANT_UNSTAKER_ROLE, address(deployment.controller)), true);
 
         // check multicall roles
         assertEq(deployment.multicall.hasRole(MULTICALLER_ROLE, config.get("multicaller_role").toAddress()), true);
@@ -113,6 +114,8 @@ contract DeployDevelopmentForkTest is ForkBaseTest, Config {
         // check controller is correctly configured
         assertEq(deployment.controller.custodian(), address(deployment.custodian_module));
         assertEq(deployment.controller.manager(), address(deployment.manager));
+        assertEq(deployment.controller.blockMintLimit(), vm.parseUint(config.get("mint_limit").toString()));
+        assertEq(deployment.controller.blockRedeemLimit(), vm.parseUint(config.get("redeem_limit").toString()));
 
         // check manager is correctly configured
         assertEq(deployment.manager.controller(), address(deployment.controller));

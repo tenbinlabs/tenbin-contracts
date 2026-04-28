@@ -1,5 +1,5 @@
 # Controller
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/Controller.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/Controller.sol)
 
 **Inherits:**
 [IController](/src/interface/IController.sol/interface.IController.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), AccessControl, EIP712
@@ -7,16 +7,26 @@
 **Title:**
 Controller
 
+__/\\\\\\\\\\\\\\\__________________________/\\\____________________________
+_\///////\\\/////__________________________\/\\\____________________________
+_______\/\\\_______________________________\/\\\_________/\\\_______________
+_______\/\\\______/\\\\\\\\___/\\/\\\\\\___\/\\\________\///___/\\/\\\\\\___
+_______\/\\\____/\\\/////\\\_\/\\\////\\\__\/\\\\\\\\\___/\\\_\/\\\////\\\__
+_______\/\\\___/\\\\\\\\\\\__\/\\\__\//\\\_\/\\\////\\\_\/\\\_\/\\\__\//\\\_
+_______\/\\\__\//\\///////___\/\\\___\/\\\_\/\\\__\/\\\_\/\\\_\/\\\___\/\\\_
+_______\/\\\___\//\\\\\\\\\\_\/\\\___\/\\\_\/\\\\\\\\\__\/\\\_\/\\\___\/\\\_
+_______\///_____\//////////__\///____\///__\/////////___\///__\///____\///__
+
 The Controller handles mint and redemption orders for the Tenbin protocol
 Tenbin is an asset token issuance platform with the goal of creating liquid, composable financial assets.
 Assets in the Tenbin protocol are backed by two positions: off-chain futures contracts and on-chain collateral.
 An off-chain hedging system maintains a delta one exposure of an underlying asset. On-chain collateral is used to earn low-risk yield.
 So long as the on-chain yield equals or exceeds the off-chain funding costs, the protocol is able to peg Tenbin assets to the spot price of the real asset.
 The controller contract is responsible for minting and redeeming assets in the Tenbin protocol
-Mint and redemptions are encoded as an Order. Orders are signed by KYC-approved signers and specify order details such as
-collateral amount, asset amount, and deadline. To successfully execute an order, a minter account calls the mint or redeem
-with an order and signature. Orders are executed atomically: collateral is transferred and tokens are minted/burned in a single transaction.
-All orders are executed by a minter key stored in a hardware security module and controlled by the Tenbin backend.
+Orders are signed by KYC-approved signers and specify order details such as order type, collateral amount, asset amount, and deadline.
+All orders have an approval signed by a minter key stored in a hardware security module and controlled by the Tenbin backend.
+To successfully execute an order, any account can call the mint or redeem with an order, signature, context, and approval.
+Orders are executed atomically: collateral is transferred and tokens are minted/burned in a single transaction.
 When a mint is executed, the collateral is split between a custodian account and a manager account.
 The controller ratio represents the percentage of collateral to transfer to the the custodian account.
 The controller has several administrative functions to manage order signers, add order beneficiaries, and allow delegating to a signer.
@@ -28,13 +38,17 @@ An oracle is used as a backstop to prevent order price from deviating from the o
 However, order price is not determined by the oracle on-chain.
 Staked assets can be redeemed by specifying the staked asset address as part of the order.
 Redeeming staked assets requires approving the controller to spend staked assets.
+The `Context` struct allows passing in a flag to indicate an order should be curated as part of the transaction.
+When performing an on demand curation, the CollateralManager `withdraw()` or `deposit()` function is called
+before a redemption or after a mint, respectively. An additional `share_price` is passed along with curated orders
+to act as a slippage guard when interacting with the CollateralManager vaults.
 Mint and redemption limits are configurable per block. Limits are always denominated in asset amount.
 Setting the block mint limit to max uint will disable the limit
 The controller is intended to be the only account which can mint asset tokens. In the case a new controller is created,
 the old controller is deprecated and minting permission is set to the new controller.
 
 
-## State Variables
+## Constants
 ### RATIO_PRECISION
 Precision used for ratio calculations
 
@@ -50,6 +64,15 @@ Max oracle delta tolerance. 1e18 = 100%
 
 ```solidity
 uint96 private constant MAX_ORACLE_TOLERANCE = 1e18
+```
+
+
+### MAX_LIMIT_AMOUNT
+Max amount that can be set for mint and redeem limits
+
+
+```solidity
+uint128 private constant MAX_LIMIT_AMOUNT = type(uint128).max
 ```
 
 
@@ -102,7 +125,7 @@ Order typehash
 
 ```solidity
 bytes32 public constant ORDER_TYPEHASH = keccak256(
-    "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,address asset_token,uint256 asset_amount)"
+    "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,address order_token,uint256 asset_amount)"
 )
 ```
 
@@ -131,7 +154,7 @@ Semantic version
 
 
 ```solidity
-string public constant VERSION = "1.2.0"
+string public constant VERSION = "1.4.0"
 ```
 
 
@@ -153,6 +176,7 @@ address public immutable stakedAsset
 ```
 
 
+## State Variables
 ### pauseStatus
 Pause status
 
@@ -194,7 +218,7 @@ Keeps track of which nonces a payer has used
 
 
 ```solidity
-mapping(address => mapping(uint256 => bool)) nonces
+mapping(address => mapping(uint256 => bool)) public nonces
 ```
 
 
@@ -260,7 +284,7 @@ Asset mint limit per block
 
 
 ```solidity
-uint256 blockMintLimit
+uint128 public blockMintLimit
 ```
 
 
@@ -269,34 +293,25 @@ Asset redeem limit per block
 
 
 ```solidity
-uint256 blockRedeemLimit
+uint128 public blockRedeemLimit
 ```
 
 
-### blockMints
-Asset amount minted for a block. Used to enforce mint limits.
+### mintLimit
+Track amount minted in a block to enforce limits
 
 
 ```solidity
-uint256 blockMints
+Limit mintLimit
 ```
 
 
-### blockRedeems
-Asset amount redeemed for a block. Used to enforce redemption limits.
+### redeemLimit
+Track amount redeemed in a block to enforce limits
 
 
 ```solidity
-uint256 blockRedeems
-```
-
-
-### blockNumber
-track block number to enforce limits
-
-
-```solidity
-uint256 blockNumber
+Limit redeemLimit
 ```
 
 
@@ -366,6 +381,8 @@ function setRecipientStatus(address recipient, bool status) external;
 ### setDelegateStatus
 
 Allow an account to delegate a signer to sign orders on their behalf
+
+New delegations require signer to be active
 
 
 ```solidity
@@ -511,7 +528,7 @@ Set block mint limit
 
 
 ```solidity
-function setBlockMintLimit(uint256 newBlockMintLimit) external onlyRole(DEFAULT_ADMIN_ROLE);
+function setBlockMintLimit(uint128 newBlockMintLimit) external onlyRole(DEFAULT_ADMIN_ROLE);
 ```
 
 ### setBlockRedeemLimit
@@ -520,7 +537,7 @@ Set block redeem limit
 
 
 ```solidity
-function setBlockRedeemLimit(uint256 newBlockRedeemLimit) external onlyRole(DEFAULT_ADMIN_ROLE);
+function setBlockRedeemLimit(uint128 newBlockRedeemLimit) external onlyRole(DEFAULT_ADMIN_ROLE);
 ```
 
 ### rescueToken

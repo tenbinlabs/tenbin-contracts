@@ -33,17 +33,27 @@ import {UUPSUpgradeable} from "openzeppelin-contracts/contracts/proxy/utils/UUPS
 /// @title StakedAsset
 /// @notice Allows staking an asset token for a staking token
 /// Rewards can be sent to this contract to reward stakers proportionally to their stake
+///
 /// Includes a vesting period over which pending rewards are linearly vested
 /// Whenever a reward is paid to the contract, the vesting period resets
+/// Once the vesting period is set, it cannot be set below MIN_VESTING_PERIOD.
+///
 /// Includes a cooldown period over which a user must wait between cooldown and withdraw
 /// When cooldownPeriod > 0, the normal withdraw() and redeem() functions will revert
+///
 /// Users call cooldownShares() and cooldownAssets() to initiate cooldown
 /// Users can have multiple cooldowns at once denominated by cooldownIds[account]
 /// Users do not earn rewards for assets during the cooldown period
 /// Assets in cooldown are stored in a Silo contract until cooldown is complete
-/// After the cooldown is completed, users can call unstake(id) to claim their asset tokens
+/// After a cooldown is completed, users can call unstake(id) to claim their asset tokens
+///
+/// The INSTANT_UNSTAKER_ROLE can unstake tokens on behalf of an account with approval
+/// Typically the instant unstake function is used by the Controller contract to process staked asset redemptions
+/// Instant unstaking includes an instant unstake cap which is depleted as assets are instantly unstaked
+/// The CAP_ADJUSTER_ROLE can adjust the instant unstake cap
 ///
 /// In order to avoid a first depositor donation attack a minimum stake should be made in the same transaction as the contract deployment
+///
 /// This is a UUPS upgradeable contract meant to be deployed behind an ERC1967 Proxy
 contract StakedAsset is
     IStakedAsset,
@@ -82,12 +92,6 @@ contract StakedAsset is
     /// @notice Min vesting period to prevent rounding errors when calculating rewards within 0.1%
     uint256 public constant MIN_VESTING_PERIOD = 1200 seconds;
 
-    /// @notice Precision for fee calculations
-    uint256 constant FEE_PRECISION = 1e18;
-
-    /// @notice Max instant unstaking fee = 100%
-    uint256 constant MAX_INSTANT_UNSTAKE_FEE = 1e18;
-
     /* ------------------------------------ STATE VARIABLES ------------------------------------ */
 
     /// @notice AssetSilo holds assets during cooldown
@@ -110,12 +114,6 @@ contract StakedAsset is
 
     /// @notice Cap for instant unstaking. When an instant unstake is performed, this value is decremented
     uint256 public instantUnstakeCap;
-
-    /// @notice Instant unstaking fee charged in assets
-    uint256 public instantUnstakeFee;
-
-    /// @notice Account which receives instant unstaking fees
-    address public feeRecipient;
 
     /* ------------------------------------ MODIFIERS ------------------------------------------ */
 
@@ -141,23 +139,17 @@ contract StakedAsset is
     /// @param symbol_ Symbol for this token
     /// @param asset_ Asset to stake and reward
     /// @param owner_ Default admin role for this contract
-    function initialize(
-        string memory name_,
-        string memory symbol_,
-        address asset_,
-        address owner_,
-        uint256 _instantUnstakeFee,
-        address _feeRecipient
-    ) external initializer nonZeroAddress(asset_) nonZeroAddress(owner_) {
+    function initialize(string memory name_, string memory symbol_, address asset_, address owner_)
+        external
+        initializer
+        nonZeroAddress(asset_)
+        nonZeroAddress(owner_)
+    {
         __ERC20_init(name_, symbol_);
         __ERC20Permit_init(name_);
         __ERC4626_init(IERC20(asset_));
         __AccessControl_init();
         silo = new AssetSilo(address(this), address(asset_));
-        if (_instantUnstakeFee > MAX_INSTANT_UNSTAKE_FEE) revert ExceedsMaxInstantUnstakeFee();
-        if (_feeRecipient == address(this)) revert InvalidFeeRecipient();
-        instantUnstakeFee = _instantUnstakeFee;
-        feeRecipient = _feeRecipient;
         _grantRole(DEFAULT_ADMIN_ROLE, owner_);
     }
 
@@ -185,7 +177,6 @@ contract StakedAsset is
 
         _withdraw(_msgSender(), address(silo), msg.sender, assets, shares);
         emit CooldownStarted(msg.sender, assets, shares, id, cooldownEnd);
-        return (shares, id);
     }
 
     /// @inheritdoc IStakedAsset
@@ -195,7 +186,6 @@ contract StakedAsset is
         shares = previewWithdraw(assets);
         // increment cooldown ID for this user
         id = cooldownIds[msg.sender]++;
-        assets = previewRedeem(shares);
         uint256 cooldownEnd = (block.timestamp + cooldownPeriod);
 
         // store cooldown
@@ -235,31 +225,25 @@ contract StakedAsset is
     }
 
     /// @inheritdoc IStakedAsset
-    function instantUnstake(uint256 shares, address receiver, address owner)
+    function instantUnstake(uint256 assets, address receiver, address owner)
         external
         onlyRole(INSTANT_UNSTAKER_ROLE)
         nonRestricted(owner)
         nonRestricted(receiver)
-        returns (uint256 assets, uint256 fee)
+        returns (uint256 shares)
     {
-        assets = previewRedeem(shares);
+        shares = previewWithdraw(assets);
         if (assets > instantUnstakeCap) revert ExceedsInstantUnstakeCap();
         instantUnstakeCap -= assets;
 
-        // If instant unstake fee is set, withdraw fees to fee receiver
-        fee = 0;
-        if (instantUnstakeFee > 0 && feeRecipient != address(0)) {
-            fee = Math.mulDiv(instantUnstakeFee, assets, FEE_PRECISION);
-            super.withdraw(fee, feeRecipient, owner);
-        }
-
         // withdraw remaining assets to receiver
-        super.withdraw(assets - fee, receiver, owner);
+        super.redeem(shares, receiver, owner);
         emit InstantUnstake(owner, receiver, assets, shares);
     }
 
     /// @inheritdoc IStakedAsset
     function reward(uint256 assets) external onlyRole(REWARDER_ROLE) {
+        if (assets == 0) revert InvalidRewardAmount();
         if (vesting.period > 0) {
             uint256 pending = _pendingRewards();
             vesting.assets = pending + assets;
@@ -277,7 +261,7 @@ contract StakedAsset is
     /// with the remaining rewards vested over the new vesting period
     function setVestingPeriod(uint128 newVestingPeriod) external onlyRole(ADMIN_ROLE) {
         if (newVestingPeriod > MAX_VESTING_PERIOD) revert ExceedsMaxVestingPeriod();
-        if (newVestingPeriod < MIN_VESTING_PERIOD && newVestingPeriod != 0) revert SubceedsMinVestingPeriod();
+        if (newVestingPeriod < MIN_VESTING_PERIOD) revert SubceedsMinVestingPeriod();
         // get pending rewards and reset vesting if pending rewards > 0
         uint256 pending = _pendingRewards();
         if (pending > 0) {
@@ -308,23 +292,6 @@ contract StakedAsset is
     function setInstantUnstakeCap(uint256 cap) external onlyRole(CAP_ADJUSTER_ROLE) {
         instantUnstakeCap = cap;
         emit InstantUnstakeCapChanged(cap);
-    }
-
-    /// @notice Set instant unstake fee as a percentage where 1e18 = 100%
-    /// @param fee Instant unstaking fee
-    function setInstantUnstakeFee(uint256 fee) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (fee > MAX_INSTANT_UNSTAKE_FEE) revert ExceedsMaxInstantUnstakeFee();
-        instantUnstakeFee = fee;
-        emit InstantUnstakeFeeChanged(fee);
-    }
-
-    /// @notice Set an account to receive fees from instant unstaking
-    /// @param newFeeRecipient New recipient for unstaking fees
-    function setFeeRecipient(address newFeeRecipient) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (newFeeRecipient == address(this)) revert InvalidFeeRecipient();
-        if (instantUnstakeFee == 0 && newFeeRecipient == address(0)) revert InvalidFeeRecipient();
-        feeRecipient = newFeeRecipient;
-        emit FeeRecipientUpdated(newFeeRecipient);
     }
 
     /// @notice Withdraw assets from a restricted account.
@@ -460,8 +427,7 @@ contract StakedAsset is
         uint256 end = data.end;
         uint256 period = data.period;
         uint256 assets = data.assets;
-        // slither-disable-next-line incorrect-equality
-        if (period == 0) return 0;
+
         if (block.timestamp >= end) return 0;
         pending = Math.mulDiv(assets, end - block.timestamp, period);
     }

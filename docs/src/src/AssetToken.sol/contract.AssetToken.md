@@ -1,5 +1,5 @@
 # AssetToken
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/AssetToken.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/AssetToken.sol)
 
 **Inherits:**
 [IBurnMintERC20](/src/interface/IBurnMintERC20.sol/interface.IBurnMintERC20.md), ERC20Permit, Ownable2Step
@@ -22,16 +22,7 @@ Implemented as an ERC20 with added mint() and burn() functions
 The `minter` role is set by the owner, and is allowed to call the mint() function
 
 
-## State Variables
-### minter
-Account which has permission to mint tokens
-
-
-```solidity
-address public minter
-```
-
-
+## Constants
 ### TOKEN_NOTE
 
 ```solidity
@@ -54,6 +45,16 @@ string public constant TOKEN_NOTE = "- ***THIS TOKEN-NOTE IS SUBJECT TO ALL OF T
     "9. **Waiver; Amendment**. No amendment to the terms of this Note or waiver of a breach, failure of any condition, or any right or remedy contained in or granted by the provisions of this Note will be effective unless it is in writing and expressly approved by Issuer. No waiver of any breach, failure, right, or remedy will be deemed a waiver of any other breach, failure, right, or remedy, whether or not similar, and no waiver will constitute a continuing waiver, unless the writing so specifies.\n"
     "10. **Headings**. The descriptive headings of the sections and subsections of this Note are for convenience only, and do not affect this Note's construction or interpretation.\n"
     "11. **Platform-Based Signatures**. By issuing and accepting the Token on the Token Platform in accordance with Section 7 hereof, Issuer and each Holder authenticates, signs (including, without limitation, \"signing\" within the meaning of Section 1-201 of the UCC, and, for the avoidance of doubt, such signing shall constitute, without limitation, an \"electronic signature\" within the meaning of the Uniform Electronic Transactions Act and U.S. federal E-SIGN Act of 2000), executes, and delivers this Note as of the effective date of such acceptance. No manual signature, writings, notarization, or further action is required to indicate such Loan Participant's intent to authenticate or adopt this Agreement. In accordance with Section 6 hereof, this Agreement may be executed in any number of counterparts and all of such counterparts shall together constitute one and the same instrument."
+```
+
+
+## State Variables
+### minter
+Account which has permission to mint tokens
+
+
+```solidity
+address public minter
 ```
 
 

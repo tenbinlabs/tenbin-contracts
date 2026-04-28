@@ -47,7 +47,7 @@ contract MintTestnetScript is BaseScript {
             recipient: RECIPIENT_ADDRESS,
             collateral_token: COLLATERAL_ADDRESS,
             collateral_amount: 100_000e6, // 100k usdc
-            asset_token: ASSET_ADDRESS,
+            order_token: ASSET_ADDRESS,
             asset_amount: 238e17 // 23.8k gold
         });
     }

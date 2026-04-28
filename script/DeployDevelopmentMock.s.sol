@@ -79,9 +79,7 @@ contract DeployDevelopmentMock is DeployBase {
             params.staked_asset_name,
             params.staked_asset_symbol,
             deployment.asset,
-            broadcaster,
-            0,
-            address(0)
+            broadcaster
         );
         ERC1967Proxy proxy = new ERC1967Proxy{salt: SALT}(stakingImplementation, data);
         deployment.staking = StakedAsset(address(proxy));
@@ -150,16 +148,22 @@ contract DeployDevelopmentMock is DeployBase {
         deployment.revenue_module.grantRole(REVENUE_KEEPER_ROLE, roles.revenue_keeper_role);
         deployment.custodian_module.grantRole(CUSTODIAN_KEEPER_ROLE, roles.custodian_keeper_role);
 
-        // configuration
+        // configure controller
         deployment.controller.grantRole(ADMIN_ROLE, broadcaster);
         deployment.controller.grantRole(SIGNER_MANAGER_ROLE, broadcaster);
         deployment.controller.setSignerStatus(params.signer, true);
+        deployment.controller.setIsCollateral(address(deployment.collateral), true);
+        deployment.controller.setManager(address(deployment.manager));
+        deployment.controller.setBlockMintLimit(params.mint_limit);
+        deployment.controller.setBlockRedeemLimit(params.redeem_limit);
+
+        // configure manager
         deployment.manager.grantRole(ADMIN_ROLE, broadcaster);
         deployment.manager.addCollateral(address(deployment.collateral), address(deployment.vault));
         deployment.manager.setSwapModule(address(deployment.swap_module));
         deployment.manager.setRevenueModule(address(deployment.revenue_module));
-        deployment.controller.setIsCollateral(address(deployment.collateral), true);
-        deployment.controller.setManager(address(deployment.manager));
+
+        // configure staking
         deployment.staking.grantRole(ADMIN_ROLE, broadcaster);
         if (block.chainid != 1) {
             // TODO Create a separation ENG-1261
@@ -285,11 +289,9 @@ contract DeployDevelopmentMock is DeployBase {
         console2.log("domain separator: ");
         console2.logBytes32(deployment.controller.getDomainSeparator());
         console2.log("order typehash: ");
-        console2.logBytes32(
-            keccak256(
-                "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,uint256 asset_amount)"
-            )
-        );
+        console2.logBytes32(deployment.controller.ORDER_TYPEHASH());
+        console2.log("context typehash: ");
+        console2.logBytes32(deployment.controller.CONTEXT_TYPEHASH());
         console2.log("\n========================= Contracts =========================\n");
         console2.log("Controller: ", address(deployment.controller));
         console2.log("CollateralManager: ", address(deployment.manager));

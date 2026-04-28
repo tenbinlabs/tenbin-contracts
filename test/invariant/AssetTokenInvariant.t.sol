@@ -2,10 +2,11 @@
 pragma solidity 0.8.30;
 
 import {AssetTokenHandler} from "./handlers/AssetTokenHandler.sol";
-import {BaseTest} from "../BaseTest.sol";
+import {InvariantBase} from "./InvariantBase.sol";
 
-// forge test --mc AssetTokenInvariantsTest -vvvv
-contract AssetTokenInvariantTest is BaseTest {
+// echidna: echidna test/invariant/AssetTokenInvariant.t.sol --contract AssetTokenInvariantTest --config echidna.yaml
+// foundry: forge test --mc AssetTokenInvariantsTest -vvvv
+contract AssetTokenInvariantTest is InvariantBase {
     AssetTokenHandler tokenHandler;
 
     function setUp() public virtual override {
@@ -33,5 +34,16 @@ contract AssetTokenInvariantTest is BaseTest {
     // Permit and transferFrom preserve total supply
     function invariant_totalSupplyPersistence() public view {
         assertEq(tokenHandler.totalBeforeTransfer(), tokenHandler.totalAfterTransfer());
+    }
+
+    //-------------------- Access Control Invariants-----------------------------------
+
+    // setMinter always revert when caller is not authorized
+    function invariant_setMinter_only_owner_callable() public {
+        try asset.setMinter(address(1)) {
+            assertTrue(false);
+        } catch {
+            assertTrue(true);
+        }
     }
 }

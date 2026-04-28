@@ -5,6 +5,8 @@ endpoint_url = "${SEPOLIA_RPC_URL}"
 [11155111.string]
 asset_name = "Tenbin Gold"
 asset_symbol = "tGLD"
+mint_limit = "3000000000000000000000"   # 3000 asset tokens
+redeem_limit = "3000000000000000000000" # 3000 asset tokens
 
 [11155111.address]
 admin_role = "0x0cca9129cccbd78288ff87631c5233dd835c9aa2"

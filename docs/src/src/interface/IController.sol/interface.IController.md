@@ -1,5 +1,5 @@
 # IController
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/interface/IController.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/interface/IController.sol)
 
 **Title:**
 IController
@@ -213,7 +213,6 @@ event Mint(
     address indexed recipient,
     address collateralToken,
     uint256 collateralAmount,
-    address assetToken,
     uint256 mintAmount
 );
 ```
@@ -229,7 +228,6 @@ event Mint(
 |`recipient`|`address`|Recipient account which received assets|
 |`collateralToken`|`address`|Collateral used for this mint|
 |`collateralAmount`|`uint256`|Collateral amount sent|
-|`assetToken`|`address`|Asset token used for this mint|
 |`mintAmount`|`uint256`|Amount of asset tokens minted|
 
 ### Redeem
@@ -245,7 +243,6 @@ event Redeem(
     address indexed recipient,
     address collateralToken,
     uint256 collateralAmount,
-    address assetToken,
     uint256 redeemAmount
 );
 ```
@@ -261,8 +258,7 @@ event Redeem(
 |`recipient`|`address`|Recipient account which received collateral|
 |`collateralToken`|`address`|Collateral used for this redeem|
 |`collateralAmount`|`uint256`|Collateral amount received|
-|`assetToken`|`address`|Asset token used for this redeem|
-|`redeemAmount`|`uint256`|Amount of asset redeemed|
+|`redeemAmount`|`uint256`|Amount of asset redeemed and burned|
 
 ### MintRedeemPauseStatusChanged
 Emitted when mint & redemption pause status changes
@@ -472,6 +468,14 @@ Exceeds block redeem limit
 error ExceedsBlockRedeemLimit();
 ```
 
+### ExceedsMaxLimitAmount
+Exceeds max block limit amount
+
+
+```solidity
+error ExceedsMaxLimitAmount();
+```
+
 ### ExceedsOracleDeltaTolerance
 Order price exceeds oracle tolerance
 
@@ -500,14 +504,6 @@ Invalid asset amount
 
 ```solidity
 error InvalidAssetAmount();
-```
-
-### InvalidAssetToken
-Invalid asset token
-
-
-```solidity
-error InvalidAssetToken();
 ```
 
 ### InvalidCollateralAmount
@@ -548,6 +544,14 @@ Invalid nonce
 
 ```solidity
 error InvalidNonce();
+```
+
+### InvalidOrderToken
+Invalid order token
+
+
+```solidity
+error InvalidOrderToken();
 ```
 
 ### InvalidOrderType
@@ -678,7 +682,7 @@ struct Order {
     address recipient;
     address collateral_token;
     uint256 collateral_amount;
-    address asset_token;
+    address order_token;
     uint256 asset_amount;
 }
 ```
@@ -694,8 +698,8 @@ struct Order {
 |`recipient`|`address`|Account to transfer tokens to|
 |`collateral_token`|`address`|Collateral token|
 |`collateral_amount`|`uint256`|Amount of collateral|
-|`asset_token`|`address`|Asset token for this order - either asset or staked asset|
-|`asset_amount`|`uint256`|Amount of asset tokens|
+|`order_token`|`address`|Token for this order - either asset or staked asset|
+|`asset_amount`|`uint256`|Amount of asset tokens used for this order|
 
 ### Context
 Context is signed by a minter and used during order execution
@@ -734,6 +738,24 @@ struct Oracle {
 |----|----|-----------|
 |`adapter`|`address`|Oracle adapter used to get normalized price|
 |`tolerance`|`uint96`|Percentage tolerance from oracle price. 1e18 = 100%|
+
+### Limit
+Struct to track and enforce limits per block
+
+
+```solidity
+struct Limit {
+    uint128 blockNumber;
+    uint128 amount;
+}
+```
+
+**Properties**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`blockNumber`|`uint128`|Block number in which amount is tracked|
+|`amount`|`uint128`|Amount for this block|
 
 ## Enums
 ### SignatureType

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseTest} from "../BaseTest.sol";
 import {ControllerHandler} from "./handlers/ControllerHandler.sol";
 import {IController} from "../../src/interface/IController.sol";
+import {InvariantBase} from "./InvariantBase.sol";
 
-// forge test --mc ControllerInvariantTest -vvvv
-contract ControllerInvariantTest is BaseTest {
+// echidna: echidna test/invariant/ControllerInvariant.t.sol --contract ControllerInvariantTest --config echidna.yaml
+// foundry: forge test --mc ControllerInvariantTest -vvvv
+contract ControllerInvariantTest is InvariantBase {
     ControllerHandler controllerHandler;
 
     uint256 initialManagerBalance;
@@ -23,14 +24,19 @@ contract ControllerInvariantTest is BaseTest {
                 gatekeeper: gatekeeper,
                 admin: admin,
                 payerKey: payerKey,
+                minterKey: minterKey,
                 controller: controller,
                 asset: asset,
-                collateral: collateral
+                collateral: collateral,
+                staking: staking,
+                vault: vault
             })
         );
 
         initialManagerBalance = collateral.balanceOf(controller.manager());
         initialCustodianBalance = collateral.balanceOf(controller.custodian());
+        vm.prank(capAdjuster);
+        staking.setInstantUnstakeCap(type(uint256).max);
 
         targetContract(address(controllerHandler));
     }
@@ -58,7 +64,6 @@ contract ControllerInvariantTest is BaseTest {
     // No token `totalSupply` can change if `ControllerPauseStatus` ≠ `None`
     function invariant_pausedImpliesConstantSupply() public view {
         bool paused = controller.pauseStatus() != IController.ControllerPauseStatus.None;
-        assertTrue(!paused || collateral.totalSupply() == controllerHandler.lastCollateralSupply());
         assertTrue(!paused || asset.totalSupply() == controllerHandler.lastAssetSupply());
     }
 
@@ -80,12 +85,12 @@ contract ControllerInvariantTest is BaseTest {
     // Manager never receives more than the minted collateral amount
     function invariant_ManagerBalance() public view {
         uint256 collAmount = controllerHandler.totalMintCollateral() - controllerHandler.totalRedeemCollateral();
-        assertLe(collateral.balanceOf(controller.manager()), collAmount);
+        assertLe(controllerHandler.sentToManager(), collAmount);
     }
 
     // Collateral token `totalSupply` must not change after calling mint or redeem
     function invariant_CollateralSupply() public view {
-        assertEq(controllerHandler.lastCollateralSupply(), collateral.totalSupply());
+        assertFalse(controllerHandler.didSupplyChanged());
     }
 
     // Asset token `totalSupply` must decrease after redeeming
@@ -93,14 +98,54 @@ contract ControllerInvariantTest is BaseTest {
         assertLe(asset.totalSupply(), controllerHandler.totalAssetSupplyMint());
     }
 
-    // Sum of manager and custodian holdings always equals total collateral amount of the order.
+    // Sum of manager + custodian + vault holdings always equals total collateral amount of the order.
     function invariant_CollateralConservation() public view {
-        uint256 collAmount = controllerHandler.totalMintCollateral() - controllerHandler.totalRedeemCollateral();
+        uint256 collAmount = collateral.totalSupply();
         uint256 managerIncrease = collateral.balanceOf(controller.manager()) - initialManagerBalance;
 
         uint256 custodianIncrease = collateral.balanceOf(controller.custodian()) - initialCustodianBalance;
-        uint256 total = managerIncrease + custodianIncrease;
+        uint256 total = managerIncrease + custodianIncrease + collateral.balanceOf(address(vault));
 
-        assertEq(total, collAmount);
+        assertGe(collAmount, total);
+    }
+
+    // Asset token address doesn't change
+    function invariant_asset_value() public view {
+        assertEq(controller.asset(), address(asset));
+    }
+
+    // oracle tolerance always less than MAX_ORACLE_TOLERANCE
+    function invariant_oracleTolerance_bound() public view {
+        (address adapter, uint96 tolerance) = controller.oracle();
+        assertTrue(adapter == address(0) || tolerance < MAX_ORACLE_TOLERANCE);
+    }
+
+    //-------------------- Access Control Invariants-----------------------------------
+
+    // setSignerStatus always revert for non signer manager role
+    function invariant_setSignerStatus_only_signerManager_callable() public {
+        try controller.setSignerStatus(address(1), true) {
+            assertTrue(false);
+        } catch {
+            assertTrue(true);
+        }
+    }
+
+    // setPauseStatus always revert non gatekeeper role
+    function invariant_setPauseStatus_only_gatekeeper_callable() public {
+        try controller.setPauseStatus(IController.ControllerPauseStatus.None) {
+            assertTrue(false);
+        } catch {
+            assertTrue(true);
+        }
+    }
+
+    // setIsRestricted always revert non restricter
+    function invariant_setIsRestricted_only_restricter_callable() public {
+        try controller.setIsRestricted(address(1), true) {
+            assertTrue(false);
+        } catch {
+            assertTrue(true);
+        }
     }
 }

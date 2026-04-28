@@ -28,10 +28,7 @@ contract GoldOracleAdapter is IOracleAdapter {
     /// @inheritdoc IOracleAdapter
     /// @dev Return price in USD with 18 decimals
     function getPrice() external view returns (uint256) {
-        (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = oracle.latestRoundData();
-
-        // valid round
-        if (answeredInRound != roundId) revert IncorrectOracleRound();
+        (, int256 answer,, uint256 updatedAt,) = oracle.latestRoundData();
 
         // Check for stale price
         if (block.timestamp - updatedAt > PRICE_STALENESS_THRESHOLD) revert OraclePriceStale();

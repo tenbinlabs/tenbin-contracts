@@ -1,5 +1,5 @@
 # IOracleAdapter
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/interface/IOracleAdapter.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/interface/IOracleAdapter.sol)
 
 **Title:**
 OracleAdapter
@@ -24,14 +24,6 @@ function getPrice() external view returns (uint256 price);
 
 
 ## Errors
-### IncorrectOracleRound
-Answer is not from latest round
-
-
-```solidity
-error IncorrectOracleRound();
-```
-
 ### InvalidOracleDecimals
 Thrown when adding an oracle with incompatible decimals
 

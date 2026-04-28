@@ -1,5 +1,5 @@
 # IStakedAsset
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/interface/IStakedAsset.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/interface/IStakedAsset.sol)
 
 **Title:**
 IStakedAsset
@@ -130,7 +130,7 @@ function instantUnstake(uint256 assets, address receiver, address owner) externa
 
 |Name|Type|Description|
 |----|----|-----------|
-|`assets`|`uint256`|Amount of assets to instant withdraw|
+|`assets`|`uint256`|Amount of assets to withdraw|
 |`receiver`|`address`|Account to receive assets|
 |`owner`|`address`|Account which hold staked assets|
 
@@ -146,7 +146,9 @@ function instantUnstake(uint256 assets, address receiver, address owner) externa
 Adds new rewards to the contract and extends vesting period
 
 WARNING: This resets the vesting end time to block.timestamp + vesting.period,
-which can delay distribution of previously pending rewards
+which can delay distribution of previously pending rewards.
+Rewarding the contract excessively and with low reward amounts can cause vesting to reset and extend currently vesting rewards.
+Rewards should be distributed infrequently (once per 1-3 days) and in consistent amounts to ensure smooth vesting.
 
 
 ```solidity
@@ -300,34 +302,6 @@ event InstantUnstakeCapChanged(uint256 newInstantUnstakeCap);
 |----|----|-----------|
 |`newInstantUnstakeCap`|`uint256`|New instant unstake cap|
 
-### InstantUnstakeFeeChanged
-Emitted when the instant unstake fee is updated
-
-
-```solidity
-event InstantUnstakeFeeChanged(uint256 newInstantUnstakeFee);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`newInstantUnstakeFee`|`uint256`|New instant unstake fee|
-
-### FeeRecipientUpdated
-Emitted when the fee recipient is changed
-
-
-```solidity
-event FeeRecipientUpdated(address newFeeRecipient);
-```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`newFeeRecipient`|`address`|New fee recipeint|
-
 ## Errors
 ### CooldownExceededMaxRedeem
 Cannot withdraw more than max redeem
@@ -369,14 +343,6 @@ Max cooldown period exceeded
 error ExceedsMaxCooldownPeriod();
 ```
 
-### ExceedsMaxInstantUnstakeFee
-Exceeds max instant redeem fee
-
-
-```solidity
-error ExceedsMaxInstantUnstakeFee();
-```
-
 ### ExceedsMaxVestingPeriod
 Max vesting period exceeded
 
@@ -399,6 +365,14 @@ Cannot rescue asset token from staking contract
 
 ```solidity
 error InvalidRescueToken();
+```
+
+### InvalidRewardAmount
+Cannot reward zero assets
+
+
+```solidity
+error InvalidRewardAmount();
 ```
 
 ### NonexistentCooldown
@@ -447,14 +421,6 @@ Cooldown has already been unstaked or does not exist
 
 ```solidity
 error ZeroCooldownAssets();
-```
-
-### InvalidFeeRecipient
-Fee recipient cannot be address(0) or this contract
-
-
-```solidity
-error InvalidFeeRecipient();
 ```
 
 ## Structs

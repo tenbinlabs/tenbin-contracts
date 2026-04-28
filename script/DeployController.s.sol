@@ -33,7 +33,7 @@ contract DeployController is BaseScript, Config {
     string constant DEFAULT_DIR = "./config/mainnet/tgld/tgld.toml";
 
     // configuration for tGLD controller
-    string constant TARGET_VERSION = "1.2.0";
+    string constant TARGET_VERSION = "1.4.0";
     address constant ASSET_TOKEN_ADDRESS = 0x6a547b25534234bb79CE6961a23Db13DE154b6F4;
     address constant COLLATERAL_MANAGER_ADDRESS = 0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa;
     address constant CUSTODIAN_MODULE_ADDRESS = 0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89;
@@ -85,6 +85,11 @@ contract DeployController is BaseScript, Config {
         address broadcaster;
         Controller controller;
         RevenueModule revenue_module;
+    }
+
+    /// @dev The version for this deployment
+    function getVersion() internal pure override returns (string memory) {
+        return TARGET_VERSION;
     }
 
     function loadConfig(string memory configDir) internal {
@@ -242,11 +247,9 @@ contract DeployController is BaseScript, Config {
         console2.log("domain separator: ");
         console2.logBytes32(deployment.controller.getDomainSeparator());
         console2.log("order typehash: ");
-        console2.logBytes32(
-            keccak256(
-                "Order(uint8 order_type,uint256 nonce,uint256 expiry,address payer,address recipient,address collateral_token,uint256 collateral_amount,address asset_token,uint256 asset_amount)"
-            )
-        );
+        console2.logBytes32(deployment.controller.ORDER_TYPEHASH());
+        console2.log("context typehash: ");
+        console2.logBytes32(deployment.controller.CONTEXT_TYPEHASH());
         console2.log("\n========================= Contracts =========================\n");
         console2.log("Controller: ", address(deployment.controller));
         console2.log("RevenueModule: ", address(deployment.revenue_module));

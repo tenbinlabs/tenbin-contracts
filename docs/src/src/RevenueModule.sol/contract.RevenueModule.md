@@ -1,5 +1,5 @@
 # RevenueModule
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/8b82dd1743dba7886263e22eb709d16ae9d38b49/src/RevenueModule.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/RevenueModule.sol)
 
 **Inherits:**
 [IRevenueModule](/src/interface/IRevenueModule.sol/interface.IRevenueModule.md), AccessControl
@@ -19,7 +19,7 @@ A keeper role is assigned by the revenue module to automate these tasks
 For example, the keeper might be called 2x per day to transfer revenue back to the collateral manager, and 1x per day to reward the staking contract
 
 
-## State Variables
+## Constants
 ### ADMIN_ROLE
 Admin role manages delegating a signer and approving a controller to mint rewards from revenue
 

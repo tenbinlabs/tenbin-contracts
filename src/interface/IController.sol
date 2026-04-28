@@ -36,8 +36,8 @@ interface IController {
     /// @param recipient Account to transfer tokens to
     /// @param collateral_token Collateral token
     /// @param collateral_amount Amount of collateral
-    /// @param asset_token Asset token for this order - either asset or staked asset
-    /// @param asset_amount Amount of asset tokens
+    /// @param order_token Token for this order - either asset or staked asset
+    /// @param asset_amount Amount of asset tokens used for this order
     struct Order {
         OrderType order_type;
         uint256 nonce;
@@ -46,7 +46,7 @@ interface IController {
         address recipient;
         address collateral_token;
         uint256 collateral_amount;
-        address asset_token;
+        address order_token;
         uint256 asset_amount;
     }
 
@@ -68,6 +68,14 @@ interface IController {
         uint96 tolerance;
     }
 
+    /// @notice Struct to track and enforce limits per block
+    /// @param blockNumber Block number in which amount is tracked
+    /// @param amount Amount for this block
+    struct Limit {
+        uint128 blockNumber;
+        uint128 amount;
+    }
+
     /// @notice Pause states
     /// @param None Contract is not in a pause state
     /// @param MintRedeemPause Contract is not in a pause state
@@ -86,7 +94,6 @@ interface IController {
     /// @param recipient Recipient account which received assets
     /// @param collateralToken Collateral used for this mint
     /// @param collateralAmount Collateral amount sent
-    /// @param assetToken Asset token used for this mint
     /// @param mintAmount Amount of asset tokens minted
     event Mint(
         address executor,
@@ -96,7 +103,6 @@ interface IController {
         address indexed recipient,
         address collateralToken,
         uint256 collateralAmount,
-        address assetToken,
         uint256 mintAmount
     );
 
@@ -108,8 +114,7 @@ interface IController {
     /// @param recipient Recipient account which received collateral
     /// @param collateralToken Collateral used for this redeem
     /// @param collateralAmount Collateral amount received
-    /// @param assetToken Asset token used for this redeem
-    /// @param redeemAmount Amount of asset redeemed
+    /// @param redeemAmount Amount of asset redeemed and burned
     event Redeem(
         address executor,
         address indexed signer,
@@ -118,7 +123,6 @@ interface IController {
         address indexed recipient,
         address collateralToken,
         uint256 collateralAmount,
-        address assetToken,
         uint256 redeemAmount
     );
 
@@ -185,6 +189,8 @@ interface IController {
     error ExceedsBlockMintLimit();
     /// @notice Exceeds block redeem limit
     error ExceedsBlockRedeemLimit();
+    /// @notice Exceeds max block limit amount
+    error ExceedsMaxLimitAmount();
     /// @notice Order price exceeds oracle tolerance
     error ExceedsOracleDeltaTolerance();
     /// @notice Emergency Pause
@@ -193,8 +199,6 @@ interface IController {
     error InvalidApproval();
     /// @notice Invalid asset amount
     error InvalidAssetAmount();
-    /// @notice Invalid asset token
-    error InvalidAssetToken();
     /// @notice Invalid collateral amount
     error InvalidCollateralAmount();
     /// @notice Collateral token has an invalid number of decimals
@@ -205,6 +209,8 @@ interface IController {
     error InvalidERC1271Signature();
     /// @notice Invalid nonce
     error InvalidNonce();
+    /// @notice Invalid order token
+    error InvalidOrderToken();
     /// @notice Invalid order type
     error InvalidOrderType();
     /// @notice Invalid ratio
