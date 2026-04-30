@@ -175,7 +175,7 @@ contract SwapModuleTest is Test {
 
         // revert on partial fills enabled
         vm.startPrank(manager);
-        desc.flags = 1 << 255;
+        desc.flags = 1 << 0;
         vm.expectRevert(ISwapModule.PartialFillNotAllowed.selector);
         swapModule.swap(abi.encode(params), abi.encode(executor, desc, data));
 

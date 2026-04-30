@@ -180,4 +180,46 @@ contract SpokeERC20RestrictedTest is BaseTest {
         assertEq(token.balanceOf(user), 0);
         assertEq(token.balanceOf(user2), 1e18);
     }
+
+    function test_TransferRestricted() public {
+        // set up
+        vm.prank(minter);
+        token.mint(user, 1e18);
+        address user2 = vm.addr(0xC001);
+        // restrict account
+        vm.prank(restricter);
+        token.setIsRestricted(user, true);
+
+        // Perform transfer
+        vm.prank(owner);
+        token.transferRestricted(user, user2);
+
+        assertEq(token.balanceOf(user), 0);
+        assertEq(token.balanceOf(user2), 1e18);
+    }
+
+    function test_Revert_TransferRestricted() public {
+        address user2 = vm.addr(0xC001);
+        // add balance
+        vm.prank(minter);
+        token.mint(user, 1e18);
+        // Cant transfer from non restricted account
+        // Perform transfer
+        vm.prank(owner);
+        vm.expectRevert();
+        token.transferRestricted(user, user2);
+
+        // restrict from
+        vm.prank(restricter);
+        token.setIsRestricted(user, true);
+
+        // Cant transfer to restricted account
+        // restrict to
+        vm.prank(restricter);
+        token.setIsRestricted(user2, true);
+
+        vm.prank(owner);
+        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
+        token.transferRestricted(user, user2);
+    }
 }

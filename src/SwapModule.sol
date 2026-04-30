@@ -13,7 +13,8 @@ contract SwapModule is ISwapModule {
     using SafeERC20 for IERC20;
 
     /// @dev 1inch swap partial fills flag
-    uint256 private constant _NO_PARTIAL_FILLS_FLAG = 1 << 255;
+    /// https://etherscan.io/address/0x111111125421cA6dc452d289314280a0f8842A65#code#F1#L4790
+    uint256 private constant _PARTIAL_FILL = 1 << 0;
 
     /// @notice Manager contract which calls this swap contract
     address public immutable manager;
@@ -79,7 +80,7 @@ contract SwapModule is ISwapModule {
             revert InvalidSrcReceiver();
         }
         // Verify flags
-        if (swapData.flags & _NO_PARTIAL_FILLS_FLAG != 0) revert PartialFillNotAllowed();
+        if (swapData.flags & _PARTIAL_FILL != 0) revert PartialFillNotAllowed();
 
         // approve tokens
         IERC20(params.srcToken).safeIncreaseAllowance(params.router, params.amount);

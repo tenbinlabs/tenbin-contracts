@@ -55,6 +55,18 @@ contract SpokeERC20Restricted is IBurnMintERC20, IRestrictedRegistry, ERC20Permi
         _burn(account, amount);
     }
 
+    /// @notice Withdraw assets from a restricted account
+    /// @param from Restricted account to sweep funds from
+    /// @param to Account to transfer assets to
+    function transferRestricted(address from, address to) external nonRestricted(to) onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(isRestricted[from]);
+        uint256 balance = balanceOf(from);
+        // transfer if restricted account has tokens
+        if (balance > 0) {
+            _transfer(from, to, balance);
+        }
+    }
+
     /// @inheritdoc IRestrictedRegistry
     function setIsRestricted(address account, bool newStatus) external onlyRole(RESTRICTER_ROLE) {
         isRestricted[account] = newStatus;

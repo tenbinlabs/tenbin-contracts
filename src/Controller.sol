@@ -293,11 +293,13 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     /// @notice Set block mint limit
     function setBlockMintLimit(uint128 newBlockMintLimit) external onlyRole(DEFAULT_ADMIN_ROLE) {
         blockMintLimit = newBlockMintLimit;
+        emit MintLimitUpdated(newBlockMintLimit);
     }
 
     /// @notice Set block redeem limit
     function setBlockRedeemLimit(uint128 newBlockRedeemLimit) external onlyRole(DEFAULT_ADMIN_ROLE) {
         blockRedeemLimit = newBlockRedeemLimit;
+        emit RedeemLimitUpdated(newBlockRedeemLimit);
     }
 
     /// @notice Rescue tokens sent to this contract

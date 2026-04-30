@@ -1260,7 +1260,7 @@ contract StakedAssetTest is BaseTest {
         staking.instantUnstake(11e18, user, user);
 
         // insufficient balance
-        vm.expectPartialRevert(ERC4626.ERC4626ExceededMaxRedeem.selector);
+        vm.expectPartialRevert(ERC4626.ERC4626ExceededMaxWithdraw.selector);
         staking.instantUnstake(1e18, user, user);
         vm.stopPrank();
     }

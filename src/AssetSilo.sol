@@ -26,7 +26,7 @@ contract AssetSilo {
     constructor(address staking_, address asset_) {
         staking = staking_;
         asset = IERC20(asset_);
-        asset.approve(staking, type(uint256).max);
+        asset.forceApprove(staking, type(uint256).max);
     }
 
     /// @notice Withdraw assets to an account

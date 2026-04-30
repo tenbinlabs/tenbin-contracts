@@ -181,6 +181,14 @@ interface IController {
     /// @param newAdapter New adapter account
     event OracleAdapterUpdated(address newAdapter);
 
+    /// @notice Emitted when mint limit amount is updated
+    /// @param newBlockMintLimit New mint limit amount
+    event MintLimitUpdated(uint128 newBlockMintLimit);
+
+    /// @notice Emitted when redeem limit amount is updated
+    /// @param newBlockRedeemLimit New redeem limit amount
+    event RedeemLimitUpdated(uint128 newBlockRedeemLimit);
+
     /// @notice Unsupported collateral type
     error CollateralNotSupported();
     /// @notice Context order hash does not match order hash
