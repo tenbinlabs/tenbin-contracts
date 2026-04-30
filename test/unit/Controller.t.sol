@@ -1106,7 +1106,11 @@ contract ControllerTest is BaseTest {
 
     function test_SetBlockMintLimit(uint128 amount) public {
         vm.prank(owner);
+        vm.expectEmit();
+        emit IController.MintLimitUpdated(amount);
         controller.setBlockMintLimit(amount);
+
+        assertEq(controller.blockMintLimit(), amount);
     }
 
     function test_Revert_SetBlockMintLimit() public {
@@ -1116,7 +1120,11 @@ contract ControllerTest is BaseTest {
 
     function test_SetBlockRedeemLimit(uint128 amount) public {
         vm.prank(owner);
+        vm.expectEmit();
+        emit IController.RedeemLimitUpdated(amount);
         controller.setBlockRedeemLimit(amount);
+
+        assertEq(controller.blockRedeemLimit(), amount);
     }
 
     function test_Revert_SetBlockRedeemLimit() public {
