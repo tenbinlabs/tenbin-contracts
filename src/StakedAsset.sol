@@ -232,12 +232,11 @@ contract StakedAsset is
         nonRestricted(receiver)
         returns (uint256 shares)
     {
-        shares = previewWithdraw(assets);
         if (assets > instantUnstakeCap) revert ExceedsInstantUnstakeCap();
         instantUnstakeCap -= assets;
 
         // withdraw remaining assets to receiver
-        super.redeem(shares, receiver, owner);
+        shares = super.withdraw(assets, receiver, owner);
         emit InstantUnstake(owner, receiver, assets, shares);
     }
 
