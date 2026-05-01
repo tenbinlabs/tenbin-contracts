@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 import {AssetToken} from "../../src/AssetToken.sol";
 import {AggregatorV3Interface} from "chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
+import {ChainlinkOracleAdapter} from "../../src/oracle/ChainlinkOracleAdapter.sol";
 import {IController} from "../../src/interface/IController.sol";
 import {IOracleAdapter} from "../../src/interface/IOracleAdapter.sol";
 import {GoldOracleAdapter} from "../../src/oracle/GoldOracleAdapter.sol";
@@ -10,25 +11,29 @@ import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract ChainlinkOracleForkTest is ForkBaseTest {
+contract OracleAdapterForkTest is ForkBaseTest {
     using SafeCast for int256;
     using SafeERC20 for AssetToken;
-    // constants
-    uint256 public constant PRICE_STALENESS_THRESHOLD = 1 days;
+    uint256 public constant DEFAULT_STALENESS_THRESHOLD = 1 days;
+    address internal constant XAU_USD_AGGREGATOR = 0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6;
+    address internal constant TGLD_USD_AGGREGATOR = 0x369C67E8b026CC4Ef98350f332D7Dd52b85b7674;
 
-    // mainnet contracts
-    address internal aggregatorContract = 0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6;
+    // legacy adapter replaced by new GoldOracleAdapter
+    IOracleAdapter legacyOracleAdapter;
 
     function setUp() public override {
         // fork mainnet
+        forkBlock = 24995466;
         super.setUp();
-        oracleAdapter = new GoldOracleAdapter(aggregatorContract);
+        legacyOracleAdapter = new ChainlinkOracleAdapter(XAU_USD_AGGREGATOR, 1 days);
+        oracleAdapter = new GoldOracleAdapter();
         // set adapter and tolerance
         setOracle(address(oracleAdapter), 1e17);
     }
 
     function testFork_SetUp() public view {
-        assertEq(address(oracleAdapter.oracle()), aggregatorContract);
+        assertEq(address(oracleAdapter.oracle()), TGLD_USD_AGGREGATOR);
+        assertEq(address(legacyOracleAdapter.oracle()), XAU_USD_AGGREGATOR);
     }
 
     function testFork_Revert_GetPrice() public {
@@ -44,7 +49,7 @@ contract ChainlinkOracleForkTest is ForkBaseTest {
 
     function testFork_LatestRoundData() public view {
         (uint80 roundID, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) =
-            AggregatorV3Interface(aggregatorContract).latestRoundData();
+            AggregatorV3Interface(XAU_USD_AGGREGATOR).latestRoundData();
 
         assertGt(roundID, 0);
         assertGt(answer, 0);
@@ -54,7 +59,7 @@ contract ChainlinkOracleForkTest is ForkBaseTest {
 
         // revert conditions not present
         assertEq(answeredInRound, roundID);
-        assertLe(block.timestamp - updatedAt, PRICE_STALENESS_THRESHOLD);
+        assertLe(block.timestamp - updatedAt, DEFAULT_STALENESS_THRESHOLD);
     }
 
     function testFork_Oracle_Mint() public {

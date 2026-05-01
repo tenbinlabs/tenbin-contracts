@@ -14,4 +14,8 @@ interface IOracleAdapter {
     /// @notice Returns price with 18 decimals of precision
     /// @return price Price with 18 decimals of precision
     function getPrice() external view returns (uint256 price);
+
+    /// @notice Address of oracle used by this adapter
+    /// @return oracleAddress Oracle address
+    function oracle() external view returns (address oracleAddress);
 }

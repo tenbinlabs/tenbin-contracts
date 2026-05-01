@@ -25,13 +25,14 @@ contract MockAggregator is AggregatorV3Interface {
         return mockAnswer;
     }
 
+    /// @dev Get latest round data
     function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
         return (latestRoundId, mockAnswer, block.timestamp, isFresh ? 0 : block.timestamp, 1);
     }
 
-    /// @dev Set answer by converting uint256 with 18 decimals to int256 with 8 decimals
+    /// @dev Set mock answer
     function setAnswer(uint256 newAnswer) external {
-        mockAnswer = (newAnswer / 1e10).toInt256();
+        mockAnswer = newAnswer.toInt256();
     }
 
     /// @dev Set decimals amount
