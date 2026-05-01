@@ -1,26 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {MockAggregator} from "../mocks/MockAggregator.sol";
+import {ChainlinkOracleAdapter} from "../../src/oracle/ChainlinkOracleAdapter.sol";
 import {IOracleAdapter} from "../../src/interface/IOracleAdapter.sol";
-import {GoldOracleAdapter} from "../../src/oracle/GoldOracleAdapter.sol";
+import {MockAggregator} from "../mocks/MockAggregator.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract OracleAdapterTest is Test {
     uint256 internal constant ADAPTER_PRECISION = 1e10;
 
     MockAggregator internal aggregator;
-    GoldOracleAdapter internal adapter;
+    ChainlinkOracleAdapter internal adapter;
 
     function setUp() public {
         aggregator = new MockAggregator();
-        adapter = new GoldOracleAdapter(address(aggregator));
+        aggregator.setDecimals(18);
+        adapter = new ChainlinkOracleAdapter(address(aggregator), 1 days);
     }
 
-    function test_Revert_Deploy() public {
-        aggregator.setDecimals(2);
+    function test_Revert_Deploy_OracleAdapter() public {
+        aggregator.setDecimals(19);
         vm.expectRevert(IOracleAdapter.InvalidOracleDecimals.selector);
-        new GoldOracleAdapter(address(aggregator));
+        new ChainlinkOracleAdapter(address(aggregator), 1 days);
+
+        aggregator.setDecimals(5);
+        vm.expectRevert(IOracleAdapter.InvalidOracleDecimals.selector);
+        new ChainlinkOracleAdapter(address(aggregator), 1 days);
     }
 
     function test_Revert_getPrice() public {
@@ -37,6 +42,14 @@ contract OracleAdapterTest is Test {
         aggregator.setAnswer(0);
         vm.expectRevert(IOracleAdapter.InvalidOraclePrice.selector);
         adapter.getPrice();
+    }
+
+    function test_fuzz_OracleAdapter_decimals(uint8 decimals) public {
+        decimals = uint8(bound(decimals, 6, 18));
+        aggregator.setDecimals(decimals);
+        adapter = new ChainlinkOracleAdapter(address(aggregator), decimals);
+        aggregator.setAnswer(1 * 10 ** decimals);
+        assertEq(adapter.getPrice(), 1e18);
     }
 
     function test_OracleAdapter() public {

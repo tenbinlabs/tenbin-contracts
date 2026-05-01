@@ -1608,6 +1608,7 @@ contract ControllerTest is BaseTest {
         mint(order, signature);
     }
 
+    // test adapter for tokens with different decimal amounts
     function test_OracleAdapter_Decimals(uint8 decimals) public {
         // set decimals between 6-18
         decimals = uint8(bound(uint8(decimals), 6, 18));

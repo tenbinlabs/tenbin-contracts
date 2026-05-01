@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 import {console2} from "forge-std/console2.sol";
 import {AssetSilo} from "../src/AssetSilo.sol";
 import {AssetToken} from "../src/AssetToken.sol";
+import {ChainlinkOracleAdapter} from "../src/oracle/ChainlinkOracleAdapter.sol";
 import {CollateralManager} from "../src/CollateralManager.sol";
 import {CollateralManagerHarness} from "./harness/CollateralManagerHarness.sol";
 import {ControllerHarness} from "./harness/ControllerHarness.sol";
@@ -13,6 +14,7 @@ import {IAggregationRouterV6} from "../src/external/1inch/IAggregationRouterV6.s
 import {IController} from "../src/interface/IController.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import {IOracleAdapter} from "../src/interface/IOracleAdapter.sol";
 import {ISwapModule} from "../src/interface/ISwapModule.sol";
 import {Mock1InchRouter} from "./mocks/Mock1InchRouter.sol";
 import {MockAggregator} from "./mocks/MockAggregator.sol";
@@ -21,7 +23,6 @@ import {MockERC4626} from "./mocks/MockERC4626.sol";
 import {MockERC1271Signer} from "./mocks/MockERC1271Signer.sol";
 import {MockEtherReceiver} from "./mocks/MockEtherReceiver.sol";
 import {MultiCall} from "../src/MultiCall.sol";
-import {GoldOracleAdapter} from "../src/oracle/GoldOracleAdapter.sol";
 import {RevenueModule} from "../src/RevenueModule.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StakedAsset} from "../src/StakedAsset.sol";
@@ -59,7 +60,7 @@ contract BaseTest is Test {
     // max price delta tolerance for controller
     uint96 internal constant MAX_ORACLE_TOLERANCE = 1e18;
     // chainlink price aggregator precision
-    uint256 internal constant ADAPTER_PRECISION = 1e10;
+    uint256 internal constant ADAPTER_PRECISION = 1e18;
     // dead deposit address
     address internal constant DEAD_DEPOSIT_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     // empty approval signature for tenbin executed orders
@@ -113,7 +114,7 @@ contract BaseTest is Test {
     StakedAssetHarness internal staking;
     CustodianModule internal custodianModule;
     MockAggregator internal aggregator;
-    GoldOracleAdapter internal oracleAdapter;
+    IOracleAdapter internal oracleAdapter;
     AssetSilo internal silo;
     MockEtherReceiver etherReceiver;
 
@@ -205,7 +206,8 @@ contract BaseTest is Test {
         signerContract = new MockERC1271Signer();
         custodianModule = new CustodianModule(owner);
         aggregator = new MockAggregator();
-        oracleAdapter = new GoldOracleAdapter(address(aggregator));
+        aggregator.setDecimals(18);
+        oracleAdapter = new ChainlinkOracleAdapter(address(aggregator), 1 days);
         etherReceiver = new MockEtherReceiver();
     }
 
