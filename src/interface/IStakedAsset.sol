@@ -42,8 +42,6 @@ interface IStakedAsset {
     error InvalidRewardAmount();
     /// @notice Cooldown does not exist for this account and ID
     error NonexistentCooldown();
-    /// @notice Only restricted account
-    error NonRestrictedAccount();
     /// @notice Only zero address
     error NonZeroAddress();
     /// @notice Redeem and withdrawal require cooldown
