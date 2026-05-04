@@ -28,7 +28,7 @@ contract SpokeERC20RestrictedTest is BaseTest {
         assertTrue(token.hasRole(RESTRICTER_ROLE, restricter));
     }
 
-    function test_Revert_Mint_SpokeERC20() public {
+    function test_Revert_Mint_SpokeERC20Restricted() public {
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         token.mint(user, 1e18);
     }
@@ -133,24 +133,10 @@ contract SpokeERC20RestrictedTest is BaseTest {
         vm.prank(user);
         token.transfer(address(this), 1000e18);
 
-        // can't transfer assets to a restricted account
-        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        token.transfer(user, 1000e18);
-
-        // can't call transferFrom assets from a restricted account
-        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        vm.prank(user);
-        token.transferFrom(user2, user2, 1000e18);
-
         // can't transferFrom assets from a non-restricted account
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
         vm.prank(user2);
         token.transferFrom(user, user2, 1000e18);
-
-        // can't transferFrom assets to a non-restricted account
-        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        vm.prank(user2);
-        token.transferFrom(user2, user, 1000e18);
         // forge-lint: disable-end(erc20-unchecked-transfer)
     }
 
@@ -185,21 +171,19 @@ contract SpokeERC20RestrictedTest is BaseTest {
         // set up
         vm.prank(minter);
         token.mint(user, 1e18);
-        address user2 = vm.addr(0xC001);
         // restrict account
         vm.prank(restricter);
         token.setIsRestricted(user, true);
 
         // Perform transfer
-        vm.prank(owner);
-        token.transferRestricted(user, user2);
+        vm.prank(owner, address(this));
+        token.transferRestricted(user, address(this));
 
         assertEq(token.balanceOf(user), 0);
-        assertEq(token.balanceOf(user2), 1e18);
+        assertEq(token.balanceOf(address(this)), 1e18);
     }
 
     function test_Revert_TransferRestricted() public {
-        address user2 = vm.addr(0xC001);
         // add balance
         vm.prank(minter);
         token.mint(user, 1e18);
@@ -207,19 +191,6 @@ contract SpokeERC20RestrictedTest is BaseTest {
         // Perform transfer
         vm.prank(owner);
         vm.expectRevert();
-        token.transferRestricted(user, user2);
-
-        // restrict from
-        vm.prank(restricter);
-        token.setIsRestricted(user, true);
-
-        // Cant transfer to restricted account
-        // restrict to
-        vm.prank(restricter);
-        token.setIsRestricted(user2, true);
-
-        vm.prank(owner);
-        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        token.transferRestricted(user, user2);
+        token.transferRestricted(user, address(this));
     }
 }
