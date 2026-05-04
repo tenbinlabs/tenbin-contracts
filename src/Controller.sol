@@ -162,10 +162,10 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     uint128 public blockRedeemLimit;
 
     /// @notice Track amount minted in a block to enforce limits
-    Limit mintLimit;
+    Limit public mintLimit;
 
     /// @notice Track amount redeemed in a block to enforce limits
-    Limit redeemLimit;
+    Limit public redeemLimit;
 
     /* ------------------------------------ MODIFIERS ------------------------------------------ */
 

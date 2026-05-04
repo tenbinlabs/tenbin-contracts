@@ -4,8 +4,10 @@ pragma solidity 0.8.30;
 /// @title IRestrictedRegistry
 /// @notice Interface for contract managing the restricted registry
 interface IRestrictedRegistry {
-    /// @notice Throws when consulted address is restricted
+    /// @notice Throws when account is restricted
     error AccountRestricted();
+    /// @notice Throws when account is not restricted
+    error AccountNotRestricted();
 
     /// @notice Emitted when a restricted address status changes
     /// @param account Address whose status was updated

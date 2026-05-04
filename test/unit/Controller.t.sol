@@ -1271,24 +1271,24 @@ contract ControllerTest is BaseTest {
         approveController(collateral, payer, type(uint256).max);
         IController.Order memory order = getMintOrder(collateral, 4000e18, 1e18, 0);
         mint(order, signOrder(payerKey, hashOrder(order)));
-
-        assertEq(controller.exposedBlockNumberMint(), block.number);
-        assertEq(controller.exposedBlockMints(), 1e18);
+        (uint256 blockNumber, uint256 amount) = controller.mintLimit();
+        assertEq(blockNumber, block.number);
+        assertEq(amount, 1e18);
 
         // limt resets after new block
         vm.roll(block.number + 1);
         order = getMintOrder(collateral, 4000e18, 1e18, 1);
         mint(order, signOrder(payerKey, hashOrder(order)));
-
-        assertEq(controller.exposedBlockNumberMint(), block.number);
-        assertEq(controller.exposedBlockMints(), 1e18);
+        (blockNumber, amount) = controller.mintLimit();
+        assertEq(blockNumber, block.number);
+        assertEq(amount, 1e18);
 
         // all mints update blockMints
         order = getMintOrder(collateral, 4000e18, 1e18, 2);
         mint(order, signOrder(payerKey, hashOrder(order)));
-
-        assertEq(controller.exposedBlockNumberMint(), block.number);
-        assertEq(controller.exposedBlockMints(), 2e18);
+        (blockNumber, amount) = controller.mintLimit();
+        assertEq(blockNumber, block.number);
+        assertEq(amount, 2e18);
     }
 
     function test_Revert_BlockMintLimit() public {
@@ -1335,24 +1335,24 @@ contract ControllerTest is BaseTest {
         approveController(asset, payer, 3e18);
         IController.Order memory order = getRedeemOrder(collateral, 4000e18, 1e18, 0);
         redeem(order, signOrder(payerKey, hashOrder(order)));
-
-        assertEq(controller.exposedBlockNumberRedeem(), block.number);
-        assertEq(controller.exposedBlockRedeems(), 1e18);
+        (uint256 blockNumber, uint256 amount) = controller.redeemLimit();
+        assertEq(blockNumber, block.number);
+        assertEq(amount, 1e18);
 
         // limt resets after new block
         vm.roll(block.number + 1);
         order = getRedeemOrder(collateral, 4000e18, 1e18, 1);
         redeem(order, signOrder(payerKey, hashOrder(order)));
-
-        assertEq(controller.exposedBlockNumberRedeem(), block.number);
-        assertEq(controller.exposedBlockRedeems(), 1e18);
+        (blockNumber, amount) = controller.redeemLimit();
+        assertEq(blockNumber, block.number);
+        assertEq(amount, 1e18);
 
         // all redeems update blockRedeems
         order = getRedeemOrder(collateral, 4000e18, 1e18, 2);
         redeem(order, signOrder(payerKey, hashOrder(order)));
-
-        assertEq(controller.exposedBlockNumberRedeem(), block.number);
-        assertEq(controller.exposedBlockRedeems(), 2e18);
+        (blockNumber, amount) = controller.redeemLimit();
+        assertEq(blockNumber, block.number);
+        assertEq(amount, 2e18);
     }
 
     function test_Revert_BlockRedeemLimit() public {

@@ -52,6 +52,14 @@ import {UUPSUpgradeable} from "openzeppelin-contracts/contracts/proxy/utils/UUPS
 /// Instant unstaking includes an instant unstake cap which is depleted as assets are instantly unstaked
 /// The CAP_ADJUSTER_ROLE can adjust the instant unstake cap
 ///
+/// A restricted registry is included to comply with legal requirements
+/// Restricted accounts can have their balances burned and underlying assets distributed to stakers
+/// Restricted accounts:
+/// - cannot receive asset tokens
+/// - cannot unstake, withdraw, or redeem
+/// - cannot transfer tokens out of the account
+/// - can receive tokens in their account (but not transfer out)
+///
 /// In order to avoid a first depositor donation attack a minimum stake should be made in the same transaction as the contract deployment
 ///
 /// This is a UUPS upgradeable contract meant to be deployed behind an ERC1967 Proxy
@@ -243,12 +251,7 @@ contract StakedAsset is
     /// @inheritdoc IStakedAsset
     function reward(uint256 assets) external onlyRole(REWARDER_ROLE) {
         if (assets == 0) revert InvalidRewardAmount();
-        if (vesting.period > 0) {
-            uint256 pending = _pendingRewards();
-            vesting.assets = pending + assets;
-            vesting.end = uint128(block.timestamp) + vesting.period;
-            emit VestingStarted(pending + assets, uint128(block.timestamp) + vesting.period);
-        }
+        _updateVesting(assets);
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), assets);
         emit RewardsReceived(assets);
     }
@@ -293,34 +296,34 @@ contract StakedAsset is
         emit InstantUnstakeCapChanged(cap);
     }
 
-    /// @notice Withdraw assets from a restricted account.
-    /// Without the ability to redeem frozen shares, a portion of rewards will be stuck in the contract
-    /// Always redeems the full balance of the restricted account
-    /// @param from Restricted account to redeem shares from
-    /// @param to Account to transfer assets to
-    /// @param isCooldown Flag to specify if restricted account is in cooldown
+    /// @notice Burn staked assets from a restricted account
+    /// When burning restricted staked assets, the underlying asset tokens are distributed to the stakers
+    /// @param owner Restricted account to redeem shares from
+    /// @param isCooldown Flag do specify if restricted account is in cooldown
     /// @param id Id of cooldown
-    function transferRestrictedAssets(address from, address to, bool isCooldown, uint256 id)
-        external
-        nonZeroAddress(to)
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        if (!isRestricted[from]) revert NonRestrictedAccount();
-        uint256 shares = balanceOf(from);
-        uint256 assets = previewRedeem(shares);
-
-        // withdraw if restricted account has shares
-        if (shares > 0) {
-            _withdraw(from, to, from, assets, shares);
+    function burnRestricted(address owner, bool isCooldown, uint256 id) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (!isRestricted[owner]) revert AccountNotRestricted();
+        // if in cooldown, force withdraw assets from silo
+        if (isCooldown) {
+            if (id >= cooldownIds[owner]) revert NonexistentCooldown();
+            Cooldown memory cooldown = cooldowns[owner][id];
+            uint256 assets = uint256(cooldown.assets);
+            if (assets == 0) revert ZeroCooldownAssets();
+            delete cooldowns[owner][id];
+            // update vesting
+            _updateVesting(assets);
+            // slither-disable-next-line reentrancy-no-eth
+            silo.withdraw(address(this), assets);
+            // will emit 0 shares, as 0 shares are minted from this action
+            emit CooldownCancelled(owner, assets, 0, id);
         }
 
-        // withdraw from silo if account is in cooldown, ignoring cooldown time
-        if (isCooldown) {
-            Cooldown memory cooldown = cooldowns[from][id];
-            if (cooldown.assets == 0) revert ZeroCooldownAssets();
-            delete cooldowns[from][id];
-            silo.withdraw(to, cooldown.assets);
-            emit Unstake(from, to, cooldown.assets, id);
+        // if account has shares, update vesting and burn them
+        uint256 shares = balanceOf(owner);
+        if (shares > 0) {
+            uint256 assets = previewRedeem(shares);
+            _updateVesting(assets);
+            _burn(owner, shares);
         }
     }
 
@@ -355,6 +358,7 @@ contract StakedAsset is
     }
 
     /// @notice Withdraw function which reverts when cooldown is active
+    /// @dev Prevent restricted accounts from initiating withdraw or receiving tokens
     function withdraw(uint256 assets, address receiver, address owner)
         public
         override
@@ -368,6 +372,7 @@ contract StakedAsset is
     }
 
     /// @notice Redeem function which requires cooldown
+    /// @dev Prevent restricted accounts from redeeming tokens or receiving assets
     function redeem(uint256 shares, address receiver, address owner)
         public
         override
@@ -396,22 +401,23 @@ contract StakedAsset is
     }
 
     /// @dev Override transfer function to prevent restricted accounts from transferring
+    /// Restricted accounts can receive tokens, but not transfer them out
     function transfer(address to, uint256 value)
         public
         override(IERC20, ERC20Upgradeable)
         nonRestricted(msg.sender)
-        nonRestricted(to)
         returns (bool)
     {
         return super.transfer(to, value);
     }
 
+    /// @dev Override transferFrom function to prevent restricted accounts from transferring
+    /// Restricted accounts can receive tokens, but not transfer them out
     function transferFrom(address from, address to, uint256 value)
         public
         override(IERC20, ERC20Upgradeable)
-        nonRestricted(from)
-        nonRestricted(to)
         nonRestricted(msg.sender)
+        nonRestricted(from)
         returns (bool)
     {
         return super.transferFrom(from, to, value);
@@ -429,6 +435,17 @@ contract StakedAsset is
 
         if (block.timestamp >= end) return 0;
         pending = Math.mulDiv(assets, end - block.timestamp, period);
+    }
+
+    /// @dev Update vesting amount
+    /// Increases vesting by `assets` and resets vesting period
+    function _updateVesting(uint256 assets) internal {
+        if (vesting.period > 0) {
+            uint256 pending = _pendingRewards();
+            vesting.assets = pending + assets;
+            vesting.end = uint128(block.timestamp) + vesting.period;
+            emit VestingStarted(pending + assets, uint128(block.timestamp) + vesting.period);
+        }
     }
 
     /// @dev Override this function to allow only default admin role to perform upgrades

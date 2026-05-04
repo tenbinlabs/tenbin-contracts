@@ -285,26 +285,10 @@ contract StakedAssetTest is BaseTest {
         vm.prank(user);
         staking.transfer(address(this), 1000e18);
 
-        // can't transfer assets to a non-restricted account
-        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        vm.prank(user2);
-        staking.transfer(user, 1000e18);
-
         // can't call transfer assets from a restricted account
         vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
         vm.prank(user);
         staking.transferFrom(user2, user2, 1000e18);
-
-        // can't transfer assets to a non-restricted account
-        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        vm.prank(user2);
-        staking.transferFrom(user, user2, 1000e18);
-
-        // can't transfer assets to a non-restricted account
-        vm.expectRevert(IRestrictedRegistry.AccountRestricted.selector);
-        vm.prank(user2);
-        staking.transferFrom(user2, user, 1000e18);
-
         // forge-lint: disable-end(erc20-unchecked-transfer)
     }
 
@@ -331,67 +315,92 @@ contract StakedAssetTest is BaseTest {
         assertEq(staking.balanceOf(user2), 2000e18);
     }
 
-    function test_Revert_TransferRestrictedAssets() public {
+    function test_Revert_BurnRestricted() public {
         // setup
         mintAsset(user, 1000e18);
         vm.prank(admin);
         staking.setCooldownPeriod(7 days);
 
+        uint256 startingTimestamp = block.timestamp;
+
         // deposit
         vm.prank(user);
         staking.deposit(1000e18, user);
 
-        // only default admin can transfer restricted assets
+        // only default admin can burn restricted assets
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        staking.transferRestrictedAssets(user, address(this), false, 0);
+        staking.burnRestricted(user, false, 0);
 
-        // can't transfer assets for a non-restricted account
+        // can't burn assets for a non-restricted account
         vm.prank(owner);
-        vm.expectRevert(IStakedAsset.NonRestrictedAccount.selector);
-        staking.transferRestrictedAssets(user, address(this), false, 0);
+        vm.expectRevert(IRestrictedRegistry.AccountNotRestricted.selector);
+        staking.burnRestricted(user, false, 0);
 
         // restrict account
         vm.prank(restricter);
         staking.setIsRestricted(user, true);
 
-        // cannot specify address(0) when transferring restricted assets
-        vm.prank(owner);
-        vm.expectRevert(IStakedAsset.NonZeroAddress.selector);
-        staking.transferRestrictedAssets(user, address(0), false, 0);
-
         // revert if restricted account has no assets for specified cooldown
         vm.prank(owner);
+        vm.expectRevert(IStakedAsset.NonexistentCooldown.selector);
+        staking.burnRestricted(user, true, 0);
+
+        // remove restriction and initiate cooldown
+        vm.prank(restricter);
+        staking.setIsRestricted(user, false);
+
+        // initiate cooldown and unstake some assets
+        vm.prank(user);
+        staking.cooldownShares(100e18);
+        vm.warp(startingTimestamp + 7 days);
+        vm.prank(user);
+        staking.unstake(user, 0);
+
+        // start another cooldown
+        vm.prank(user);
+        staking.cooldownShares(100e18);
+
+        // restrict user again
+        vm.prank(restricter);
+        staking.setIsRestricted(user, true);
+
+        vm.prank(owner);
         vm.expectRevert(IStakedAsset.ZeroCooldownAssets.selector);
-        staking.transferRestrictedAssets(user, address(this), true, 0);
+        staking.burnRestricted(user, true, 0);
     }
 
-    function test_TransferRestrictedAssets() public {
-        // First deposit that happens at deployment
-        test_Deposit();
+    function test_BurnRestricted() public {
+        address user2 = vm.addr(0xC000);
 
-        mintAsset(restricted, 1000e18);
-        vm.prank(restricted);
+        // mint assets for 2 users
+        mintAsset(user, 1000e18);
+        vm.prank(user);
         asset.approve(address(staking), 1000e18);
-        vm.prank(admin);
-        staking.setCooldownPeriod(7 days);
+        mintAsset(user2, 1000e18);
+        vm.prank(user2);
+        asset.approve(address(staking), 1000e18);
 
-        // deposit
-        vm.prank(restricted);
-        staking.deposit(1000e18, restricted);
+        // deposit for 2 users
+        vm.prank(user);
+        staking.deposit(1000e18, user);
+        vm.prank(user2);
+        staking.deposit(1000e18, user2);
 
         // restrict user
         vm.prank(restricter);
-        staking.setIsRestricted(restricted, true);
+        staking.setIsRestricted(user, true);
 
-        // successful transfer
+        // successful burn
         vm.prank(owner);
-        staking.transferRestrictedAssets(restricted, address(this), false, 0);
-        assertEq(staking.balanceOf(restricted), 0);
-        assertEq(asset.balanceOf(address(staking)), 1000e18);
-        assertEq(asset.balanceOf(address(this)), 1000e18);
+        staking.burnRestricted(user, false, 0);
+        assertEq(staking.balanceOf(user), 0);
+        assertEq(asset.balanceOf(address(staking)), 2000e18);
+
+        // share price increases after burning restricted assets
+        assertApproxEqAbs(staking.convertToAssets(1e18), 2e18, VAULT_TOLERANCE, "share price failed to increase");
     }
 
-    function test_Cooldown_TransferRestrictedAssets() public {
+    function test_BurnRestricted_Cooldown() public {
         // First deposit that happens at deployment
         test_Deposit();
         // setup
@@ -406,7 +415,7 @@ contract StakedAssetTest is BaseTest {
         vm.prank(restricted);
         staking.deposit(1000e18, restricted);
 
-        // cooldowns asset
+        // cooldown assets
         vm.prank(restricted);
         staking.cooldownAssets(1000e18);
 
@@ -414,17 +423,72 @@ contract StakedAssetTest is BaseTest {
         vm.prank(restricter);
         staking.setIsRestricted(restricted, true);
 
-        // execute transfer
+        // execute burn
         vm.prank(owner);
-        staking.transferRestrictedAssets(restricted, address(this), true, 0);
+        staking.burnRestricted(restricted, true, 0);
 
         // successful transfer
         (uint256 assets, uint256 end) = staking.cooldowns(restricted, 0);
         assertEq(assets, 0);
         assertEq(end, 0);
         assertEq(staking.balanceOf(restricted), 0);
-        assertEq(asset.balanceOf(address(staking)), 1000e18);
-        assertEq(asset.balanceOf(address(this)), 1000e18);
+        assertEq(asset.balanceOf(address(staking)), 2000e18);
+        // ensure rewards are distributed to staking pool
+        assertApproxEqAbs(staking.convertToAssets(1e18), 2e18, VAULT_TOLERANCE);
+    }
+
+    function test_BurnRestricted_Cooldown_Vesting() public {
+        address user2 = vm.addr(0xC001);
+
+        // mint for 2 different users
+        mintAsset(user, 1000e18);
+        mintAsset(user2, 1000e18);
+        vm.prank(user);
+        asset.approve(address(staking), 1000e18);
+        vm.prank(user2);
+        asset.approve(address(staking), 1000e18);
+        vm.prank(admin);
+        staking.setCooldownPeriod(6 days);
+        vm.prank(admin);
+        staking.setVestingPeriod(6 days);
+
+        uint256 startingTimestamp = block.timestamp;
+
+        // deposit for 2 different users
+        vm.prank(user);
+        staking.deposit(1000e18, user);
+        vm.prank(user2);
+        staking.deposit(1000e18, user2);
+
+        // start cooldown
+        vm.prank(user);
+        staking.cooldownShares(1000e18);
+
+        // restrict user
+        vm.prank(restricter);
+        staking.setIsRestricted(user, true);
+
+        // fast forward part way through cooldown
+        vm.warp(startingTimestamp + 3 days);
+
+        // successful burn during cooldown
+        vm.prank(owner);
+        staking.burnRestricted(user, true, 0);
+        assertEq(staking.balanceOf(user), 0);
+        assertEq(asset.balanceOf(address(staking)), 2000e18, "insuffient balance after burn");
+        // silo has no balance after forced withdrawal
+        assertEq(asset.balanceOf(address(silo)), 0);
+
+        // vesting starts after burning shares, causing no share price increase at first
+        assertApproxEqAbs(staking.convertToAssets(1e18), 1e18, VAULT_TOLERANCE, "incorrect share price after burn");
+
+        // increase timestamp halfway through vesting period
+        vm.warp(startingTimestamp + 6 days);
+        assertApproxEqAbs(staking.convertToAssets(1e18), 1.5e18, VAULT_TOLERANCE, "vesting amount incorrect");
+
+        // increase timestamp to end of vesting period
+        vm.warp(startingTimestamp + 9 days);
+        assertApproxEqAbs(staking.convertToAssets(1e18), 2e18, VAULT_TOLERANCE, "vesting amount incorrect");
     }
 
     function test_Revert_Withdraw() public {
@@ -449,7 +513,7 @@ contract StakedAssetTest is BaseTest {
         staking.withdraw(1000e18, user, user);
     }
 
-    function test_Revert_Redeem() public {
+    function test_Revert_Redeem_StakedAsset() public {
         // setup
         address restrictedAddress = address(1);
         vm.prank(restricter);
