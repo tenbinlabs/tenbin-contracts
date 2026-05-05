@@ -1,5 +1,5 @@
 # IStakedAsset
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/interface/IStakedAsset.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/interface/IStakedAsset.sol)
 
 **Title:**
 IStakedAsset
@@ -381,14 +381,6 @@ Cooldown does not exist for this account and ID
 
 ```solidity
 error NonexistentCooldown();
-```
-
-### NonRestrictedAccount
-Only restricted account
-
-
-```solidity
-error NonRestrictedAccount();
 ```
 
 ### NonZeroAddress

@@ -1,5 +1,5 @@
 # IOracleAdapter
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/interface/IOracleAdapter.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/interface/IOracleAdapter.sol)
 
 **Title:**
 OracleAdapter
@@ -21,6 +21,21 @@ function getPrice() external view returns (uint256 price);
 |Name|Type|Description|
 |----|----|-----------|
 |`price`|`uint256`|Price with 18 decimals of precision|
+
+
+### oracle
+
+Address of oracle used by this adapter
+
+
+```solidity
+function oracle() external view returns (address oracleAddress);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`oracleAddress`|`address`|Oracle address|
 
 
 ## Errors

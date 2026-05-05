@@ -1,5 +1,5 @@
 # StakedAsset
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/StakedAsset.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/StakedAsset.sol)
 
 **Inherits:**
 [IStakedAsset](/src/interface/IStakedAsset.sol/interface.IStakedAsset.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), UUPSUpgradeable, ERC20PermitUpgradeable, ERC4626Upgradeable, AccessControlUpgradeable
@@ -33,6 +33,13 @@ The INSTANT_UNSTAKER_ROLE can unstake tokens on behalf of an account with approv
 Typically the instant unstake function is used by the Controller contract to process staked asset redemptions
 Instant unstaking includes an instant unstake cap which is depleted as assets are instantly unstaked
 The CAP_ADJUSTER_ROLE can adjust the instant unstake cap
+A restricted registry is included to comply with legal requirements
+Restricted accounts can have their balances burned and underlying assets distributed to stakers
+Restricted accounts:
+- cannot receive asset tokens
+- cannot unstake, withdraw, or redeem
+- cannot transfer tokens out of the account
+- can receive tokens in their account (but not transfer out)
 In order to avoid a first depositor donation attack a minimum stake should be made in the same transaction as the contract deployment
 This is a UUPS upgradeable contract meant to be deployed behind an ERC1967 Proxy
 
@@ -451,26 +458,21 @@ function setInstantUnstakeCap(uint256 cap) external onlyRole(CAP_ADJUSTER_ROLE);
 |`cap`|`uint256`|New instant unstake cap|
 
 
-### transferRestrictedAssets
+### burnRestricted
 
-Withdraw assets from a restricted account.
-Without the ability to redeem frozen shares, a portion of rewards will be stuck in the contract
-Always redeems the full balance of the restricted account
+Burn staked assets from a restricted account
+When burning restricted staked assets, the underlying asset tokens are distributed to the stakers
 
 
 ```solidity
-function transferRestrictedAssets(address from, address to, bool isCooldown, uint256 id)
-    external
-    nonZeroAddress(to)
-    onlyRole(DEFAULT_ADMIN_ROLE);
+function burnRestricted(address owner, bool isCooldown, uint256 id) external onlyRole(DEFAULT_ADMIN_ROLE);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`from`|`address`|Restricted account to redeem shares from|
-|`to`|`address`|Account to transfer assets to|
-|`isCooldown`|`bool`|Flag to specify if restricted account is in cooldown|
+|`owner`|`address`|Restricted account to redeem shares from|
+|`isCooldown`|`bool`|Flag do specify if restricted account is in cooldown|
 |`id`|`uint256`|Id of cooldown|
 
 
@@ -521,6 +523,8 @@ function decimals() public view override(ERC4626Upgradeable, ERC20Upgradeable) r
 
 Withdraw function which reverts when cooldown is active
 
+Prevent restricted accounts from initiating withdraw or receiving tokens
+
 
 ```solidity
 function withdraw(uint256 assets, address receiver, address owner)
@@ -535,6 +539,8 @@ function withdraw(uint256 assets, address receiver, address owner)
 ### redeem
 
 Redeem function which requires cooldown
+
+Prevent restricted accounts from redeeming tokens or receiving assets
 
 
 ```solidity
@@ -583,6 +589,7 @@ function rescueToken(address token, address to) external onlyRole(ADMIN_ROLE) no
 ### transfer
 
 Override transfer function to prevent restricted accounts from transferring
+Restricted accounts can receive tokens, but not transfer them out
 
 
 ```solidity
@@ -590,20 +597,21 @@ function transfer(address to, uint256 value)
     public
     override(IERC20, ERC20Upgradeable)
     nonRestricted(msg.sender)
-    nonRestricted(to)
     returns (bool);
 ```
 
 ### transferFrom
+
+Override transferFrom function to prevent restricted accounts from transferring
+Restricted accounts can receive tokens, but not transfer them out
 
 
 ```solidity
 function transferFrom(address from, address to, uint256 value)
     public
     override(IERC20, ERC20Upgradeable)
-    nonRestricted(from)
-    nonRestricted(to)
     nonRestricted(msg.sender)
+    nonRestricted(from)
     returns (bool);
 ```
 
@@ -621,6 +629,16 @@ function _pendingRewards() internal view returns (uint256 pending);
 |----|----|-----------|
 |`pending`|`uint256`|Pending unvested rewards|
 
+
+### _updateVesting
+
+Update vesting amount
+Increases vesting by `assets` and resets vesting period
+
+
+```solidity
+function _updateVesting(uint256 assets) internal;
+```
 
 ### _authorizeUpgrade
 

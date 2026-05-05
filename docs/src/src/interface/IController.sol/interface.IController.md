@@ -1,5 +1,5 @@
 # IController
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/interface/IController.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/interface/IController.sol)
 
 **Title:**
 IController
@@ -434,6 +434,34 @@ event OracleAdapterUpdated(address newAdapter);
 |Name|Type|Description|
 |----|----|-----------|
 |`newAdapter`|`address`|New adapter account|
+
+### MintLimitUpdated
+Emitted when mint limit amount is updated
+
+
+```solidity
+event MintLimitUpdated(uint128 newBlockMintLimit);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newBlockMintLimit`|`uint128`|New mint limit amount|
+
+### RedeemLimitUpdated
+Emitted when redeem limit amount is updated
+
+
+```solidity
+event RedeemLimitUpdated(uint128 newBlockRedeemLimit);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newBlockRedeemLimit`|`uint128`|New redeem limit amount|
 
 ## Errors
 ### CollateralNotSupported
