@@ -37,7 +37,7 @@ Four smart contract audits were performed on v1.0. An initial independent audit 
 [verilog](audit/1_22_26_verilog.pdf)
 
 ## v1.4.0 Audit
-Two smart contract autis were performed on v1.4.0 by Zellic and Fuzzland. Additionally, two AI audits were run using Cantina AI and Claude Opus 4.7. For the claude code audit, CLAUDE.md was used as context.
+Two smart contract audits were performed on v1.4.0 by Zellic and Fuzzland. Additionally, two AI audits were run using Cantina AI and Claude Opus 4.7. For the claude code audit, CLAUDE.md was used as context.
  
 [scope](audit/4_12_26_scope.pdf)
  
