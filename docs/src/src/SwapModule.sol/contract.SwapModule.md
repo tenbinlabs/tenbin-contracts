@@ -1,5 +1,5 @@
 # SwapModule
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/SwapModule.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/SwapModule.sol)
 
 **Inherits:**
 [ISwapModule](/src/interface/ISwapModule.sol/interface.ISwapModule.md)
@@ -12,12 +12,13 @@ This contract is permissioned so only a manager can call the swap function
 
 
 ## Constants
-### _NO_PARTIAL_FILLS_FLAG
+### _PARTIAL_FILL
 1inch swap partial fills flag
+https://etherscan.io/address/0x111111125421cA6dc452d289314280a0f8842A65#code#F1#L4790
 
 
 ```solidity
-uint256 private constant _NO_PARTIAL_FILLS_FLAG = 1 << 255
+uint256 private constant _PARTIAL_FILL = 1 << 0
 ```
 
 

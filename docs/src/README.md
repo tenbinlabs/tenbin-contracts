@@ -22,17 +22,30 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 | SwapModule | [0xB426bcB6028Ba1fBB746a8af11859D97007BE594](https://etherscan.io/address/0xB426bcB6028Ba1fBB746a8af11859D97007BE594) |
 
 # Audit
-Four smart contract audits were performed on the solidity codebase. An initial independent audit was conducted, followed by major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
 
-[scope](audit/scope_1_22_26.pdf)
+## v1.0.0 Audit
+Four smart contract audits were performed on v1.0. An initial independent audit was conducted, followed by major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
  
-[0xleastwood](audit/0xleastwood_1_22_26.pdf)
+[scope](audit/1_22_26_scope.pdf)
  
-[fuzzland](audit/fuzzland_1_22_26.pdf)
+[0xleastwood](audit/1_22_26_0xleastwood_.pdf) 
  
-[spearbit](audit/spearbit_1_22_26.pdf)
+[fuzzland](audit/1_22_26_fuzzland.pdf)
  
-[verilog](audit/verilog_1_22_26.pdf)
+[spearbit](audit/1_22_26_spearbit.pdf)
+ 
+[verilog](audit/1_22_26_verilog.pdf)
+
+## v1.4.0 Audit
+Two smart contract autis were performed on v1.4.0 by Zellic and Fuzzland. Additionally, two AI audits were run using Cantina AI and Claude Opus 4.7. For the claude code audit, CLAUDE.md was used as context.
+ 
+[scope](audit/4_12_26_scope.pdf)
+ 
+[zellic](audit/4_22_26_zellic.pdf)
+ 
+[claude](audit/4_29_26_claude_AI.pdf)
+ 
+[cantina ai](audit/5_1_26_cantina_AI.pdf)
 
 # Setup
 

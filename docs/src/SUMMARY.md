@@ -20,6 +20,7 @@
     - [IStakedAsset](src/interface/IStakedAsset.sol/interface.IStakedAsset.md)
     - [ISwapModule](src/interface/ISwapModule.sol/interface.ISwapModule.md)
   - [❱ oracle](src/oracle/README.md)
+    - [ChainlinkOracleAdapter](src/oracle/ChainlinkOracleAdapter.sol/contract.ChainlinkOracleAdapter.md)
     - [GoldOracleAdapter](src/oracle/GoldOracleAdapter.sol/contract.GoldOracleAdapter.md)
   - [AssetSilo](src/AssetSilo.sol/contract.AssetSilo.md)
   - [AssetToken](src/AssetToken.sol/contract.AssetToken.md)

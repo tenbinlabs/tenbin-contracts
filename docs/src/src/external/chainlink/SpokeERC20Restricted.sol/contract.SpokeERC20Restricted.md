@@ -1,5 +1,5 @@
 # SpokeERC20Restricted
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/external/chainlink/SpokeERC20Restricted.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/external/chainlink/SpokeERC20Restricted.sol)
 
 **Inherits:**
 [IBurnMintERC20](/src/interface/IBurnMintERC20.sol/interface.IBurnMintERC20.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), ERC20Permit, AccessControl
@@ -9,6 +9,10 @@ Spoke ERC20
 
 ERC20 for deployment on "spoke" chains. Facilitates cross-chain tokens by allowing
 "mint-and-burn" operations on non-ethereum chains.
+Has a resticted list for complying with legal requirements. Used for cross chain StakedAsset tokens
+If an account is restricted, it cannot transfer assets
+Restricted accounts can have their balance burned
+Allows transferring to restricted accounts to ensure cross chain transfers can complete for restricted accounts
 
 
 ## Constants
@@ -75,7 +79,7 @@ this function increases the total supply.
 
 
 ```solidity
-function mint(address account, uint256 amount) external nonRestricted(account) onlyRole(MINTER_BURNER_ROLE);
+function mint(address account, uint256 amount) external onlyRole(MINTER_BURNER_ROLE);
 ```
 **Parameters**
 
@@ -138,6 +142,25 @@ function burnFrom(address account, uint256 amount) external nonRestricted(accoun
 |`amount`|`uint256`|The number of tokens to be burned.|
 
 
+### transferRestricted
+
+Withdraw assets from a restricted account
+
+If it is necessary to sweep funds from a restricted account, the tokens will be
+transferred back to the hub chain and burned. This prevents permanent locking in the CCIP hub chain pool
+
+
+```solidity
+function transferRestricted(address from, address to) external onlyRole(DEFAULT_ADMIN_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`from`|`address`|Restricted account to sweep funds from|
+|`to`|`address`|Account to transfer assets to|
+
+
 ### setIsRestricted
 
 Sets or unsets an address as restricted
@@ -157,6 +180,7 @@ function setIsRestricted(address account, bool newStatus) external onlyRole(REST
 ### transfer
 
 Override transfer function to prevent restricted accounts from transferring
+Restricted accounts can still receive tokens
 
 
 ```solidity
@@ -164,13 +188,13 @@ function transfer(address to, uint256 value)
     public
     override(IERC20, ERC20)
     nonRestricted(msg.sender)
-    nonRestricted(to)
     returns (bool);
 ```
 
 ### transferFrom
 
-Override transferFrom function to prevent restricted accounts from transferring
+Override transferFrom function to prevent restricted accounts from trasnferring tokens
+Restricted accounts can still receive tokens
 
 
 ```solidity
@@ -178,7 +202,6 @@ function transferFrom(address from, address to, uint256 value)
     public
     override(IERC20, ERC20)
     nonRestricted(from)
-    nonRestricted(to)
     nonRestricted(msg.sender)
     returns (bool);
 ```

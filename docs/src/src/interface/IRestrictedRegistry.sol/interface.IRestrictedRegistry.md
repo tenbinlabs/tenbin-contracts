@@ -1,5 +1,5 @@
 # IRestrictedRegistry
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/interface/IRestrictedRegistry.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/interface/IRestrictedRegistry.sol)
 
 **Title:**
 IRestrictedRegistry
@@ -57,10 +57,18 @@ event RestrictedStatusChanged(address indexed account, bool isRestricted);
 
 ## Errors
 ### AccountRestricted
-Throws when consulted address is restricted
+Throws when account is restricted
 
 
 ```solidity
 error AccountRestricted();
+```
+
+### AccountNotRestricted
+Throws when account is not restricted
+
+
+```solidity
+error AccountNotRestricted();
 ```
 

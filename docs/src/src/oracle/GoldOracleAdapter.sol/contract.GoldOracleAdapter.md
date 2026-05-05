@@ -1,5 +1,5 @@
 # GoldOracleAdapter
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/oracle/GoldOracleAdapter.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/oracle/GoldOracleAdapter.sol)
 
 **Inherits:**
 [IOracleAdapter](/src/interface/IOracleAdapter.sol/interface.IOracleAdapter.md)
@@ -7,19 +7,12 @@
 **Title:**
 Gold Oracle Adapter
 
-Normalize oracle data from a Chainlink aggregator into a standard representation
+Oracle Adapter for Chainlink tGLD/USD oracle
+Normalizes response from Chainlink aggregator to uint256 with 18 decimals
+https://etherscan.io/address/0x369C67E8b026CC4Ef98350f332D7Dd52b85b7674
 
 
 ## Constants
-### DECIMALS_OFFSET
-Difference between oracle decimals and 1e18
-
-
-```solidity
-uint256 internal constant DECIMALS_OFFSET = 1e10
-```
-
-
 ### PRICE_STALENESS_THRESHOLD
 Stale price threshold (e.g., 24 hours for XAU/USD)
 
@@ -30,28 +23,15 @@ uint256 public constant PRICE_STALENESS_THRESHOLD = 1 days
 
 
 ### oracle
-Chainlink oracle
+Chainlink Oracle: tGLD/USD - 24/7 Blended Price
 
 
 ```solidity
-AggregatorV3Interface public immutable oracle
+address public constant oracle = 0x369C67E8b026CC4Ef98350f332D7Dd52b85b7674
 ```
 
 
 ## Functions
-### constructor
-
-
-```solidity
-constructor(address oracle_) ;
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`oracle_`|`address`|Address of chainlink oracle|
-
-
 ### getPrice
 
 Returns price with 18 decimals of precision

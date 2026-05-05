@@ -1,5 +1,5 @@
 # Controller
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/00ddce6925b917558aba40457ad0c857bb43d8d1/src/Controller.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/Controller.sol)
 
 **Inherits:**
 [IController](/src/interface/IController.sol/interface.IController.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), AccessControl, EIP712
@@ -302,7 +302,7 @@ Track amount minted in a block to enforce limits
 
 
 ```solidity
-Limit mintLimit
+Limit public mintLimit
 ```
 
 
@@ -311,7 +311,7 @@ Track amount redeemed in a block to enforce limits
 
 
 ```solidity
-Limit redeemLimit
+Limit public redeemLimit
 ```
 
 
