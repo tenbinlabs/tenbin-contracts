@@ -17,7 +17,7 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 | Gate | [0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1](https://etherscan.io/address/0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1) |
 | GoldOracleAdapter | [0x0977592F86616788Fd809446E094F9Bb91E97A44](https://etherscan.io/address/0x0977592F86616788Fd809446E094F9Bb91E97A44) |
 | MultiCall | [0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8](https://etherscan.io/address/0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8) |
-| StakedAsset | [0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4](https://etherscan.io/address/0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4) |
+| StakedAsset | [0x8d301801d899dC81fEabBDE69407A53b82bdBF19](https://etherscan.io/address/0x8d301801d899dC81fEabBDE69407A53b82bdBF19) |
 | Vault | [0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75](https://etherscan.io/address/0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75) |
 | RevenueModule | [0x933745Dc6fcBcCDc491d9A8322672d731C8a262e](https://etherscan.io/address/0x933745Dc6fcBcCDc491d9A8322672d731C8a262e) |
 | SwapModule | [0xB426bcB6028Ba1fBB746a8af11859D97007BE594](https://etherscan.io/address/0xB426bcB6028Ba1fBB746a8af11859D97007BE594) |
