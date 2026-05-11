@@ -9,16 +9,17 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 | Contract | Address |
 | --- | --- |
 | Adapter | [0x932E0ba317897D4a3142929B95CaaDA33df5fC35](https://etherscan.io/address/0x932E0ba317897D4a3142929B95CaaDA33df5fC35) |
-| AssetSilo | [0xA924A7493782c11b4E408B072367A0Fc02556092](https://etherscan.io/address/0xA924A7493782c11b4E408B072367A0Fc02556092) |
+| AssetSilo | [0x572cE2dfdDF795b1332d592b585Ae17E492E4b41](https://etherscan.io/address/0x572cE2dfdDF795b1332d592b585Ae17E492E4b41) |
 | AssetToken | [0x6a547b25534234bb79CE6961a23Db13DE154b6F4](https://etherscan.io/address/0x6a547b25534234bb79CE6961a23Db13DE154b6F4) |
 | CollateralManager | [0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa](https://etherscan.io/address/0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa) |
-| Controller | [0xcaF2cD7fd794CaAf56555Db90A5865a5FE9182f7](https://etherscan.io/address/0xcaF2cD7fd794CaAf56555Db90A5865a5FE9182f7) |
+| Controller | [0x5e631388b24ec493619DAEEAef6fc34B33d97Dcd](https://etherscan.io/address/0x5e631388b24ec493619DAEEAef6fc34B33d97Dcd) |
 | CustodianModule | [0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89](https://etherscan.io/address/0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89) |
 | Gate | [0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1](https://etherscan.io/address/0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1) |
+| GoldOracleAdapter | [0x0977592F86616788Fd809446E094F9Bb91E97A44](https://etherscan.io/address/0x0977592F86616788Fd809446E094F9Bb91E97A44) |
 | MultiCall | [0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8](https://etherscan.io/address/0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8) |
-| StakedAsset | [0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4](https://etherscan.io/address/0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4) |
+| StakedAsset | [0x8d301801d899dC81fEabBDE69407A53b82bdBF19](https://etherscan.io/address/0x8d301801d899dC81fEabBDE69407A53b82bdBF19) |
 | Vault | [0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75](https://etherscan.io/address/0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75) |
-| RevenueModule | [0x5D46Ec01376d218Ade3c1133a7E38976c2DBe584](https://etherscan.io/address/0x5D46Ec01376d218Ade3c1133a7E38976c2DBe584) |
+| RevenueModule | [0x933745Dc6fcBcCDc491d9A8322672d731C8a262e](https://etherscan.io/address/0x933745Dc6fcBcCDc491d9A8322672d731C8a262e) |
 | SwapModule | [0xB426bcB6028Ba1fBB746a8af11859D97007BE594](https://etherscan.io/address/0xB426bcB6028Ba1fBB746a8af11859D97007BE594) |
 
 # Audit
