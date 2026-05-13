@@ -43,6 +43,10 @@ Two smart contract audits were performed on v1.4.0 by Zellic and Fuzzland. Addit
 [scope](audit/4_12_26_scope.pdf)
  
 [zellic](audit/4_22_26_zellic.pdf)
+
+[fuzzland](audit/5_4_26_fuzzland.pdf)
+
+### AI Audits
  
 [claude](audit/4_29_26_claude_AI.pdf)
  
