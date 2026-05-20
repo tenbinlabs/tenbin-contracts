@@ -57,7 +57,7 @@ contract ControllerTest is BaseTest {
     }
 
     function test_Version() public view {
-        assertEq(keccak256(abi.encodePacked("1.4.0")), keccak256(abi.encodePacked(controller.version())));
+        assertEq(keccak256(abi.encodePacked("1.4.1")), keccak256(abi.encodePacked(controller.version())));
     }
 
     function test_HashOrder() public view {

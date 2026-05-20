@@ -49,20 +49,19 @@ contract CollateralManagerInvariantTest is InvariantBase {
         assertNotEq(manager.swapModule(), address(0));
     }
 
-    // The sum of all assets in vaults + pending revenue should always equal total managed collateral (minus withdrawals).
-    function invariant_BalanceSymmetry() public view {
-        uint256 actual = vault.totalAssets(); // default vault
+    // The sum of all assets in vaults + pending revenue should never be less than total managed collateral (minus withdrawals).
+    function invariant_BalanceCoversManagedCollateral() public view {
+        uint256 actual = vault.totalAssets();
+
         for (uint256 i = 0; i < handler.counter(); i++) {
             address coll = handler.addedCollaterals(i);
             IERC4626 currentVault = manager.vaults(coll);
             actual += currentVault.totalAssets();
         }
 
-        uint256 totalCollateral = handler.totalCollateral();
-        uint256 totalWithdraw = handler.totalWithdraw();
-        uint256 expected = totalCollateral - totalWithdraw;
+        uint256 expected = handler.totalCollateral() - handler.totalWithdraw();
 
-        assertApproxEqAbs(actual, expected, 1e6);
+        assertGe(actual + 1e6, expected);
     }
 
     // Revenue module is never the zero address

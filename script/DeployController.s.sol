@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {BaseScript} from "./Base.s.sol";
-import {Config} from "forge-std/Config.sol";
 import {console2} from "forge-std/console2.sol";
 import {Controller} from "../src/Controller.sol";
+import {DeployBase} from "./DeployBase.s.sol";
+import {GoldOracleAdapter} from "../src/oracle/GoldOracleAdapter.sol";
+import {IOracleAdapter} from "../src/interface/IOracleAdapter.sol";
 import {RevenueModule} from "../src/RevenueModule.sol";
 
 /// @notice Deploy and configure new controller and new revenue module using config/*.toml
@@ -21,120 +22,31 @@ import {RevenueModule} from "../src/RevenueModule.sol";
 /// Signers will need to update their approved payers and recipients after the upgrade**
 ///
 /// Running this script:
-/// FOUNDRY_PROFILE=production forge script script/DeployController.s.sol $CONFIG_DIR --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow
-contract DeployController is BaseScript, Config {
-    /// @notice Roles loaded from config file
-    RolesParameters internal roles;
-
-    /// @notice Parameters loaded from config file
-    DeploymentParameters internal params;
-
+/// FOUNDRY_PROFILE=production forge script script/DeployController.s.sol $CONFIG_DIR --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow
+contract DeployController is DeployBase {
     /// @notice Default mainnet config directory to be used if none was specified
     string constant DEFAULT_DIR = "./config/mainnet/tgld/tgld.toml";
 
     // configuration for tGLD controller
-    string constant TARGET_VERSION = "1.4.0";
+    string constant TARGET_VERSION = "1.4.1";
     address constant ASSET_TOKEN_ADDRESS = 0x6a547b25534234bb79CE6961a23Db13DE154b6F4;
     address constant COLLATERAL_MANAGER_ADDRESS = 0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa;
     address constant CUSTODIAN_MODULE_ADDRESS = 0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89;
     address constant MULTICALL_ADDRESS = 0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8;
     address constant MULTISIG_ADDRESS = 0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8;
-    address constant ORACLE_ADAPTER_ADDRESS = 0xA944664E98FF8CD1743149A62Da3F3F23297E7C1;
-    address constant STAKED_ASSET_ADDRESS = 0xdE80e9EC32249d4c7dBA7997fD6D6C03fb27EBf4;
-
-    /// @notice Roles set during deployment
-    struct RolesParameters {
-        address admin_role;
-        address cap_adjuster_role;
-        address curator_role;
-        address custodian_keeper_role;
-        address default_admin_role;
-        address gatekeeper_role;
-        address minter_role;
-        address multicaller_role;
-        address rebalancer_role;
-        address restricter_role;
-        address rewarder_role;
-        address revenue_keeper_role;
-        address signer_manager_role;
-    }
-
-    /// @notice Config variables set during deployment
-    struct DeploymentParameters {
-        address multisig;
-        address collateral;
-        address custodian;
-        address one_inch_router;
-        address oracle;
-        address vault;
-        string asset_name;
-        string asset_symbol;
-        string staked_asset_name;
-        string staked_asset_symbol;
-        uint256 cooldown_period;
-        uint256 min_swap_price;
-        uint256 oracle_tolerance;
-        uint256 ratio;
-        uint256 rebalance_cap;
-        uint256 swap_cap;
-        uint256 vesting_period;
-    }
+    address constant STAKED_ASSET_ADDRESS = 0x8d301801d899dC81fEabBDE69407A53b82bdBF19;
 
     /// @notice Results returned when running this deployment script
     struct DeploymentResult {
         address broadcaster;
         Controller controller;
+        IOracleAdapter oracle_adapter;
         RevenueModule revenue_module;
     }
 
     /// @dev The version for this deployment
-    function getVersion() internal pure override returns (string memory) {
+    function getVersion() internal pure virtual override returns (string memory) {
         return TARGET_VERSION;
-    }
-
-    function loadConfig(string memory configDir) internal {
-        if (bytes(configDir).length != 0) {
-            _loadConfig(configDir, false);
-        } else {
-            _loadConfig(DEFAULT_DIR, false);
-        }
-
-        // load roles
-        roles.admin_role = config.get("admin_role").toAddress();
-        roles.cap_adjuster_role = config.get("cap_adjuster_role").toAddress();
-        roles.curator_role = config.get("curator_role").toAddress();
-        roles.custodian_keeper_role = config.get("custodian_keeper_role").toAddress();
-        roles.gatekeeper_role = config.get("gatekeeper_role").toAddress();
-        roles.minter_role = config.get("minter_role").toAddress();
-        roles.multicaller_role = config.get("multicaller_role").toAddress();
-        roles.default_admin_role = config.get("default_admin_role").toAddress();
-        roles.rebalancer_role = config.get("rebalancer_role").toAddress();
-        roles.restricter_role = config.get("restricter_role").toAddress();
-        roles.revenue_keeper_role = config.get("revenue_keeper_role").toAddress();
-        roles.rewarder_role = config.get("rewarder_role").toAddress();
-        roles.signer_manager_role = config.get("signer_manager_role").toAddress();
-
-        // load parameters
-        params.collateral = config.get("collateral").toAddress();
-        params.custodian = config.get("custodian").toAddress();
-        params.multisig = config.get("multisig").toAddress();
-        params.oracle = config.get("oracle").toAddress();
-        params.vault = config.get("vault").toAddress();
-
-        // load strings
-        params.asset_name = config.get("asset_name").toString();
-        params.asset_symbol = config.get("asset_symbol").toString();
-        params.staked_asset_name = config.get("staked_asset_name").toString();
-        params.staked_asset_symbol = config.get("staked_asset_symbol").toString();
-
-        // load uint
-        params.cooldown_period = config.get("cooldown_period").toUint256();
-        params.min_swap_price = config.get("min_swap_price").toUint256();
-        params.oracle_tolerance = config.get("oracle_tolerance").toUint256();
-        params.ratio = config.get("ratio").toUint256();
-        params.rebalance_cap = config.get("rebalance_cap").toUint256();
-        params.swap_cap = config.get("swap_cap").toUint256();
-        params.vesting_period = config.get("vesting_period").toUint256();
     }
 
     function run(string memory configDir) public returns (DeploymentResult memory deployment) {
@@ -164,9 +76,12 @@ contract DeployController is BaseScript, Config {
             address(MULTISIG_ADDRESS)
         );
 
+        // deploy oracle adapter
+        deployment.oracle_adapter = IOracleAdapter(address(new GoldOracleAdapter()));
+
         // hard enforce version
         require(
-            keccak256(bytes(deployment.controller.version())) == keccak256(bytes(TARGET_VERSION)),
+            keccak256(bytes(deployment.controller.version())) == keccak256(bytes(getVersion())),
             "incorrect controller version"
         );
 
@@ -185,8 +100,10 @@ contract DeployController is BaseScript, Config {
         // configure controller
         deployment.controller.setIsCollateral(address(params.collateral), true);
         deployment.controller.setManager(COLLATERAL_MANAGER_ADDRESS);
-        deployment.controller.setOracleAdapter(ORACLE_ADAPTER_ADDRESS);
+        deployment.controller.setOracleAdapter(address(deployment.oracle_adapter));
         deployment.controller.setOracleTolerance(uint96(params.oracle_tolerance));
+        deployment.controller.setBlockMintLimit(params.mint_limit);
+        deployment.controller.setBlockRedeemLimit(params.redeem_limit);
 
         // configure revenue module
         deployment.revenue_module.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
@@ -220,6 +137,7 @@ contract DeployController is BaseScript, Config {
 
         // serialize contracts
         contractsObj = vm.serializeAddress(contractsKey, "controller", address(deployment.controller));
+        contractsObj = vm.serializeAddress(contractsKey, "oracle_adapter", address(deployment.oracle_adapter));
         contractsObj = vm.serializeAddress(contractsKey, "revenue_module", address(deployment.revenue_module));
 
         // serialize config
@@ -255,7 +173,4 @@ contract DeployController is BaseScript, Config {
         console2.log("RevenueModule: ", address(deployment.revenue_module));
         console2.log("\n=============================================================\n");
     }
-
-    // mark this as a test contract
-    function test() public {}
 }

@@ -43,9 +43,10 @@ contract DeployBase is BaseScript, Config {
         uint256 ratio;
         uint256 rebalance_cap;
         uint256 swap_cap;
-        uint256 vesting_period;
+        uint128 vesting_period;
         uint128 mint_limit;
         uint128 redeem_limit;
+        uint256 instant_unstake_cap;
     }
 
     /// @notice Roles loaded from config file
@@ -53,6 +54,9 @@ contract DeployBase is BaseScript, Config {
     /// @notice Parameters loaded from config file
     DeploymentParameters internal params;
 
+    /// @notice load configuration from a toml file given a directory
+    /// Will load the parameters for an asset deployment
+    /// @dev To load a different type of config, override this function
     function loadConfig(string memory configDir) internal virtual {
         _loadConfig(configDir, false);
 
@@ -81,28 +85,23 @@ contract DeployBase is BaseScript, Config {
         params.asset_name = config.get("asset_name").toString();
         params.asset_symbol = config.get("asset_symbol").toString();
 
-        if (block.chainid == 31337 || block.chainid == 11155111) {
-            params.staked_asset_name = string.concat("Staked ", params.asset_name);
-            params.staked_asset_symbol = string.concat("s", params.asset_symbol);
-            params.signer = config.get("signer").toAddress();
-        } else {
-            params.collateral = config.get("collateral").toAddress();
-            params.vault = config.get("vault").toAddress();
-            params.oracle = config.get("oracle").toAddress();
+        params.collateral = config.get("collateral").toAddress();
+        params.vault = config.get("vault").toAddress();
+        params.oracle = config.get("oracle").toAddress();
 
-            // load string
-            params.staked_asset_name = config.get("staked_asset_name").toString();
-            params.staked_asset_symbol = config.get("staked_asset_symbol").toString();
+        // load string
+        params.staked_asset_name = config.get("staked_asset_name").toString();
+        params.staked_asset_symbol = config.get("staked_asset_symbol").toString();
 
-            // load uint
-            params.cooldown_period = config.get("cooldown_period").toUint256();
-            params.min_swap_price = config.get("min_swap_price").toUint256();
-            params.oracle_tolerance = config.get("oracle_tolerance").toUint256();
-            params.ratio = config.get("ratio").toUint256();
-            params.rebalance_cap = config.get("rebalance_cap").toUint256();
-            params.swap_cap = config.get("swap_cap").toUint256();
-            params.vesting_period = config.get("vesting_period").toUint256();
-        }
+        // load uint
+        params.cooldown_period = config.get("cooldown_period").toUint256();
+        params.min_swap_price = config.get("min_swap_price").toUint256();
+        params.oracle_tolerance = config.get("oracle_tolerance").toUint256();
+        params.ratio = config.get("ratio").toUint256();
+        params.rebalance_cap = config.get("rebalance_cap").toUint256();
+        params.swap_cap = config.get("swap_cap").toUint256();
+        params.vesting_period = config.get("vesting_period").toUint128();
+        params.instant_unstake_cap = uint128(vm.parseUint(config.get("instant_unstake_cap").toString()));
     }
 
     function printAccounts() internal view {
@@ -143,6 +142,11 @@ contract DeployBase is BaseScript, Config {
         rolesObj = vm.serializeAddress(rolesKey, "revenue_keeper_role", arr(roles.revenue_keeper_role));
         rolesObj = vm.serializeAddress(rolesKey, "rewarder_role", arr(roles.rewarder_role, revenueModule));
         rolesObj = vm.serializeAddress(rolesKey, "signer_manager_role", arr(roles.signer_manager_role));
+    }
+
+    // helper function to compare 2 string values
+    function stringMatches(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(abi.encode(a)) == keccak256(abi.encode(b));
     }
 
     // mark this as a test contract

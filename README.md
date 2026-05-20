@@ -23,34 +23,17 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 | SwapModule | [0xB426bcB6028Ba1fBB746a8af11859D97007BE594](https://etherscan.io/address/0xB426bcB6028Ba1fBB746a8af11859D97007BE594) |
 
 # Audit
+Four smart contract audits were performed on the solidity codebase. An initial independent audit was conducted, followed by major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
 
-## v1.0.0 Audit
-Four smart contract audits were performed on v1.0. An initial independent audit was conducted, followed by major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
+[scope](audit/scope_1_22_26.pdf)
  
-[scope](audit/1_22_26_scope.pdf)
+[0xleastwood](audit/0xleastwood_1_22_26.pdf)
  
-[0xleastwood](audit/1_22_26_0xleastwood_.pdf) 
+[fuzzland](audit/fuzzland_1_22_26.pdf)
  
-[fuzzland](audit/1_22_26_fuzzland.pdf)
+[spearbit](audit/spearbit_1_22_26.pdf)
  
-[spearbit](audit/1_22_26_spearbit.pdf)
- 
-[verilog](audit/1_22_26_verilog.pdf)
-
-## v1.4.0 Audit
-Two smart contract audits were performed on v1.4.0 by Zellic and Fuzzland. Additionally, two AI audits were run using Cantina AI and Claude Opus 4.7. For the claude code audit, CLAUDE.md was used as context.
- 
-[scope](audit/4_12_26_scope.pdf)
- 
-[zellic](audit/4_22_26_zellic.pdf)
-
-[fuzzland](audit/5_4_26_fuzzland.pdf)
-
-### AI Audits
- 
-[claude](audit/4_29_26_claude_AI.pdf)
- 
-[cantina ai](audit/5_1_26_cantina_AI.pdf)
+[verilog](audit/verilog_1_22_26.pdf)
 
 # Setup
 
@@ -110,11 +93,23 @@ View coverage with uncovered branches and lines:
 
 `forge doc`
 
+### Updating and Fixing Dependencies
+
+#### Sync foundry dependencies with git submodules
+ 
+`./sync_foundry_deps.sh`
+
+#### Nuke and reinstall dependencies from scratch
+ 
+`repair_foundry_deps.sh`
+ 
+When updating dependencies, ensure to add/update tag names in `foundry.lock` and `repair_foundry_deps.sh`.
+
 ### Fuzzing
 
 Install echidna: https://github.com/crytic/echidna?tab=readme-ov-file#installation
 
-Run all echidna tests: `echidna.sh`
+Run all echidna tests: `./echidna.sh`
 
 `echidna test/echidna/<contract-file-name>.sol --contract <contract-name> --config echidna.yaml"`
 
@@ -169,7 +164,9 @@ Use `config/` to configure roles and parameters when running deploy scripts. Rol
 
 ### Deploy to sepolia testnet:
 
-Run `FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+1) Ensure `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and `ETHERSCAN_API_KEY` are correctly set up.
+
+Run `FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
 
 Use `--broadcast` to broadcast
 

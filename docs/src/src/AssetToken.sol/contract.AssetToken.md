@@ -1,5 +1,5 @@
 # AssetToken
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/AssetToken.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/14e4f5c2d1208a42b40e6ca6182f36f84dc88dd9/src/AssetToken.sol)
 
 **Inherits:**
 [IBurnMintERC20](/src/interface/IBurnMintERC20.sol/interface.IBurnMintERC20.md), ERC20Permit, Ownable2Step

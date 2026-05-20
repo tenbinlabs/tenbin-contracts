@@ -4,10 +4,11 @@ pragma solidity 0.8.30;
 import {DeployDevelopmentMock} from "./DeployDevelopmentMock.s.sol";
 
 /// @notice Deploy a current version of the protocol for mainnet testing
+/// TODO: ENG-1630: update this script to actually deploy a development version on mainnet (not just call mock)
 contract DeployDevelopment is DeployDevelopmentMock {
-    function run() public override returns (DeploymentResult memory) {
+    function run(string memory configDir) public override returns (DeploymentResult memory) {
         // this script should only deploy the current development on mainnet
         require(block.chainid == 1);
-        return super.run();
+        return super.run(configDir);
     }
 }

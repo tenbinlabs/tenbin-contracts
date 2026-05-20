@@ -1,0 +1,43 @@
+# sepolia
+[11155111]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[11155111.string]
+asset_name = "Tenbin Mexican Peso"
+asset_symbol = "tMXN"
+staked_asset_name = "Staked Tenbin Mexican Peso"
+staked_asset_symbol = "stMXN"
+mint_limit = "300000000000000000000000000"           # 300 million asset tokens
+redeem_limit = "300000000000000000000000000"         # 300 million asset tokens
+instant_unstake_cap = "300000000000000000000000000"  # 300 million asset tokens
+
+[11155111.uint]
+cooldown_period = 600                       # 10 minutes
+min_swap_price = 0                          # 0
+oracle_tolerance = 80_000000000000000       # 8%
+ratio = 170_000000000000000                 # 17%
+rebalance_cap = 100_000_000_000000          # 100m
+swap_cap = 0                                # 0
+vesting_period = 259_200                    # 3 days
+
+[11155111.address]
+admin_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+cap_adjuster_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+collateral = "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A"               # mock USDC
+curator_role = "0x743B4A56f9C754C7306482CBcaFB735860654F4a"             # sepolia keeper
+custodian = "0xbb9d2e2f9084721de949e1426bce93d5cfabefe6"
+custodian_keeper_role = "0x743B4A56f9C754C7306482CBcaFB735860654F4a"    # sepolia keeper
+default_admin_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+gatekeeper_role = "0x2cfa1b9F9ce868B8CeB78D7E53ee0eEd0aB858b8"          # sepolia gatekeeper
+minter_role = "0x57c8f884839f0eFD2a53ba841b2c6ABF3A35d993"              # sepolia minter
+multicaller_role = "0x57c8f884839f0eFD2a53ba841b2c6ABF3A35d993"         # sepolia minter
+multisig = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+one_inch_router = "0x0000000000000000000000000000000000000000"
+oracle = "0x0000000000000000000000000000000000000000"
+rebalancer_role = "0x743B4A56f9C754C7306482CBcaFB735860654F4a"          # sepolia keeper
+restricter_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+revenue_keeper_role = "0x743B4A56f9C754C7306482CBcaFB735860654F4a"      # sepolia keeper
+rewarder_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+signer = "0xB6C48583F3b4BDedEA5b018FaAFE8De4eA964678"                   # sepolia signer
+signer_manager_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+vault = "0xec95F37af2ff03b4c06585D766d6c42A0a5042b7"                    # tMXN sepolia morpho vault

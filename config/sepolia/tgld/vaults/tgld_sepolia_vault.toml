@@ -1,0 +1,22 @@
+# sepolia
+[sepolia]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[sepolia.string]
+name = "tGLD USDC Vault"
+symbol = "tGLDv-USDC"
+
+[sepolia.address]
+allocator = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"        # owner key
+asset = "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A"            # set in deployment script
+curator = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"          # owner key
+initial_vault = "0x0000000000000000000000000000000000000000"    # set in testnet deployment script
+owner = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"            # owner key
+sentinel = "0xF43ABe43FcC915db2F3bDB677690a29FD6ef930e"         # sepolia gatekeeper
+
+[sepolia.uint]
+dead_deposit = 1_000000                         # 1 usdc
+initial_absolute_cap = 100_000_000_000000       # 100m usdc
+initial_relative_cap = 1_000000000000000000     # 100%
+max_rate = 63419583967                          # 2000% APR
+timelock_duration = 172800                      # 2 days

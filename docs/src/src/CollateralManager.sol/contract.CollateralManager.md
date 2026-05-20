@@ -1,5 +1,5 @@
 # CollateralManager
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/CollateralManager.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/14e4f5c2d1208a42b40e6ca6182f36f84dc88dd9/src/CollateralManager.sol)
 
 **Inherits:**
 [ICollateralManager](/src/interface/ICollateralManager.sol/interface.ICollateralManager.md), UUPSUpgradeable, AccessControlUpgradeable, ReentrancyGuardTransient
@@ -185,6 +185,16 @@ EnumerableSet.AddressSet internal collaterals
 ```
 
 
+### distributor
+address of merkl.xyz rewards distributor
+https://docs.merkl.xyz/merkl-mechanisms/technical-overview
+
+
+```solidity
+address public distributor
+```
+
+
 ## Functions
 ### nonZeroAddress
 
@@ -348,6 +358,21 @@ function setRevenueModule(address newRevenueModule)
 |`newRevenueModule`|`address`|New revenue module|
 
 
+### setDistributor
+
+Set address of merkl.xyz rewards distributor contract
+
+
+```solidity
+function setDistributor(address newDistributor) external onlyRole(DEFAULT_ADMIN_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newDistributor`|`address`|New distributor contract address|
+
+
 ### setPauseStatus
 
 Gatekeeper role can set pause status
@@ -441,6 +466,25 @@ function rescueToken(address token, address to) external onlyRole(DEFAULT_ADMIN_
 |----|----|-----------|
 |`token`|`address`|The address of the ERC20 token to be rescued|
 |`to`|`address`|Recipient of rescued tokens|
+
+
+### setClaimRecipient
+
+Set Rewards claim recipient
+https://docs.merkl.xyz/earn-with-merkl/earning-with-merkl
+
+if token is the zero address the recipient is authorized for all tokens
+
+
+```solidity
+function setClaimRecipient(address recipient, address token) external onlyRole(DEFAULT_ADMIN_ROLE);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`recipient`|`address`|Address to receive token rewards|
+|`token`|`address`|Address of token recipient is authorize to claim|
 
 
 ### getRevenue

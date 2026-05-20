@@ -1,5 +1,5 @@
 # ICollateralManager
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/03cb36d03e9d12b530c127a14daa5c41e1749e7d/src/interface/ICollateralManager.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/14e4f5c2d1208a42b40e6ca6182f36f84dc88dd9/src/interface/ICollateralManager.sol)
 
 **Title:**
 ICollateralManager
@@ -382,6 +382,20 @@ event RevenueConverted(address collateral, uint256 amount);
 |----|----|-----------|
 |`collateral`|`address`|Collateral token to convert|
 |`amount`|`uint256`|Amount of revenue to convert|
+
+### DistributorUpdated
+Emitted when new merkl.xyz distributor address is set
+
+
+```solidity
+event DistributorUpdated(address newDistributor);
+```
+
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`newDistributor`|`address`|New distributor address|
 
 ## Errors
 ### CollateralAlreadySupported
