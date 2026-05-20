@@ -25,11 +25,16 @@ contract BaseScript is Script {
     bytes32 internal constant SIGNER_MANAGER_ROLE = keccak256("SIGNER_MANAGER_ROLE");
     bytes32 internal constant INSTANT_UNSTAKER_ROLE = keccak256("INSTANT_UNSTAKER_ROLE");
 
+    /// @notice The multisig responsible for collecting the merkl.xyz rewards
+    address internal constant REWARD_RECIPIENT = 0x76D1415AB9d2CB6A790499a36313F5B700CF035d;
+    /// @notice address of merkl.xyz rewards distributor
+    address internal constant DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
+
     /// @dev Included to enable compilation of the script without a $MNEMONIC environment variable.
     string internal constant TEST_MNEMONIC = "ten ten ten ten ten ten ten ten ten ten ten test";
 
     /// @dev The salt used for deterministic deployments.
-    bytes32 internal immutable SALT;
+    bytes32 internal SALT;
 
     /// @notice Account which will broadcast the transaction
     address internal broadcaster;
@@ -65,7 +70,8 @@ contract BaseScript is Script {
     ///
     /// Notes:
     /// - The salt format is "ChainID <chainid>, Version <version>".
-    function constructCreate2Salt() public view returns (bytes32) {
+    // override this function to create more complex salt. e.g. same deployment with different parameters
+    function constructCreate2Salt() public view virtual returns (bytes32) {
         string memory chainId = block.chainid.toString();
         string memory version = getVersion();
         string memory create2Salt = string.concat("ChainID ", chainId, ", Version ", version);
@@ -74,15 +80,15 @@ contract BaseScript is Script {
     }
 
     /// @dev The version for this deployment
-    function getVersion() internal pure virtual returns (string memory) {
-        return "1.0.0";
+    function getVersion() internal view virtual returns (string memory) {
+        return "1.4.1";
     }
 
     function printLogo() internal pure {
         // logo
         console2.log("\n=============================================================\n");
         console2.log(
-            "\n  __/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\__________________________/\\\\\\____________________________        "
+            "\n __/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\__________________________/\\\\\\____________________________        "
         );
         console2.log(" _\\///////\\\\\\/////__________________________\\/\\\\\\____________________________       ");
         console2.log("  _______\\/\\\\\\_______________________________\\/\\\\\\_________/\\\\\\_______________      ");

@@ -13,4 +13,5 @@ interface ITokenAdminRegistry {
     function transferAdminRole(address asset, address newAdmin) external;
     function proposeAdministrator(address asset, address owner) external;
     function acceptAdminRole(address asset) external;
+    function getPool(address token) external view returns (address);
 }

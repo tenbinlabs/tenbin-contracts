@@ -3,23 +3,37 @@
 endpoint_url="wss://localhost:8545"
 
 [31337.string]
-asset_name = "Test Asset"
-asset_symbol = "tAsset"
+asset_name = "Tenbin Gold"
+asset_symbol = "tGLD"
+staked_asset_name = "Staked Tenbin Gold"
+staked_asset_symbol = "stGLD"
 mint_limit = "3000000000000000000000"   # 3000 asset tokens
 redeem_limit = "3000000000000000000000" # 3000 asset tokens
+instant_unstake_cap = "3000000000000000000000" # 3000 asset tokens
+
+[31337.uint]
+cooldown_period = 600                       # 10 minutes
+min_swap_price = 0                          # 0
+oracle_tolerance = 50_000000000000000       # 5%
+ratio = 170_000000000000000                 # 17%
+rebalance_cap = 100_000_000_000000          # 100m
+swap_cap = 0                                # 0
+vesting_period = 259_200                    # 3 days
 
 [31337.address]
 admin_role = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
 cap_adjuster_role = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
+collateral = "0x0000000000000000000000000000000000000000"
 curator_role = "0x583C11E16623346CE990Ca6A3f8247cf838aE1b1"
 custodian = "0x11B3D09135f32acFa3F2aDC44bfE10B4EC7677B6"
 custodian_keeper_role = "0x583C11E16623346CE990Ca6A3f8247cf838aE1b1"
-deployer = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
+default_admin_role = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
 gatekeeper_role = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
 multisig = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
+oracle = "0x0000000000000000000000000000000000000000"
 minter_role = "0x21626b87DBbEB540Ebb9Ca8B560A4545BA619D00"
 multicaller_role = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
-default_admin_role = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
+one_inch_router = "0x0000000000000000000000000000000000000000"
 payer = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
 recipient = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
 rebalancer_role = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"

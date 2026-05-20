@@ -12,6 +12,7 @@ import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC19
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {Mock1InchRouter} from "../test/mocks/Mock1InchRouter.sol";
+import {MockDistributor} from "../test/mocks/MockDistributor.sol";
 import {MockERC20} from "../test/mocks/MockERC20.sol";
 import {MockERC4626} from "../test/mocks/MockERC4626.sol";
 import {MultiCall} from "../src/MultiCall.sol";
@@ -19,52 +20,50 @@ import {RevenueModule} from "../src/RevenueModule.sol";
 import {StakedAsset} from "../src/StakedAsset.sol";
 import {SwapModule} from "../src/SwapModule.sol";
 
-/// @notice Deploy a current version of the protocol for testing in a mock environment
+/// @notice Deploy the current version of the protocol for testing in a mock environment
+/// FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol $CONFIG_DIR --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow
 contract DeployDevelopmentMock is DeployBase {
-    /// @notice Default ratio is 10%
-    uint256 constant DEFAULT_RATIO = 2e17;
-    /// @notice Default cooldown length for testnet is 180 seconds
-    uint128 constant DEFAULT_COOLDOWN_PERIOD = 180 seconds; // TESTNET
-    /// @notice Default vesting length for testnet is 1200 seconds
-    uint128 constant DEFAULT_VESTING_PERIOD = 1200 seconds; // TESTNET
-    /// @notice Default EOA when none are provided in .env
-    address constant DEFAULT_EOA = 0x635ECB1700d52a1FbC395c5C92b845A00AF56a38;
-    /// @notice 1Inch Aggregation Router V6
-    address constant ROUTER_1INCH = 0x111111125421cA6dc452d289314280a0f8842A65;
-    /// @notice USDC address
-    address constant USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
     /// @notice Contracts deployed by this script
     struct DeploymentResult {
+        address broadcaster;
+        AssetSilo silo;
         Controller controller;
         CollateralManager manager;
+        CustodianModule custodian_module;
         AssetToken asset;
         MultiCall multicall;
-        StakedAsset staking;
+        StakedAsset staked_asset;
         SwapModule swap_module;
         IERC20 collateral;
         IERC4626 vault;
         Mock1InchRouter one_inch_router;
         RevenueModule revenue_module;
-        AssetSilo silo;
-        CustodianModule custodian_module;
     }
 
     /// @dev The version for this deployment
     function getVersion() internal pure override returns (string memory) {
-        return "1.1.1";
+        return "1.4.1";
     }
 
-    function run() public virtual returns (DeploymentResult memory deployment) {
-        string memory configDir;
-        if (block.chainid == 1) configDir = "./config/mainnet/tgld/tgld.toml";
-        if (block.chainid == 11155111) configDir = "./config/sepolia/sepolia.toml";
-        if (block.chainid == 31337) configDir = "./config/local/local.toml";
+    // run and load config dir from CI
+    function run(string memory configDir) public virtual returns (DeploymentResult memory deployment) {
+        if (bytes(configDir).length == 0) {
+            // default config for testing
+            if (block.chainid == 1) configDir = "./config/mainnet/tgld/tgld.toml";
+            else if (block.chainid == 11155111) configDir = "./config/sepolia/tgld/tgld_sepolia.toml";
+            else if (block.chainid == 31337) configDir = "./config/local/local.toml";
+            else revert("chain not supported");
+        }
+
         loadConfig(configDir);
         deployment = deploy();
     }
 
     function deploy() public broadcast returns (DeploymentResult memory deployment) {
+        // update salt and cache broadcaster
+        SALT = bytes32(abi.encodePacked(constructCreate2Salt(), params.asset_name));
+        deployment.broadcaster = broadcaster;
+
         // load config
         deployment.collateral = IERC20(params.collateral);
         deployment.vault = IERC4626(params.vault);
@@ -82,17 +81,21 @@ contract DeployDevelopmentMock is DeployBase {
             broadcaster
         );
         ERC1967Proxy proxy = new ERC1967Proxy{salt: SALT}(stakingImplementation, data);
-        deployment.staking = StakedAsset(address(proxy));
-        deployment.silo = deployment.staking.silo();
+        deployment.staked_asset = StakedAsset(address(proxy));
+        deployment.silo = deployment.staked_asset.silo();
 
         deployment.custodian_module = new CustodianModule(broadcaster);
         deployment.controller = new Controller{salt: SALT}(
             address(deployment.asset),
-            address(deployment.staking),
-            DEFAULT_RATIO,
+            address(deployment.staked_asset),
+            params.ratio,
             address(deployment.custodian_module),
             broadcaster
         );
+
+        require(stringMatches(deployment.controller.version(), getVersion()), "controller version mismatch");
+
+        // deploy multicall
         deployment.multicall = new MultiCall{salt: SALT}(broadcaster);
 
         // deploy manager behind a proxy
@@ -102,23 +105,41 @@ contract DeployDevelopmentMock is DeployBase {
         proxy = new ERC1967Proxy{salt: SALT}(managerImplementation, data);
         deployment.manager = CollateralManager(address(proxy));
 
-        // deploy remaining contracts
+        // deploy swap module
         deployment.one_inch_router = new Mock1InchRouter();
         deployment.swap_module =
             new SwapModule{salt: SALT}(address(deployment.manager), address(deployment.one_inch_router), broadcaster);
+
+        // deploy revenue module
         deployment.revenue_module = new RevenueModule{salt: SALT}(
             address(deployment.manager),
-            address(deployment.staking),
+            address(deployment.staked_asset),
             broadcaster,
             address(deployment.controller),
             address(deployment.asset),
             address(params.multisig)
         );
 
-        // use mock USDC for testnet
-        if (block.chainid == 31337 || block.chainid == 11155111) {
+        // testnet and mock options
+        if (block.chainid == 11155111) {
+            // sepolia: mint mock ERC20 tokens to broadcaster
+            require(address(deployment.collateral) != address(0), "invalid collateral");
+            MockERC20(address(deployment.collateral)).mint(broadcaster, 1e6);
+            params.signer = config.get("signer").toAddress();
+            deployment.manager.setDistributor(address(new MockDistributor()));
+        } else if (block.chainid == 31337) {
+            // local dev: use mock token and vault
             deployment.collateral = new MockERC20{salt: SALT}("Mock USDC", "USDC", 6);
             deployment.vault = new MockERC4626{salt: SALT}("Mock USDC Vault", "vUSDC", deployment.collateral);
+
+            // perform dead deposit
+            MockERC20(address(deployment.collateral)).mint(broadcaster, 1e6);
+            deployment.collateral.approve(address(deployment.vault), 1e6);
+            deployment.vault.deposit(1e6, address(0xDEAD));
+            params.signer = config.get("signer").toAddress();
+            deployment.manager.setDistributor(address(new MockDistributor()));
+        } else {
+            deployment.manager.setDistributor(DISTRIBUTOR);
         }
 
         printAccounts();
@@ -138,19 +159,25 @@ contract DeployDevelopmentMock is DeployBase {
         deployment.manager.grantRole(CURATOR_ROLE, address(deployment.multicall));
         deployment.manager.grantRole(CURATOR_ROLE, address(deployment.controller));
         deployment.manager.grantRole(GATEKEEPER_ROLE, roles.gatekeeper_role);
+        deployment.manager.setClaimRecipient(REWARD_RECIPIENT, address(0));
         deployment.multicall.grantRole(MULTICALLER_ROLE, roles.multicaller_role);
-        deployment.staking.grantRole(ADMIN_ROLE, roles.admin_role);
-        deployment.staking.grantRole(REWARDER_ROLE, params.multisig);
-        deployment.staking.grantRole(REWARDER_ROLE, address(deployment.revenue_module));
-        deployment.staking.grantRole(RESTRICTER_ROLE, roles.restricter_role);
-        deployment.staking.grantRole(CAP_ADJUSTER_ROLE, roles.cap_adjuster_role);
-        deployment.staking.grantRole(INSTANT_UNSTAKER_ROLE, address(deployment.controller));
+        deployment.staked_asset.grantRole(ADMIN_ROLE, roles.admin_role);
+        deployment.staked_asset.grantRole(REWARDER_ROLE, params.multisig);
+        deployment.staked_asset.grantRole(REWARDER_ROLE, address(deployment.revenue_module));
+        deployment.staked_asset.grantRole(RESTRICTER_ROLE, roles.restricter_role);
+        deployment.staked_asset.grantRole(CAP_ADJUSTER_ROLE, roles.cap_adjuster_role);
+        deployment.staked_asset.grantRole(INSTANT_UNSTAKER_ROLE, address(deployment.controller));
         deployment.revenue_module.grantRole(REVENUE_KEEPER_ROLE, roles.revenue_keeper_role);
         deployment.custodian_module.grantRole(CUSTODIAN_KEEPER_ROLE, roles.custodian_keeper_role);
 
-        // configure controller
+        // temporarily grant roles to broadcaster
         deployment.controller.grantRole(ADMIN_ROLE, broadcaster);
         deployment.controller.grantRole(SIGNER_MANAGER_ROLE, broadcaster);
+        deployment.manager.grantRole(ADMIN_ROLE, broadcaster);
+        deployment.staked_asset.grantRole(ADMIN_ROLE, broadcaster);
+        deployment.staked_asset.grantRole(CAP_ADJUSTER_ROLE, broadcaster);
+
+        // configure controller
         deployment.controller.setSignerStatus(params.signer, true);
         deployment.controller.setIsCollateral(address(deployment.collateral), true);
         deployment.controller.setManager(address(deployment.manager));
@@ -158,29 +185,23 @@ contract DeployDevelopmentMock is DeployBase {
         deployment.controller.setBlockRedeemLimit(params.redeem_limit);
 
         // configure manager
-        deployment.manager.grantRole(ADMIN_ROLE, broadcaster);
         deployment.manager.addCollateral(address(deployment.collateral), address(deployment.vault));
         deployment.manager.setSwapModule(address(deployment.swap_module));
         deployment.manager.setRevenueModule(address(deployment.revenue_module));
 
         // configure staking
-        deployment.staking.grantRole(ADMIN_ROLE, broadcaster);
-        if (block.chainid != 1) {
-            // TODO Create a separation ENG-1261
-            deployment.staking.setCooldownPeriod(DEFAULT_COOLDOWN_PERIOD);
-            deployment.staking.setVestingPeriod(DEFAULT_VESTING_PERIOD);
-        } else {
-            deployment.staking.setCooldownPeriod(config.get("cooldown_period").toUint256());
-            deployment.staking.setVestingPeriod(config.get("vesting_period").toUint128());
-        }
+        deployment.staked_asset.setCooldownPeriod(params.cooldown_period);
+        deployment.staked_asset.setVestingPeriod(params.vesting_period);
+        deployment.staked_asset.setInstantUnstakeCap(params.instant_unstake_cap);
 
+        // add custodian
         deployment.custodian_module.setCustodianStatus(params.custodian, true);
 
         // transfer ownership
         deployment.manager.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
         deployment.controller.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
         deployment.multicall.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
-        deployment.staking.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
+        deployment.staked_asset.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
         deployment.revenue_module.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
         deployment.custodian_module.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
         deployment.asset.transferOwnership(roles.default_admin_role);
@@ -189,9 +210,16 @@ contract DeployDevelopmentMock is DeployBase {
         deployment.manager.grantRole(DEFAULT_ADMIN_ROLE, params.multisig);
         deployment.controller.grantRole(DEFAULT_ADMIN_ROLE, params.multisig);
         deployment.multicall.grantRole(DEFAULT_ADMIN_ROLE, params.multisig);
-        deployment.staking.grantRole(DEFAULT_ADMIN_ROLE, params.multisig);
+        deployment.staked_asset.grantRole(DEFAULT_ADMIN_ROLE, params.multisig);
         deployment.revenue_module.grantRole(DEFAULT_ADMIN_ROLE, params.multisig);
         deployment.custodian_module.grantRole(DEFAULT_ADMIN_ROLE, params.multisig);
+
+        // perform testnet and mock options
+        if (block.chainid == 31337 || block.chainid == 11155111) {
+            MockERC20(address(deployment.collateral)).mint(broadcaster, 1_000_000_000_000e6);
+            deployment.collateral.approve(address(deployment.controller), 1_000_000_000_000e6);
+            deployment.controller.setSignerStatus(params.signer, true);
+        }
 
         // renounce deployer roles (except for local dev)
         if (block.chainid != 31337) {
@@ -201,16 +229,11 @@ contract DeployDevelopmentMock is DeployBase {
             deployment.manager.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
             deployment.controller.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
             deployment.multicall.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
-            deployment.staking.revokeRole(ADMIN_ROLE, broadcaster);
-            deployment.staking.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
+            deployment.staked_asset.revokeRole(ADMIN_ROLE, broadcaster);
+            deployment.staked_asset.revokeRole(CAP_ADJUSTER_ROLE, broadcaster);
+            deployment.staked_asset.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
             deployment.revenue_module.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
             deployment.custodian_module.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
-        }
-
-        // mint some tokens to deployer (test network only)
-        if (block.chainid == 31337 || block.chainid == 11155111) {
-            MockERC20(address(deployment.collateral)).mint(broadcaster, 1_000_000_000_000e6);
-            deployment.collateral.approve(address(deployment.controller), 1_000_000_000_000e6);
         }
 
         // Serialize json and print contracts
@@ -246,8 +269,8 @@ contract DeployDevelopmentMock is DeployBase {
         configObj = vm.serializeString(configKey, "asset_symbol", deployment.asset.symbol());
         configObj = vm.serializeUint(configKey, "deployment_block", block.number);
         configObj = vm.serializeBytes32(configKey, "domain_separator", deployment.controller.getDomainSeparator());
-        configObj = vm.serializeString(configKey, "staked_asset_name", deployment.staking.name());
-        configObj = vm.serializeString(configKey, "staked_asset_symbol", deployment.staking.symbol());
+        configObj = vm.serializeString(configKey, "staked_asset_name", deployment.staked_asset.name());
+        configObj = vm.serializeString(configKey, "staked_asset_symbol", deployment.staked_asset.symbol());
         configObj = vm.serializeString(configKey, "version", deployment.controller.version());
         configObj = vm.serializeAddress(configKey, "deployer", broadcaster);
 
@@ -260,7 +283,7 @@ contract DeployDevelopmentMock is DeployBase {
         contractsObj = vm.serializeAddress(contractsKey, "multicall", address(deployment.multicall));
         contractsObj = vm.serializeAddress(contractsKey, "revenue_module", address(deployment.revenue_module));
         contractsObj = vm.serializeAddress(contractsKey, "silo", address(deployment.silo));
-        contractsObj = vm.serializeAddress(contractsKey, "staked_asset", address(deployment.staking));
+        contractsObj = vm.serializeAddress(contractsKey, "staked_asset", address(deployment.staked_asset));
         contractsObj = vm.serializeAddress(contractsKey, "swap_module", address(deployment.swap_module));
 
         // Build asset object (builder id: "asset")
@@ -297,7 +320,7 @@ contract DeployDevelopmentMock is DeployBase {
         console2.log("CollateralManager: ", address(deployment.manager));
         console2.log("AssetToken: ", address(deployment.asset));
         console2.log("MultiCall: ", address(deployment.multicall));
-        console2.log("StakedAsset: ", address(deployment.staking));
+        console2.log("StakedAsset: ", address(deployment.staked_asset));
         console2.log("AssetSilo : ", address(deployment.silo));
         console2.log("SwapModule: ", address(deployment.swap_module));
         console2.log("MockERC20: ", address(deployment.collateral));

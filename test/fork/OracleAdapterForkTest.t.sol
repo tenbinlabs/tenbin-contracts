@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+import {console2} from "forge-std/console2.sol";
 import {AssetToken} from "../../src/AssetToken.sol";
 import {AggregatorV3Interface} from "chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
+import {BRLOracleAdapter} from "../../src/oracle/BRLOracleAdapter.sol";
 import {ChainlinkOracleAdapter} from "../../src/oracle/ChainlinkOracleAdapter.sol";
 import {IController} from "../../src/interface/IController.sol";
 import {IOracleAdapter} from "../../src/interface/IOracleAdapter.sol";
@@ -17,26 +19,50 @@ contract OracleAdapterForkTest is ForkBaseTest {
     uint256 public constant DEFAULT_STALENESS_THRESHOLD = 1 days;
     address internal constant XAU_USD_AGGREGATOR = 0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6;
     address internal constant TGLD_USD_AGGREGATOR = 0x369C67E8b026CC4Ef98350f332D7Dd52b85b7674;
+    address internal constant BRL_USD_AGGREGATOR = 0x3126E7F38D5f60f4E2B6ec3511C7bdbD79317Df1;
 
     // legacy adapter replaced by new GoldOracleAdapter
-    IOracleAdapter legacyOracleAdapter;
+    IOracleAdapter legacyAdapter;
+    IOracleAdapter goldAdapter;
+    IOracleAdapter brlAdapter;
 
     function setUp() public override {
         // fork mainnet
         forkBlock = 24995466;
         super.setUp();
-        legacyOracleAdapter = new ChainlinkOracleAdapter(XAU_USD_AGGREGATOR, 1 days);
-        oracleAdapter = new GoldOracleAdapter();
-        // set adapter and tolerance
+        legacyAdapter = new ChainlinkOracleAdapter(XAU_USD_AGGREGATOR, 1 days);
+        goldAdapter = new GoldOracleAdapter();
+        brlAdapter = new BRLOracleAdapter();
+
+        // set default adapter and tolerance
+        oracleAdapter = goldAdapter;
         setOracle(address(oracleAdapter), 1e17);
     }
 
     function testFork_SetUp() public view {
         assertEq(address(oracleAdapter.oracle()), TGLD_USD_AGGREGATOR);
-        assertEq(address(legacyOracleAdapter.oracle()), XAU_USD_AGGREGATOR);
+        assertEq(address(legacyAdapter.oracle()), XAU_USD_AGGREGATOR);
+    }
+
+    function testFork_GoldAdapter() public view {
+        // ensure decimals are converted correctly
+        assertEq(goldAdapter.getPrice(), 4622950000000001000000);
+    }
+
+    function testFork_BRLAdatper() public view {
+        // ensure decimals are converted correctly
+        assertEq(brlAdapter.getPrice(), 200698430000000000);
     }
 
     function testFork_Revert_GetPrice() public {
+        vm.mockCall(
+            address(oracleAdapter.oracle()),
+            abi.encodeWithSelector(AggregatorV3Interface.latestRoundData.selector),
+            abi.encode(uint80(1), int256(0), uint256(0), block.timestamp, uint80(1))
+        );
+        vm.expectRevert(IOracleAdapter.InvalidOraclePrice.selector);
+        oracleAdapter.getPrice();
+
         vm.warp(block.timestamp + 2 days);
 
         vm.expectRevert(IOracleAdapter.OraclePriceStale.selector);

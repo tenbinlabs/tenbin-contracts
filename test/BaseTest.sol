@@ -18,6 +18,7 @@ import {IOracleAdapter} from "../src/interface/IOracleAdapter.sol";
 import {ISwapModule} from "../src/interface/ISwapModule.sol";
 import {Mock1InchRouter} from "./mocks/Mock1InchRouter.sol";
 import {MockAggregator} from "./mocks/MockAggregator.sol";
+import {MockDistributor} from "./mocks/MockDistributor.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {MockERC4626} from "./mocks/MockERC4626.sol";
 import {MockERC1271Signer} from "./mocks/MockERC1271Signer.sol";
@@ -97,6 +98,7 @@ contract BaseTest is Test {
     address internal instantUnstaker;
     address internal feeRecipient;
     address internal restricted;
+    address internal rewardRecipient;
 
     // contracts
     ControllerHarness internal controller;
@@ -117,6 +119,7 @@ contract BaseTest is Test {
     IOracleAdapter internal oracleAdapter;
     AssetSilo internal silo;
     MockEtherReceiver etherReceiver;
+    MockDistributor distributor;
 
     // roles
     bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -178,6 +181,7 @@ contract BaseTest is Test {
         instantUnstaker = vm.addr(0xB014);
         feeRecipient = vm.addr(0xB015);
         restricted = vm.addr(0xB016);
+        rewardRecipient = vm.addr(0xB017);
         broadcaster = getTestBroadcaster();
     }
 
@@ -193,6 +197,7 @@ contract BaseTest is Test {
         ERC1967Proxy proxy = new ERC1967Proxy(stakingImplementation, data);
         staking = StakedAssetHarness(address(proxy));
         controller = new ControllerHarness(address(asset), address(staking), DEFAULT_RATIO, custodian, owner);
+        distributor = new MockDistributor();
         address managerImplementation = address(new CollateralManagerHarness());
         data = abi.encodeWithSelector(CollateralManager.initialize.selector, address(controller), owner);
         proxy = new ERC1967Proxy(managerImplementation, data);
@@ -252,6 +257,7 @@ contract BaseTest is Test {
         label(address(aggregator), "aggregator");
         label(address(oracleAdapter), "oracleAdapter");
         label(address(silo), "silo");
+        label(address(distributor), "distributor");
     }
 
     // helper function to configure controller
@@ -283,6 +289,8 @@ contract BaseTest is Test {
         manager.grantRole(CAP_ADJUSTER_ROLE, capAdjuster);
         manager.setSwapModule(address(swapModule));
         manager.setRevenueModule(address(revenueModule));
+        manager.setDistributor(address(distributor));
+        manager.setClaimRecipient(rewardRecipient, address(0));
 
         vm.startPrank(capAdjuster);
         manager.setSwapCap(address(collateral), type(uint256).max);

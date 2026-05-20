@@ -12,11 +12,6 @@ import {Test} from "forge-std/Test.sol";
 contract DeployMockTest is Test, Config {
     using SafeERC20 for IERC20;
 
-    // default values
-    uint256 public constant DEFAULT_RATIO = 2e17;
-    uint128 public constant DEFAULT_COOLDOWN_PERIOD = 180 seconds;
-    uint128 public constant DEFAULT_VESTING_PERIOD = 1200 seconds;
-
     // roles
     bytes32 internal constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 internal constant CAP_ADJUSTER_ROLE = keccak256("CAP_ADJUSTER_ROLE");
@@ -38,17 +33,19 @@ contract DeployMockTest is Test, Config {
 
     function setUp() public {
         DeployDevelopmentMock deployer = new DeployDevelopmentMock();
-        deployment = deployer.run();
+        deployment = deployer.run("");
     }
 
-    function test_DeployDevelopment() public {
+    function test_DeployDevelopmentMockIntegration() public {
         _loadConfig("./config/local/local.toml", false);
         // check default admin roles
         assertEq(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
         assertEq(deployment.manager.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
         assertEq(deployment.asset.pendingOwner(), config.get("default_admin_role").toAddress());
         assertEq(deployment.multicall.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
-        assertEq(deployment.staking.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
+        assertEq(
+            deployment.staked_asset.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true
+        );
         assertEq(
             deployment.revenue_module.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true
         );
@@ -76,12 +73,12 @@ contract DeployMockTest is Test, Config {
         assertEq(deployment.manager.hasRole(CAP_ADJUSTER_ROLE, config.get("cap_adjuster_role").toAddress()), true);
 
         // check staking roles
-        assertEq(deployment.staking.hasRole(REWARDER_ROLE, config.get("rewarder_role").toAddress()), true);
-        assertEq(deployment.staking.hasRole(REWARDER_ROLE, address(deployment.revenue_module)), true);
-        assertEq(deployment.staking.hasRole(ADMIN_ROLE, config.get("admin_role").toAddress()), true);
-        assertEq(deployment.staking.hasRole(RESTRICTER_ROLE, config.get("restricter_role").toAddress()), true);
-        assertEq(deployment.staking.hasRole(CAP_ADJUSTER_ROLE, config.get("cap_adjuster_role").toAddress()), true);
-        assertEq(deployment.staking.hasRole(INSTANT_UNSTAKER_ROLE, address(deployment.controller)), true);
+        assertEq(deployment.staked_asset.hasRole(REWARDER_ROLE, config.get("rewarder_role").toAddress()), true);
+        assertEq(deployment.staked_asset.hasRole(REWARDER_ROLE, address(deployment.revenue_module)), true);
+        assertEq(deployment.staked_asset.hasRole(ADMIN_ROLE, config.get("admin_role").toAddress()), true);
+        assertEq(deployment.staked_asset.hasRole(RESTRICTER_ROLE, config.get("restricter_role").toAddress()), true);
+        assertEq(deployment.staked_asset.hasRole(CAP_ADJUSTER_ROLE, config.get("cap_adjuster_role").toAddress()), true);
+        assertEq(deployment.staked_asset.hasRole(INSTANT_UNSTAKER_ROLE, address(deployment.controller)), true);
 
         // check multicall roles
         assertEq(deployment.multicall.hasRole(MULTICALLER_ROLE, config.get("multicaller_role").toAddress()), true);
@@ -106,14 +103,14 @@ contract DeployMockTest is Test, Config {
             assertFalse(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.manager.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.multicall.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
-            assertFalse(deployment.staking.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
+            assertFalse(deployment.staked_asset.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.manager.hasRole(ADMIN_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.manager.hasRole(CURATOR_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.manager.hasRole(REBALANCER_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.manager.hasRole(GATEKEEPER_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.manager.hasRole(CAP_ADJUSTER_ROLE, config.get("deployer").toAddress()));
-            assertFalse(deployment.staking.hasRole(REWARDER_ROLE, config.get("deployer").toAddress()));
-            assertFalse(deployment.staking.hasRole(ADMIN_ROLE, config.get("deployer").toAddress()));
+            assertFalse(deployment.staked_asset.hasRole(REWARDER_ROLE, config.get("deployer").toAddress()));
+            assertFalse(deployment.staked_asset.hasRole(ADMIN_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.multicall.hasRole(MULTICALLER_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.revenue_module.hasRole(DEFAULT_ADMIN_ROLE, config.get("deployer").toAddress()));
             assertFalse(deployment.revenue_module.hasRole(REVENUE_KEEPER_ROLE, config.get("deployer").toAddress()));
@@ -121,9 +118,11 @@ contract DeployMockTest is Test, Config {
         }
 
         // check controller is correctly configured
-        assertEq(deployment.controller.ratio(), DEFAULT_RATIO);
+        assertEq(deployment.controller.ratio(), config.get("ratio").toUint256());
         assertEq(deployment.controller.custodian(), address(deployment.custodian_module));
         assertEq(deployment.controller.manager(), address(deployment.manager));
+        assertEq(deployment.controller.blockMintLimit(), uint128(vm.parseUint(config.get("mint_limit").toString())));
+        assertEq(deployment.controller.blockRedeemLimit(), uint128(vm.parseUint(config.get("redeem_limit").toString())));
 
         // check manager is correctly configured
         assertEq(deployment.manager.controller(), address(deployment.controller));
@@ -137,13 +136,16 @@ contract DeployMockTest is Test, Config {
         (
             uint128 length,
             /*uint128 time*/, /*uint256 amount*/
-        ) = deployment.staking.vesting();
-        assertEq(length, DEFAULT_VESTING_PERIOD);
-        assertEq(deployment.staking.cooldownPeriod(), DEFAULT_COOLDOWN_PERIOD);
+        ) = deployment.staked_asset.vesting();
+        assertEq(length, config.get("vesting_period").toUint128());
+        assertEq(deployment.staked_asset.cooldownPeriod(), config.get("cooldown_period").toUint256());
+        assertEq(
+            deployment.staked_asset.instantUnstakeCap(), vm.parseUint(config.get("instant_unstake_cap").toString())
+        );
 
         // check revenue module is correctly configured
         assertEq(deployment.revenue_module.manager(), address(deployment.manager));
-        assertEq(deployment.revenue_module.staking(), address(deployment.staking));
+        assertEq(deployment.revenue_module.staking(), address(deployment.staked_asset));
         assertEq(deployment.revenue_module.asset(), address(deployment.asset));
         assertEq(deployment.revenue_module.controller(), address(deployment.controller));
     }

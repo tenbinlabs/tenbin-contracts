@@ -124,6 +124,10 @@ interface ICollateralManager {
     /// @param amount Amount of revenue to convert
     event RevenueConverted(address collateral, uint256 amount);
 
+    /// @notice Emitted when new merkl.xyz distributor address is set
+    /// @param newDistributor New distributor address
+    event DistributorUpdated(address newDistributor);
+
     /// @notice Get pending revenue for a collateral type
     /// @param collateral Get revenue for a specific collateral
     function getRevenue(address collateral) external view returns (uint256 revenue);

@@ -58,6 +58,10 @@ contract CollateralManagerPause is ICollateralManager, UUPSUpgradeable, AccessCo
         revert ContractPaused();
     }
 
+    function claim(address, address[] calldata, uint256[] calldata, bytes32[][] calldata) external pure {
+        revert ContractPaused();
+    }
+
     // mark this as a test contract
     function test() public {}
 }

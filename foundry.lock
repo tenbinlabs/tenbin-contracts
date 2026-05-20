@@ -1,14 +1,14 @@
 {
   "lib/chainlink-ccip": {
     "tag": {
-      "name": "solana-artifacts-localtest-cb23ec38649f",
-      "rev": "cb23ec38649f9d23aabd0350e30d3d649ebc2174"
+      "name": "solana-v1.6.2",
+      "rev": "9546a59bd0a3cee4ddc8ae4042da533e62225b78"
     }
   },
   "lib/chainlink-local": {
     "tag": {
-      "name": "v0.2.7",
-      "rev": "a3ace4e17336e84c4d1261f2da45d5e8963af714"
+      "name": "v0.2.9-beta.0",
+      "rev": "f7ede06fe959fca0bceebbf8511b3728a13237fb"
     }
   },
   "lib/forge-std": {

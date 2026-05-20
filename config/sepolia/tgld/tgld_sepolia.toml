@@ -1,0 +1,43 @@
+# sepolia
+[sepolia]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[sepolia.string]
+asset_name = "Tenbin Gold"
+asset_symbol = "tGLD"
+staked_asset_name = "Staked Tenbin Gold"
+staked_asset_symbol = "stGLD"
+mint_limit = "3000000000000000000000"   # 3000 asset tokens
+redeem_limit = "3000000000000000000000" # 3000 asset tokens
+instant_unstake_cap = "3000000000000000000000" # 3000 asset tokens
+
+[sepolia.uint]
+cooldown_period = 600                       # 10 minutes
+min_swap_price = 0                          # 0
+oracle_tolerance = 50_000000000000000       # 5%
+ratio = 170_000000000000000                 # 17%
+rebalance_cap = 100_000_000_000000          # 100m
+swap_cap = 0                                # 0
+vesting_period = 259_200                    # 3 days
+
+[sepolia.address]
+admin_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+cap_adjuster_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+collateral = "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A"
+curator_role = "0x15dEaF6a8dDc05B68e3a1774629Fbcd1AB1b70aa"             # sepolia keeper
+custodian = "0xbb9d2e2f9084721de949e1426bce93d5cfabefe6"
+custodian_keeper_role = "0x15dEaF6a8dDc05B68e3a1774629Fbcd1AB1b70aa"    # sepolia keeper
+default_admin_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+gatekeeper_role = "0xF43ABe43FcC915db2F3bDB677690a29FD6ef930e"          # sepolia gatekeeper
+minter_role = "0xb830e65d4BeABA5328A7d22D8C8d3d514AcA4360"              # sepolia minter
+multicaller_role = "0xb830e65d4BeABA5328A7d22D8C8d3d514AcA4360"         # sepolia minter
+multisig = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+one_inch_router = "0x0000000000000000000000000000000000000000"
+oracle = "0x0000000000000000000000000000000000000000"
+rebalancer_role = "0x15dEaF6a8dDc05B68e3a1774629Fbcd1AB1b70aa"          # sepolia keeper
+restricter_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+revenue_keeper_role = "0x15dEaF6a8dDc05B68e3a1774629Fbcd1AB1b70aa"      # sepolia keeper
+rewarder_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+signer = "0x274e783e3c49C13C2035097AfD83106D6d47356c"                   # sepolia signer
+signer_manager_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+vault = "0x69e19bF76bf01EC84059F48C7E0Ee2f5C11e5692"                    # tGLD sepolia morpho vault

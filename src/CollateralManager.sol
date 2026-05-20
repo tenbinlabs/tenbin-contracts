@@ -17,6 +17,7 @@ import {
 import {EnumerableSet} from "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {ICollateralManager} from "./interface/ICollateralManager.sol";
 import {IController} from "./interface/IController.sol";
+import {IDistributor} from "./external/merkl/IDistributor.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
@@ -107,6 +108,10 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
 
     /// @notice Stores supported collateral addresses
     EnumerableSet.AddressSet internal collaterals;
+
+    /// @notice address of merkl.xyz rewards distributor
+    /// https://docs.merkl.xyz/merkl-mechanisms/technical-overview
+    address public distributor;
 
     /* ------------------------------------ MODIFIERS ------------------------------------------ */
 
@@ -233,6 +238,13 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         emit RevenueModuleUpdated(newRevenueModule);
     }
 
+    /// @notice Set address of merkl.xyz rewards distributor contract
+    /// @param newDistributor New distributor contract address
+    function setDistributor(address newDistributor) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        distributor = newDistributor;
+        emit DistributorUpdated(newDistributor);
+    }
+
     /* ------------------------------------ Admin Config --------------------------------------- */
 
     /// @dev Gatekeeper role can set pause status
@@ -294,6 +306,15 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
             if (address(vault) == token) revert InvalidRescueToken();
         }
         IERC20(token).safeTransfer(to, IERC20(token).balanceOf(address(this)));
+    }
+
+    /// @notice Set Rewards claim recipient
+    /// https://docs.merkl.xyz/earn-with-merkl/earning-with-merkl
+    /// @param recipient Address to receive token rewards
+    /// @param token Address of token recipient is authorize to claim
+    /// @dev if token is the zero address the recipient is authorized for all tokens
+    function setClaimRecipient(address recipient, address token) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        IDistributor(distributor).setClaimRecipient(recipient, token);
     }
 
     /* ------------------------------------ EXTERNAL ------------------------------------------- */
