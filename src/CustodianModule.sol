@@ -38,7 +38,7 @@ contract CustodianModule is AccessControl {
 
     /// @dev CustodianModule constructor
     /// @param owner Address to be assigned the DEFAULT_ADMIN_ROLE
-    constructor(address owner) {
+    constructor(address owner) nonZeroAddress(owner) {
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
     }
 

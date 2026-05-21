@@ -81,7 +81,7 @@ contract BaseScript is Script {
 
     /// @dev The version for this deployment
     function getVersion() internal view virtual returns (string memory) {
-        return "1.4.1";
+        return "1.4.2";
     }
 
     function printLogo() internal pure {
