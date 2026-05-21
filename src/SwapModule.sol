@@ -37,10 +37,20 @@ contract SwapModule is ISwapModule {
         _;
     }
 
+    /// @dev Revert if zero address
+    modifier nonZeroAddress(address addr) {
+        if (addr == address(0)) revert NonZeroAddress();
+        _;
+    }
+
     /// @dev Set initial parameters
     /// @param manager_ Manager to call the swap functions on this contract
     /// @param router_ 1Inch aggregation router
-    constructor(address manager_, address router_, address admin_) {
+    constructor(address manager_, address router_, address admin_)
+        nonZeroAddress(manager_)
+        nonZeroAddress(router_)
+        nonZeroAddress(admin_)
+    {
         manager = manager_;
         router = router_;
         admin = admin_;

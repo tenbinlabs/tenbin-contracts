@@ -109,7 +109,7 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     bytes4 public constant MAGICVALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     /// @notice Semantic version
-    string public constant VERSION = "1.4.1";
+    string public constant VERSION = "1.4.2";
 
     /// @notice Asset token used for this controller
     address public immutable asset;
@@ -184,6 +184,10 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     /// @param owner_ Account to set as the DEFAULT_ADMIN_ROLE
     constructor(address asset_, address stakedAsset_, uint256 ratio_, address custodian_, address owner_)
         EIP712("TenbinController", VERSION)
+        nonZeroAddress(asset_)
+        nonZeroAddress(stakedAsset_)
+        nonZeroAddress(custodian_)
+        nonZeroAddress(owner_)
     {
         if (ratio_ > RATIO_PRECISION) revert InvalidRatio();
         asset = asset_;

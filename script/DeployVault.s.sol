@@ -55,7 +55,7 @@ contract DeployVault is BaseScript, Config {
     /// @dev The version for this deployment
     function getVersion() internal view override returns (string memory) {
         if (block.chainid == 11155111) return "1.4.12";
-        return "1.4.1";
+        return "1.4.2";
     }
 
     function loadConfig(string memory configDir) internal {
