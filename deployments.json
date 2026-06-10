@@ -4,7 +4,7 @@
             "admin_multisig": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
             "custodians": [
                 {
-                    "name": "hrp",
+                    "name": "custodian1",
                     "collateral": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
                     "address": "0x1f766513abc0DD46b26590Ea83A6b20377460a18"
                 }
