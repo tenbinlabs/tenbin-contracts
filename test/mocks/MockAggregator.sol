@@ -58,5 +58,7 @@ contract MockAggregator is AggregatorV3Interface {
         external
         view
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
-    {}
+    {
+        return (_roundId, mockAnswer, block.timestamp, isFresh ? 0 : block.timestamp, 1);
+    }
 }

@@ -5,25 +5,25 @@ import {AggregatorV3Interface} from "chainlink-local/src/data-feeds/interfaces/A
 import {IOracleAdapter} from "../interface/IOracleAdapter.sol";
 import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-/// @title BRL Oracle Adapter
-/// @notice Oracle Adapter for Chainlink BRL/USD oracle
-/// https://data.chain.link/feeds/ethereum/mainnet/brl-usd
+/// @title MXN Oracle Adapter
+/// @notice Oracle Adapter for Chainlink MXN/USD oracle
+/// hhttps://data.chain.link/feeds/ethereum/mainnet/mxn-usd
 ///
 /// Normalizes response from Chainlink aggregator to uint256 with 18 decimals
-/// https://etherscan.io/address/0x3126E7F38D5f60f4E2B6ec3511C7bdbD79317Df1
-contract BRLOracleAdapter is IOracleAdapter {
+/// https://etherscan.io/address/0xdb4881Ab0ad6b8423f76dd8C9d65542749a1dB77
+contract MXNOracleAdapter is IOracleAdapter {
     using SafeCast for int256;
 
     /// @notice Stale price threshold for this oracle
     uint256 public constant PRICE_STALENESS_THRESHOLD = 86400 seconds;
 
     /// @notice Difference between the target precicion (1e18) and the oracle precision
-    /// For BRL/USD, the precision is 1e8
+    /// For MXN/USD, the precision is 1e8
     uint256 public constant OFFSET = 1e10;
 
-    /// @notice Chainlink Oracle: BRL/USD
+    /// @notice Chainlink Oracle: MXN/USD
     // Uses 1e8 decimal precision
-    address public constant oracle = 0x3126E7F38D5f60f4E2B6ec3511C7bdbD79317Df1;
+    address public constant oracle = 0xdb4881Ab0ad6b8423f76dd8C9d65542749a1dB77;
 
     /// @inheritdoc IOracleAdapter
     /// @dev Return price in USD with 18 decimals

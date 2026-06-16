@@ -47,6 +47,17 @@ contract SwapModuleTest is Test {
         vm.label({account: address(swapModule), newLabel: "swapModule"});
     }
 
+    function test_Revert_Deploy() public {
+        vm.expectRevert(ISwapModule.NonZeroAddress.selector);
+        new SwapModuleHarness(address(0), address(router), admin);
+
+        vm.expectRevert(ISwapModule.NonZeroAddress.selector);
+        new SwapModuleHarness(manager, address(0), admin);
+
+        vm.expectRevert(ISwapModule.NonZeroAddress.selector);
+        new SwapModuleHarness(manager, address(router), address(0));
+    }
+
     function test_Swap1Inch() public {
         // create input data
         ISwapModule.SwapParameters memory params = ISwapModule.SwapParameters({

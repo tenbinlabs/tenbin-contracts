@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {console2} from "forge-std/console2.sol";
 import {AssetToken} from "../../src/AssetToken.sol";
 import {AggregatorV3Interface} from "chainlink-local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
 import {BRLOracleAdapter} from "../../src/oracle/BRLOracleAdapter.sol";
@@ -49,24 +48,17 @@ contract OracleAdapterForkTest is ForkBaseTest {
         assertEq(goldAdapter.getPrice(), 4622950000000001000000);
     }
 
-    function testFork_BRLAdatper() public view {
+    function testFork_BRLAdapter() public view {
         // ensure decimals are converted correctly
         assertEq(brlAdapter.getPrice(), 200698430000000000);
     }
 
     function testFork_Revert_GetPrice() public {
-        vm.mockCall(
-            address(oracleAdapter.oracle()),
-            abi.encodeWithSelector(AggregatorV3Interface.latestRoundData.selector),
-            abi.encode(uint80(1), int256(0), uint256(0), block.timestamp, uint80(1))
-        );
-        vm.expectRevert(IOracleAdapter.InvalidOraclePrice.selector);
-        oracleAdapter.getPrice();
+        // tGLD
+        checkGetPriceReverts(address(oracleAdapter));
 
-        vm.warp(block.timestamp + 2 days);
-
-        vm.expectRevert(IOracleAdapter.OraclePriceStale.selector);
-        oracleAdapter.getPrice();
+        // tBRL
+        checkGetPriceReverts(address(brlAdapter));
     }
 
     function testFork_GetPrice() public view {
@@ -199,5 +191,22 @@ contract OracleAdapterForkTest is ForkBaseTest {
         // Execute a failed redemption using concrete amounts
         vm.expectRevert(IController.ExceedsOracleDeltaTolerance.selector);
         controller.redeem(redeemOrder, orderSignature, context, approval);
+    }
+
+    // Helpers
+    function checkGetPriceReverts(address adapterAddress) internal {
+        IOracleAdapter adapter = IOracleAdapter(adapterAddress);
+        vm.mockCall(
+            address(adapter.oracle()),
+            abi.encodeWithSelector(AggregatorV3Interface.latestRoundData.selector),
+            abi.encode(uint80(1), int256(0), uint256(0), block.timestamp, uint80(1))
+        );
+        vm.expectRevert(IOracleAdapter.InvalidOraclePrice.selector);
+        adapter.getPrice();
+
+        vm.warp(block.timestamp + 2 days);
+
+        vm.expectRevert(IOracleAdapter.OraclePriceStale.selector);
+        adapter.getPrice();
     }
 }
