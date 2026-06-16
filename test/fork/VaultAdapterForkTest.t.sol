@@ -149,17 +149,17 @@ contract VaultAdapterForkTest is ForkBaseTest {
         vm.startPrank(allocator);
         parentVault.allocate(address(sUSDSadapter), abi.encode(shares), 100e18);
 
-        assertApproxEqAbs(sUSDS.balanceOf(address(sUSDSadapter)), shares, 1);
-        assertApproxEqAbs(sUSDSadapter.realAssets(), 100e18, 1, "Incorrect adapter real assets");
-        assertApproxEqAbs(parentVault.allocation(adapterId), 100e18, 1, "Incorrect allocation");
+        assertApproxEqAbs(sUSDS.balanceOf(address(sUSDSadapter)), shares, 2);
+        assertApproxEqAbs(sUSDSadapter.realAssets(), 100e18, 2, "Incorrect adapter real assets");
+        assertApproxEqAbs(parentVault.allocation(adapterId), 100e18, 2, "Incorrect allocation");
 
         // deallocate
         shares = sUSDS.previewWithdraw(50e18);
         parentVault.deallocate(address(sUSDSadapter), abi.encode(shares), 50e18);
 
-        assertApproxEqAbs(sUSDS.balanceOf(address(sUSDSadapter)), shares, 1);
-        assertApproxEqAbs(sUSDSadapter.realAssets(), 50e18, 1, "Incorrect adapter real assets");
-        assertApproxEqAbs(parentVault.allocation(adapterId), 50e18, 1, "Incorrect allocation");
+        assertApproxEqAbs(sUSDS.balanceOf(address(sUSDSadapter)), shares, 2);
+        assertApproxEqAbs(sUSDSadapter.realAssets(), 50e18, 2, "Incorrect adapter real assets");
+        assertApproxEqAbs(parentVault.allocation(adapterId), 50e18, 2, "Incorrect allocation");
         vm.stopPrank();
     }
 

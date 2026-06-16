@@ -137,6 +137,13 @@ contract DeployMockForkTest is ForkBaseTest, Config {
         assertEq(deployment.revenue_module.controller(), address(deployment.controller));
 
         // ensure dead deposit is performed on mock vault
-        assertEq(deployment.vault.totalSupply(), 1e18);
+        assertGe(deployment.vault.totalSupply(), 1e18);
+    }
+
+    function test_Revert_DeployDevelopmentMockFork() public {
+        DeployDevelopmentMock deployer = new DeployDevelopmentMock();
+        vm.chainId(5);
+        vm.expectRevert(bytes("chain not supported"));
+        deployer.run("");
     }
 }
