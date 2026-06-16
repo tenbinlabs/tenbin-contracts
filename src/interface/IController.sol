@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.0;
 
 /// @title IController
 /// @notice The Controller handles mint and redemption orders for the Tenbin protocol.

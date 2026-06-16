@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.0;
 
 /// @title ICollateralManager
 /// @notice The collateral manager manages onchain yield and liquidity for the Tenbin protocol

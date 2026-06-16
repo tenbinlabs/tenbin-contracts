@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.0;
 
 /// @title Swap Module
 /// @notice The Swap Module is responsible for handling swaps using external protocols
