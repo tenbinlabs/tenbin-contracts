@@ -1,5 +1,5 @@
 # SwapModule
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/14e4f5c2d1208a42b40e6ca6182f36f84dc88dd9/src/SwapModule.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/eb2d102704c08124f1036e9b92cd46f9cf41203f/src/SwapModule.sol)
 
 **Inherits:**
 [ISwapModule](/src/interface/ISwapModule.sol/interface.ISwapModule.md)
@@ -68,13 +68,25 @@ Revert unless called by the admin
 modifier onlyAdmin() ;
 ```
 
+### nonZeroAddress
+
+Revert if zero address
+
+
+```solidity
+modifier nonZeroAddress(address addr) ;
+```
+
 ### constructor
 
 Set initial parameters
 
 
 ```solidity
-constructor(address manager_, address router_, address admin_) ;
+constructor(address manager_, address router_, address admin_)
+    nonZeroAddress(manager_)
+    nonZeroAddress(router_)
+    nonZeroAddress(admin_);
 ```
 **Parameters**
 

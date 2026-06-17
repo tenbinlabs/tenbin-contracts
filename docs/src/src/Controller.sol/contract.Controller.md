@@ -1,5 +1,5 @@
 # Controller
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/14e4f5c2d1208a42b40e6ca6182f36f84dc88dd9/src/Controller.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/eb2d102704c08124f1036e9b92cd46f9cf41203f/src/Controller.sol)
 
 **Inherits:**
 [IController](/src/interface/IController.sol/interface.IController.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), AccessControl, EIP712
@@ -154,7 +154,7 @@ Semantic version
 
 
 ```solidity
-string public constant VERSION = "1.4.1"
+string public constant VERSION = "1.4.2"
 ```
 
 
@@ -332,7 +332,11 @@ Constructor
 
 ```solidity
 constructor(address asset_, address stakedAsset_, uint256 ratio_, address custodian_, address owner_)
-    EIP712("TenbinController", VERSION);
+    EIP712("TenbinController", VERSION)
+    nonZeroAddress(asset_)
+    nonZeroAddress(stakedAsset_)
+    nonZeroAddress(custodian_)
+    nonZeroAddress(owner_);
 ```
 **Parameters**
 

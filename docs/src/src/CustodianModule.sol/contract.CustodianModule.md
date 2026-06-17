@@ -1,5 +1,5 @@
 # CustodianModule
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/14e4f5c2d1208a42b40e6ca6182f36f84dc88dd9/src/CustodianModule.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/eb2d102704c08124f1036e9b92cd46f9cf41203f/src/CustodianModule.sol)
 
 **Inherits:**
 AccessControl
@@ -49,7 +49,7 @@ CustodianModule constructor
 
 
 ```solidity
-constructor(address owner) ;
+constructor(address owner) nonZeroAddress(owner);
 ```
 **Parameters**
 

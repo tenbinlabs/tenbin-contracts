@@ -13,3 +13,5 @@
 - [RevenueModule](RevenueModule.sol/contract.RevenueModule.md)
 - [StakedAsset](StakedAsset.sol/contract.StakedAsset.md)
 - [SwapModule](SwapModule.sol/contract.SwapModule.md)
+- [VaultAdapter](VaultAdapter.sol/contract.VaultAdapter.md)
+- [VaultAdapterFactory](VaultAdapterFactory.sol/contract.VaultAdapterFactory.md)
