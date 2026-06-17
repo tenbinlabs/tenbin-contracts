@@ -16,17 +16,35 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 | stMXN | [0xc91b03369F7C60C2d341527cFc6E6efD77D6E1b1](https://etherscan.io/address/0xc91b03369F7C60C2d341527cFc6E6efD77D6E1b1) |
 
 # Audit
-Four smart contract audits were performed on the solidity codebase. An initial independent audit was conducted, followed by major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
 
-[scope](audit/scope_1_22_26.pdf)
+Tenbin uses a continuous auditing policy with a target of one audit cycle per quarter. Two rounds of audits have been conducted on the tenbin contracts codebase. The first on 1/22/26 and the second on 4/12/26. Notable full protocol auditors include spearbit, zellic, and fuzzland.
+
+## 4/12/26 Audit
+
+The auditing firms zellic and fuzzland performed a full protocol audit. Additionally, AI audits were run using claude code and cantina's AI auditor tool.
+
+[scope](audit/4_12_26_scope.pdf)
  
-[0xleastwood](audit/0xleastwood_1_22_26.pdf)
+[zellic](audit/4_22_26_zellic.pdf)
+
+[fuzzland](audit/5_4_26_fuzzland.pdf)
+
+[claude AI](audit/4_29_26_claude_AI.pdf)
+
+[cantina AI](audit/5_1_26_cantina_AI.pdf)
+
+## 1/22/26 Audit
+Four smart contract audits were performed on the solidity codebase. An initial independent audit was conducted, followed by three major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
+
+[scope](audit/1_22_26_scope.pdf)
  
-[fuzzland](audit/fuzzland_1_22_26.pdf)
+[0xleastwood](audit/1_22_26_0xleastwood.pdf)
  
-[spearbit](audit/spearbit_1_22_26.pdf)
+[fuzzland](audit/1_22_26_fuzzland.pdf)
  
-[verilog](audit/verilog_1_22_26.pdf)
+[spearbit](audit/1_22_26_spearbit.pdf)
+ 
+[verilog](audit/1_22_26_verilog.pdf)
 
 # Setup
 
