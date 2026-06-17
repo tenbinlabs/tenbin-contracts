@@ -8,32 +8,43 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 
 | Contract | Address |
 | --- | --- |
-| Adapter | [0x932E0ba317897D4a3142929B95CaaDA33df5fC35](https://etherscan.io/address/0x932E0ba317897D4a3142929B95CaaDA33df5fC35) |
-| AssetSilo | [0x572cE2dfdDF795b1332d592b585Ae17E492E4b41](https://etherscan.io/address/0x572cE2dfdDF795b1332d592b585Ae17E492E4b41) |
-| AssetToken | [0x6a547b25534234bb79CE6961a23Db13DE154b6F4](https://etherscan.io/address/0x6a547b25534234bb79CE6961a23Db13DE154b6F4) |
-| CollateralManager | [0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa](https://etherscan.io/address/0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa) |
-| Controller | [0x5e631388b24ec493619DAEEAef6fc34B33d97Dcd](https://etherscan.io/address/0x5e631388b24ec493619DAEEAef6fc34B33d97Dcd) |
-| CustodianModule | [0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89](https://etherscan.io/address/0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89) |
-| Gate | [0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1](https://etherscan.io/address/0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1) |
-| GoldOracleAdapter | [0x0977592F86616788Fd809446E094F9Bb91E97A44](https://etherscan.io/address/0x0977592F86616788Fd809446E094F9Bb91E97A44) |
-| MultiCall | [0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8](https://etherscan.io/address/0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8) |
-| StakedAsset | [0x8d301801d899dC81fEabBDE69407A53b82bdBF19](https://etherscan.io/address/0x8d301801d899dC81fEabBDE69407A53b82bdBF19) |
-| Vault | [0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75](https://etherscan.io/address/0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75) |
-| RevenueModule | [0x933745Dc6fcBcCDc491d9A8322672d731C8a262e](https://etherscan.io/address/0x933745Dc6fcBcCDc491d9A8322672d731C8a262e) |
-| SwapModule | [0xB426bcB6028Ba1fBB746a8af11859D97007BE594](https://etherscan.io/address/0xB426bcB6028Ba1fBB746a8af11859D97007BE594) |
+| tGLD | [0x6a547b25534234bb79CE6961a23Db13DE154b6F4](https://etherscan.io/address/0x6a547b25534234bb79CE6961a23Db13DE154b6F4) |
+| stGLD | [0x8d301801d899dC81fEabBDE69407A53b82bdBF19](https://etherscan.io/address/0x8d301801d899dC81fEabBDE69407A53b82bdBF19) |
+| tBRL | [0xfF0D6F193E152830b38eF45eB75538636C9F7063](https://etherscan.io/address/0xfF0D6F193E152830b38eF45eB75538636C9F7063) |
+| stBRL | [0x2a319825974f006e2115B08847fC267Ce912FF66](https://etherscan.io/address/0x2a319825974f006e2115B08847fC267Ce912FF66) |
+| tMXN | [0x067f03Be93c7Dcd21C3eB700f58203F514c2Be1A](https://etherscan.io/address/0x067f03Be93c7Dcd21C3eB700f58203F514c2Be1A) |
+| stMXN | [0xc91b03369F7C60C2d341527cFc6E6efD77D6E1b1](https://etherscan.io/address/0xc91b03369F7C60C2d341527cFc6E6efD77D6E1b1) |
 
 # Audit
-Four smart contract audits were performed on the solidity codebase. An initial independent audit was conducted, followed by major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
 
-[scope](audit/scope_1_22_26.pdf)
+Tenbin uses a continuous auditing policy with a target of one audit cycle per quarter. Two rounds of audits have been conducted on the tenbin contracts codebase. The first on 1/22/26 and the second on 4/12/26. Notable full protocol auditors include spearbit, zellic, and fuzzland.
+
+## 4/12/26 Audit
+
+The auditing firms zellic and fuzzland performed a full protocol audit. Additionally, AI audits were run using claude code and cantina's AI auditor tool.
+
+[scope](audit/4_12_26_scope.pdf)
  
-[0xleastwood](audit/0xleastwood_1_22_26.pdf)
+[zellic](audit/4_22_26_zellic.pdf)
+
+[fuzzland](audit/5_4_26_fuzzland.pdf)
+
+[claude AI](audit/4_29_26_claude_AI.pdf)
+
+[cantina AI](audit/5_1_26_cantina_AI.pdf)
+
+## 1/22/26 Audit
+Four smart contract audits were performed on the solidity codebase. An initial independent audit was conducted, followed by three major audits by Spearbit, Fuzzland, and Verilog. The scope was initially created based on a monorepo, then moved to a public repository at https://github.com/tenbinlabs/contracts.
+
+[scope](audit/1_22_26_scope.pdf)
  
-[fuzzland](audit/fuzzland_1_22_26.pdf)
+[0xleastwood](audit/1_22_26_0xleastwood.pdf)
  
-[spearbit](audit/spearbit_1_22_26.pdf)
+[fuzzland](audit/1_22_26_fuzzland.pdf)
  
-[verilog](audit/verilog_1_22_26.pdf)
+[spearbit](audit/1_22_26_spearbit.pdf)
+ 
+[verilog](audit/1_22_26_verilog.pdf)
 
 # Setup
 
