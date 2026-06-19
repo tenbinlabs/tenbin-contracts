@@ -23,11 +23,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          persist-credentials: false
-          submodules: recursive
+          submodules: false
+          fetch-depth: 1
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          cache: true
 
       - name: Run Forge build
         run: forge build
