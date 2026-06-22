@@ -28,7 +28,7 @@ contract DeployController is DeployBase {
     string constant DEFAULT_DIR = "./config/mainnet/tgld/tgld.toml";
 
     // configuration for tGLD controller
-    string constant TARGET_VERSION = "1.4.2";
+    string constant TARGET_VERSION = "1.4.3";
     address constant ASSET_TOKEN_ADDRESS = 0x6a547b25534234bb79CE6961a23Db13DE154b6F4;
     address constant COLLATERAL_MANAGER_ADDRESS = 0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa;
     address constant CUSTODIAN_MODULE_ADDRESS = 0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89;
