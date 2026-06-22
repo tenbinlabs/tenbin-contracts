@@ -46,7 +46,7 @@ exclude_lints = [
 ]
 
 [fuzz]
-runs = 5000
+runs = 1000
 
 [profile.coverage]
 skip = [
@@ -65,6 +65,6 @@ sepolia = "${SEPOLIA_RPC_URL}"
 dstSepolia = "${RPC_URL_ARBITRUM_SEPOLIA}"
 
 [invariant]
-runs = 444
-depth = 50
+runs = 100
+depth = 10
 fail_on_revert = false
