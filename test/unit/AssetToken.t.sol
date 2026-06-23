@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
 import {AssetToken} from "../../src/AssetToken.sol";
+import {IERC20Errors} from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
 import {Test} from "forge-std/Test.sol";
+import {MockTokenNotice} from "../mocks/MockTokenNotice.sol";
 
 contract AssetTokenTest is Test {
     AssetToken internal token;
@@ -19,6 +20,8 @@ contract AssetTokenTest is Test {
         minter = vm.addr(0xA002);
         owner = vm.addr(0xA003);
         token = new AssetToken("Asset Token", "AST", owner);
+        vm.prank(owner);
+        token.setNotice(MockTokenNotice.GLD_TOKEN_NOTICE);
     }
 
     function test_Revert_Mint_AssetToken(uint256 amount) public {
@@ -111,5 +114,21 @@ contract AssetTokenTest is Test {
         vm.prank(owner);
         token.setMinter(account);
         assertEq(token.minter(), account);
+    }
+
+    function test_Notice() public view {
+        assertEq(keccak256(abi.encode(token.notice())), keccak256(abi.encode(MockTokenNotice.GLD_TOKEN_NOTICE)));
+    }
+
+    function test_SetNotice() public {
+        vm.prank(owner);
+        token.setNotice(MockTokenNotice.BRL_TOKEN_NOTICE);
+        assertEq(keccak256(abi.encode(token.notice())), keccak256(abi.encode(MockTokenNotice.BRL_TOKEN_NOTICE)));
+    }
+
+    function test_Revert_SetNotice() public {
+        vm.expectRevert();
+        vm.prank(account0);
+        token.setNotice(MockTokenNotice.BRL_TOKEN_NOTICE);
     }
 }

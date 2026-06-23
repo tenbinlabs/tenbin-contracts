@@ -109,7 +109,7 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
     bytes4 public constant MAGICVALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     /// @notice Semantic version
-    string public constant VERSION = "1.4.2";
+    string public constant VERSION = "1.4.3";
 
     /// @notice Asset token used for this controller
     address public immutable asset;

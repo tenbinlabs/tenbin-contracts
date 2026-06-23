@@ -42,7 +42,7 @@ contract DeployDevelopmentMock is DeployBase {
 
     /// @dev The version for this deployment
     function getVersion() internal pure override returns (string memory) {
-        return "1.4.2";
+        return "1.4.3";
     }
 
     // run and load config dir from CI
