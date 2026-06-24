@@ -10,14 +10,14 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 | --- | --- |
 | tGLD | [0x6a547b25534234bb79CE6961a23Db13DE154b6F4](https://etherscan.io/address/0x6a547b25534234bb79CE6961a23Db13DE154b6F4) |
 | stGLD | [0x8d301801d899dC81fEabBDE69407A53b82bdBF19](https://etherscan.io/address/0x8d301801d899dC81fEabBDE69407A53b82bdBF19) |
-| tBRL | [0xfF0D6F193E152830b38eF45eB75538636C9F7063](https://etherscan.io/address/0xfF0D6F193E152830b38eF45eB75538636C9F7063) |
-| stBRL | [0x2a319825974f006e2115B08847fC267Ce912FF66](https://etherscan.io/address/0x2a319825974f006e2115B08847fC267Ce912FF66) |
-| tMXN | [0x067f03Be93c7Dcd21C3eB700f58203F514c2Be1A](https://etherscan.io/address/0x067f03Be93c7Dcd21C3eB700f58203F514c2Be1A) |
-| stMXN | [0xc91b03369F7C60C2d341527cFc6E6efD77D6E1b1](https://etherscan.io/address/0xc91b03369F7C60C2d341527cFc6E6efD77D6E1b1) |
+| tBRL | [0x4C1b46adb8877E389171EC6Ef67b385094C0afaD](https://etherscan.io/address/0x4C1b46adb8877E389171EC6Ef67b385094C0afaD) |
+| stBRL | [0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f](https://etherscan.io/address/0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f) |
+| tMXN | [0x8d015aFcb6F437010653352EB1E58152c4e23734](https://etherscan.io/address/0x8d015aFcb6F437010653352EB1E58152c4e23734) |
+| stMXN | [0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba](https://etherscan.io/address/0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba) |
 
 # Audit
 
-Tenbin uses a continuous auditing policy with a target of one audit cycle per quarter. Two rounds of audits have been conducted on the tenbin contracts codebase. The first on 1/22/26 and the second on 4/12/26. Notable full protocol auditors include spearbit, zellic, and fuzzland.
+Tenbin uses a continuous auditing policy with a target of one audit cycle per quarter. Two rounds of audits have been conducted on the tenbin contracts codebase. The first on 1/22/26 and the second on 4/12/26. Notable auditors include Spearbit, Zellic, and Fuzzland.
 
 ## 4/12/26 Audit
 

@@ -1,5 +1,5 @@
 # GoldOracleAdapter
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/eb2d102704c08124f1036e9b92cd46f9cf41203f/src/oracle/GoldOracleAdapter.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/3b9a2e72170c3c18199904176b97ca07122173ad/src/oracle/GoldOracleAdapter.sol)
 
 **Inherits:**
 [IOracleAdapter](/src/interface/IOracleAdapter.sol/interface.IOracleAdapter.md)

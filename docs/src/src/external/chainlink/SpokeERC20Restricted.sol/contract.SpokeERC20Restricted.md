@@ -1,5 +1,5 @@
 # SpokeERC20Restricted
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/eb2d102704c08124f1036e9b92cd46f9cf41203f/src/external/chainlink/SpokeERC20Restricted.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/3b9a2e72170c3c18199904176b97ca07122173ad/src/external/chainlink/SpokeERC20Restricted.sol)
 
 **Inherits:**
 [IBurnMintERC20](/src/interface/IBurnMintERC20.sol/interface.IBurnMintERC20.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), ERC20Permit, AccessControl
