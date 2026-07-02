@@ -9,7 +9,7 @@ isolate = true
 gas_reports = [
   "AssetSilo",
   "AssetToken",
-  "ChainlinkOracleAdatper",
+  "ChainlinkOracleAdapter",
   "CollateralManager",
   "CollateralManagerHarness",
   "Controller",
