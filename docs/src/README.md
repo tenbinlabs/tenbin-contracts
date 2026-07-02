@@ -166,7 +166,7 @@ Use `config/` to configure roles and parameters when running deploy scripts. Rol
 
 2) Run anvil: `anvil --mnemonic $TEST_MNEMONIC`
 
-3) Run `FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol --rpc-url ws:/localhost:8545 --broadcast`
+3) Run `FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol --rpc-url ws://localhost:8545 --broadcast`
 
 ### Deploy morpho v2 vault onto sepolia testnet
 1) Ensure BROADCASTER_KEY and BROADCASTER_ADDRESS is set in .env
