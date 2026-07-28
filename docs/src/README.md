@@ -80,6 +80,10 @@ Build production contracts:
  
 `forge test`
 
+Note: `test/echidna/**` holds Echidna fork-mode harnesses that bind to live mainnet addresses
+and rely on hevm cheatcodes. `[profile.default] skip` in `foundry.toml` excludes them, so they
+are compiled and fuzzed only under `FOUNDRY_PROFILE=echidna`.
+
 #### Run tests and skip fork tests:
  
 `forge test --skip test/fork/*`
@@ -158,41 +162,40 @@ Configuration: https://getfoundry.sh/config/static-analyzers/#mythril
 
 # Deploy
 
-Use `config/` to configure roles and parameters when running deploy scripts. Roles and existing deployments are tracked in deployments.json. When running the deployment script, a file is created in `broadcast/{chainid}/{script_name}/contracts.json` containing the recently deployed contracts and roles.
+Use `config/` to configure roles and parameters. `Deploy.s.sol` is the single protocol deployment entrypoint. `FOUNDRY_PROFILE=production` deploys contracts from `lib/tenbin-contracts`; `FOUNDRY_PROFILE=development` deploys contracts from `src`. Output is written under `broadcast/Deploy.s.sol/{chainid}/`.
 
-### Deploy locally
+## Deploy locally
 
 1) Ensure BROADCASTER_KEY and BROADCASTER_ADDRESS is NOT set in .env
 
 2) Run anvil: `anvil --mnemonic $TEST_MNEMONIC`
 
-3) Run `FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol --rpc-url ws://localhost:8545 --broadcast`
+3) Run `FOUNDRY_PROFILE=development forge script script/Deploy.s.sol --sig "run(string,string,bool)" "" "" true --rpc-url ws://localhost:8545 --broadcast`
+
+## Deploy to sepolia testnet:
+
+1) Ensure `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and `ETHERSCAN_API_KEY` are correctly set up.
+
+Run `FOUNDRY_PROFILE=development forge script script/Deploy.s.sol --sig "run(string,string,bool)" $ASSET_CONFIG $VAULT_CONFIG true --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+
+Use `--broadcast` to broadcast
 
 ### Deploy morpho v2 vault onto sepolia testnet
 1) Ensure BROADCASTER_KEY and BROADCASTER_ADDRESS is set in .env
 
-2) `Run FOUNDRY_PROFILE=production forge script script/DeployVault.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast`
+2) Run `FOUNDRY_PROFILE=development forge script script/Deploy.s.sol --sig "runVaultOnly(string)" $VAULT_CONFIG --rpc-url $SEPOLIA_RPC_URL --broadcast`
 
-### Deploy to sepolia testnet:
-
-1) Ensure `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and `ETHERSCAN_API_KEY` are correctly set up.
-
-Run `FOUNDRY_PROFILE=production forge script script/DeployDevelopmentMock.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
-
-Use `--broadcast` to broadcast
-
-### Deploy production contracts
+## Deploy production contracts
 
 1) Ensure `CONFIG_DIR`, `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and `ETHERSCAN_API_KEY` are correctly set up.
 
-2) Run `FOUNDRY_PROFILE=production forge script script/DeployProduction.s.sol $CONFIG_DIR --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+2) Run `FOUNDRY_PROFILE=production forge script script/Deploy.s.sol --sig "runCoreOnly(string,bool)" $CONFIG_DIR false --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
 
 Use `--broadcast` to broadcast.
 
-Note: To create a mock version, i.e. use the current development on mainnet, use the following command instead:
+Note: To create a mock version use the following command instead:
 
-`FOUNDRY_PROFILE=production forge script script/DeployDevelopment.s.sol --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
-
+`FOUNDRY_PROFILE=development forge script script/Deploy.s.sol --sig "runCoreOnly(string,bool)" $CONFIG_DIR true --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
 
 #### Minting tokens on testnet
 
@@ -209,11 +212,15 @@ THIS SCRIPT IS NOT SAFE TO RUN ON MAINNET!!
 
 Certain contracts support a restricted addresses registry to prevent sanctioned accounts from interacting with them. Only an account with the `RESTRICTER_ROLE` can call their respective `setIsRestricted` method to restrict a specific account, but for cases when we need to create a batch of addresses to restrict, or remove restricted accounts, in a single transaction we can use the `BuildSafeBatch` script as follows:
 
-1) Ensure `CSV_ADDRESSES` is set in .env, or the execution environment, with the addresses to update.
+1) Ensure `CSV_ADDRESSES` is set in .env, or the execution environment, with the addresses to update in a comma separated strings format.
 
 2) Run the following command:
 
-```forge script script/BuildSafeBatch.s.sol:BuildSafeBatch --sig "run(address,bool,string)" <target_contract_address> <bool_status> $CSV_ADDRESSES ```
+```forge script script/BuildSafeBatch.s.sol:BuildSafeBatch --sig "run(address,bool,string,string)" <target_contract_address> <bool_status> $CSV_ADDRESSES <context_string>```
+
+3) Execute the resulting script using Safe UI Transaction Builder by copying the printed json into a file and uploading to Safe Transaction Builder.
+
+Note: If needed due to Safe UI changes, must sign the proposal and send via API call to `https://safe-transaction-mainnet.safe.global/api/v1/safes/${SAFE_RESTRICTER_ROLE_ADDRESS}/multisig-transactions/` sending the data as payload.
 
 # Architecture
 

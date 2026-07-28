@@ -1,5 +1,5 @@
 # IController
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/3b9a2e72170c3c18199904176b97ca07122173ad/src/interface/IController.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/64004be494549e5de52bb55a6490bd85d73a4f57/src/interface/IController.sol)
 
 **Title:**
 IController
@@ -197,6 +197,41 @@ function redeem(
 |`signature`|`Signature`|ECDSA signature of hashed order|
 |`context`|`Context`|Context used to determine order execution options|
 |`approval`|`Signature`|ECDSA signature of context data|
+
+
+### setDelegateStatus
+
+Allow an account to delegate a signer to sign orders on their behalf
+
+New delegations require signer to be active
+
+
+```solidity
+function setDelegateStatus(address signer, bool status) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`signer`|`address`|Signer account to delegate to|
+|`status`|`bool`|Status for delegate signer|
+
+
+### setRecipientStatus
+
+Set whether or not an account is a recipient for a given signer
+Recipients for a signer can receive tokens when an order is executed
+
+
+```solidity
+function setRecipientStatus(address recipient, bool status) external;
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`recipient`|`address`|Account to change recipient status for|
+|`status`|`bool`|True if an account is a valid recipient address for a signer|
 
 
 ## Events

@@ -1,5 +1,5 @@
 # IOracleAdapter
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/3b9a2e72170c3c18199904176b97ca07122173ad/src/interface/IOracleAdapter.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/64004be494549e5de52bb55a6490bd85d73a4f57/src/interface/IOracleAdapter.sol)
 
 **Title:**
 OracleAdapter
