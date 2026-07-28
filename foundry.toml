@@ -32,7 +32,7 @@ fs_permissions = [{ access = "read-write", path = "./" }]
 [profile.production]
 src = "src"
 skip = ["test/**/*"]
-remappings = ["deploy-target/=lib/tenbin-contracts/"]
+remappings = ["deploy-target/=./"]
 via_ir = true
 ffi = true
 optimizer = true
@@ -41,14 +41,14 @@ optimizer_runs = 18888
 [profile.development]
 src = "src"
 skip = ["test/**/*"]
-remappings = ["deploy-target/=."]
+remappings = ["deploy-target/=./"]
 via_ir = true
 ffi = true
 optimizer = true
 optimizer_runs = 18888
 
 [profile.production-test]
-remappings = ["deploy-target/=lib/tenbin-contracts/"]
+remappings = ["deploy-target/=./"]
 via_ir = true
 ffi = true
 optimizer = true
