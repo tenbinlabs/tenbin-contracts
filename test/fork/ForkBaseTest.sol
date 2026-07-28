@@ -29,7 +29,7 @@ contract ForkBaseTest is BaseTest {
     address dealer;
 
     // default fork block
-    uint256 forkBlock = 25151648;
+    uint256 forkBlock = 25383000;
 
     function setUp() public virtual override {
         setUpFork();
@@ -40,6 +40,11 @@ contract ForkBaseTest is BaseTest {
         // fork mainnet
         string memory rpc = vm.rpcUrl("mainnet");
         vm.createSelectFork(rpc, forkBlock);
+
+        // deploy scripts under test must broadcast as the funded test account,
+        // regardless of any BROADCASTER_ADDRESS/MNEMONIC in the local .env
+        // forge-lint: disable-next-line(unsafe-cheatcode)
+        vm.setEnv("BROADCASTER_ADDRESS", vm.toString(getTestBroadcaster()));
 
         // accounts
         dealer = vm.addr(0xE000);

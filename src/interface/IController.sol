@@ -309,4 +309,16 @@ interface IController {
         Context calldata context,
         Signature calldata approval
     ) external;
+
+    /// @notice Allow an account to delegate a signer to sign orders on their behalf
+    /// @param signer Signer account to delegate to
+    /// @param status Status for delegate signer
+    /// @dev New delegations require signer to be active
+    function setDelegateStatus(address signer, bool status) external;
+
+    /// @notice Set whether or not an account is a recipient for a given signer
+    /// Recipients for a signer can receive tokens when an order is executed
+    /// @param recipient Account to change recipient status for
+    /// @param status True if an account is a valid recipient address for a signer
+    function setRecipientStatus(address recipient, bool status) external;
 }

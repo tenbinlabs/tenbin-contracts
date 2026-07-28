@@ -3,7 +3,6 @@ pragma solidity 0.8.30;
 
 import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {CollateralManagerHarness} from "../harness/CollateralManagerHarness.sol";
-import {ICollateralManager} from "../../src/interface/ICollateralManager.sol";
 import {IDistributor} from "../../src/external/merkl/IDistributor.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
@@ -21,7 +20,7 @@ contract MerklForkTest is ForkBaseTest {
         super.setUp();
         manager = CollateralManagerHarness(0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa);
         // Must upgrade existing contract to new version
-        // TODO once new version is deployed we can avoid the next step
+        // TODO once new asset is deployed and earn rewards, use that new asset instead, and remove the upgrade setup
         address newImplementation = address(new CollateralManagerHarness());
         vm.prank(OWNER);
         manager.upgradeToAndCall(newImplementation, new bytes(0));

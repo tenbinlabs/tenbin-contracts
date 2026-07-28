@@ -2,7 +2,8 @@
 pragma solidity 0.8.30;
 
 import {Config} from "forge-std/Config.sol";
-import {DeployDevelopment} from "../../script/DeployDevelopment.s.sol";
+import {Deploy} from "../../script/Deploy.s.sol";
+import {DeployDevelopmentHarness} from "../harness/DeployDevelopmentHarness.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -13,22 +14,22 @@ contract DeployDevelopmentForkTest is ForkBaseTest, Config {
     using SafeERC20 for IERC20;
 
     // variables
-    DeployDevelopment.DeploymentResult deployment;
-    DeployDevelopment devDeployer;
+    Deploy.CoreDeploymentResult deployment;
+    Deploy devDeployer;
 
     function setUp() public override {
         // set a fork block where collateral vault exists
         forkBlock = 24425410;
         super.setUp();
-        devDeployer = new DeployDevelopment();
-        deployment = devDeployer.run("");
+        devDeployer = new Deploy();
+        deployment = devDeployer.runCoreOnly("", true);
     }
 
-    function test_Revert_DeployDevelopment() public {
+    function test_Revert_Chain_DeployDevelopment() public {
         vm.chainId(2);
 
         vm.expectRevert();
-        devDeployer.run("");
+        devDeployer.runCoreOnly("", true);
     }
 
     function test_DeployDevelopmentFork() public {
@@ -139,5 +140,12 @@ contract DeployDevelopmentForkTest is ForkBaseTest, Config {
         assertEq(deployment.revenue_module.staking(), address(deployment.staked_asset));
         assertEq(deployment.revenue_module.asset(), address(deployment.asset));
         assertEq(deployment.revenue_module.controller(), address(deployment.controller));
+    }
+
+    function test_fork_Revert_Version_DeployDevelopment() public {
+        DeployDevelopmentHarness deployer = new DeployDevelopmentHarness();
+
+        vm.expectRevert(bytes("controller version mismatch"));
+        deployer.runCoreOnly("", true);
     }
 }

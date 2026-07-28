@@ -5,6 +5,7 @@ endpoint_url = "${MAINNET_RPC_URL}"
 [mainnet.string]
 asset_name = "Tenbin Mexican Peso"
 asset_symbol = "tMXN"
+custodian_name = "custodian1"
 staked_asset_name = "Staked Tenbin Mexican Peso"
 staked_asset_symbol = "stMXN"
 mint_limit = "300000000000000000000000000"           # 300 million asset tokens
@@ -13,11 +14,9 @@ instant_unstake_cap = "300000000000000000000000000"  # 300 million asset tokens
 
 [mainnet.uint]
 cooldown_period = 604_800                   # 7 days
-min_swap_price = 0                          # 0
 oracle_tolerance = 80_000000000000000       # 8%
-ratio = 170_000000000000000                 # 17%
+ratio = 135_000000000000000                 # 13.5%
 rebalance_cap = 100_000_000_000000          # 100m
-swap_cap = 0                                # 0
 vesting_period = 259_200                    # 3 days
 
 [mainnet.address]
@@ -33,10 +32,10 @@ minter_role = "0x1b24074ceb5d4a911e9eff77c90601c12b98a8be"              # minter
 multicaller_role = "0x1b24074ceb5d4a911e9eff77c90601c12b98a8be"         # minter key
 multisig = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"                 # tenbin multisig
 one_inch_router = "0x111111125421cA6dc452d289314280a0f8842A65"          # 1inch router v6
-oracle = "0x0000000000000000000000000000000000000000"                   # oracle not set
+oracle = "0xdb4881Ab0ad6b8423f76dd8C9d65542749a1dB77"                   # chainlink mxn/usd oracle
 rebalancer_role = "0xb6ba562ef547c94c2a863d5e4e0395695cfcf714"          # keeper key
 restricter_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"          # admin multisig
 revenue_keeper_role = "0xb6ba562ef547c94c2a863d5e4e0395695cfcf714"      # keeper key
 rewarder_role = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"            # tenbin multisig
 signer_manager_role = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"      # dev multisig
-vault = "0x0000000000000000000000000000000000000000"                    # TODO ENG-XXX: Deploy tMXN Morpho Vault
+vault = "0x43E3f5e27422C3a938269368eb7c3A3B545Bb6ca"                    # tmxn morpho vault

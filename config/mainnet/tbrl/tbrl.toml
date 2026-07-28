@@ -5,6 +5,7 @@ endpoint_url = "${MAINNET_RPC_URL}"
 [mainnet.string]
 asset_name = "Tenbin Brazilian Real"
 asset_symbol = "tBRL"
+custodian_name = "custodian1"
 staked_asset_name = "Staked Tenbin Brazilian Real"
 staked_asset_symbol = "stBRL"
 mint_limit = "50000000000000000000000000"           # 50 million asset tokens
@@ -13,11 +14,9 @@ instant_unstake_cap = "50000000000000000000000000"  # 50 million asset tokens
 
 [mainnet.uint]
 cooldown_period = 604_800                   # 7 days
-min_swap_price = 0                          # 0
 oracle_tolerance = 80_000000000000000       # 8%
-ratio = 170_000000000000000                 # 17%
+ratio = 150_000000000000000                 # 15%
 rebalance_cap = 100_000_000_000000          # 100m
-swap_cap = 0                                # 0
 vesting_period = 259_200                    # 3 days
 
 [mainnet.address]
@@ -39,4 +38,4 @@ restricter_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"          # admin 
 revenue_keeper_role = "0xdaa880d1bdf3fb04b760235d0a4b384f2c403a43"      # keeper key
 rewarder_role = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"            # tenbin multisig
 signer_manager_role = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"      # dev multisig
-vault = "0x0000000000000000000000000000000000000000"                    # TODO ENG-1609: deploy tbrl morpho vault
+vault = "0xE275a69B93A5745e1560ee82D033205D323BfAd9"                    # tbrl morpho vault

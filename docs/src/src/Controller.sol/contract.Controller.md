@@ -1,5 +1,5 @@
 # Controller
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/3b9a2e72170c3c18199904176b97ca07122173ad/src/Controller.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/64004be494549e5de52bb55a6490bd85d73a4f57/src/Controller.sol)
 
 **Inherits:**
 [IController](/src/interface/IController.sol/interface.IController.md), [IRestrictedRegistry](/src/interface/IRestrictedRegistry.sol/interface.IRestrictedRegistry.md), AccessControl, EIP712
@@ -372,7 +372,7 @@ Recipients for a signer can receive tokens when an order is executed
 
 
 ```solidity
-function setRecipientStatus(address recipient, bool status) external;
+function setRecipientStatus(address recipient, bool status) external override;
 ```
 **Parameters**
 
@@ -390,7 +390,7 @@ New delegations require signer to be active
 
 
 ```solidity
-function setDelegateStatus(address signer, bool status) external;
+function setDelegateStatus(address signer, bool status) external override;
 ```
 **Parameters**
 

@@ -3,4 +3,5 @@ chainlink-local/=lib/chainlink-local
 forge-std/=lib/forge-std/src
 openzeppelin-contracts/=lib/openzeppelin-contracts
 openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable
+tenbin-contracts/=./
 vault-v2/=lib/vault-v2

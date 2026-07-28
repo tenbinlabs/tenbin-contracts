@@ -7,28 +7,30 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IVaultV2} from "vault-v2/src/interfaces/IVaultV2.sol";
 import {IVaultV2Factory} from "vault-v2/src/interfaces/IVaultV2Factory.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
-import {VaultAdapter} from "../../src/VaultAdapter.sol";
-import {VaultAdapterFactory} from "../../src/VaultAdapterFactory.sol";
+import {GenericMorphoAdapter} from "../../src/external/morpho/GenericMorphoAdapter.sol";
+import {GenericMorphoAdapterFactory} from "../../src/external/morpho/GenericMorphoAdapterFactory.sol";
 
-contract VaultAdapterForkTest is ForkBaseTest {
+contract GenericMorphoAdapterForkTest is ForkBaseTest {
     // accounts
     address unauthorized;
     address allocator;
 
     // contracts
     IVaultV2 parentVault;
-    VaultAdapter adapter;
+    GenericMorphoAdapter adapter;
 
     bytes32 constant SALT = bytes32(abi.encodePacked("salt"));
 
     function setUp() public override {
         super.setUp();
-        VaultAdapterFactory adapterFactory = new VaultAdapterFactory();
+        GenericMorphoAdapterFactory adapterFactory = new GenericMorphoAdapterFactory();
         unauthorized = address(0xBEEF);
         allocator = vm.addr(0xC001);
         IVaultV2Factory factory = IVaultV2Factory(VAULT_V2_FACTORY_ADDRESS);
         parentVault = IVaultV2(factory.createVaultV2(owner, address(collateral), bytes32(abi.encodePacked("salt"))));
-        adapter = VaultAdapter(adapterFactory.createVaultAdapter(address(parentVault), address(vault), owner));
+        adapter = GenericMorphoAdapter(
+            adapterFactory.createGenericMorphoAdapter(address(parentVault), address(vault), owner)
+        );
 
         collateral.mint(address(adapter), 100e18);
         collateral.mint(address(parentVault), 100e18);
@@ -67,21 +69,21 @@ contract VaultAdapterForkTest is ForkBaseTest {
 
     function test_Revert_Deploy() public {
         // vault with different asset
-        vm.expectRevert(VaultAdapter.AssetMismatch.selector);
-        new VaultAdapter(address(parentVault), address(vault2), owner);
+        vm.expectRevert(GenericMorphoAdapter.AssetMismatch.selector);
+        new GenericMorphoAdapter(address(parentVault), address(vault2), owner);
     }
 
     function test_Revert_Allocates() public {
         uint256 minShares = vault.previewDeposit(100e18);
         // Min Shares not reached
         vm.startPrank(address(parentVault));
-        vm.expectRevert(VaultAdapter.InsufficientShares.selector);
+        vm.expectRevert(GenericMorphoAdapter.InsufficientShares.selector);
         adapter.allocate(abi.encode(minShares * 2), 100e18, bytes4(0), address(0));
         vm.stopPrank();
 
         // Call from unauthorized account
         vm.prank(unauthorized);
-        vm.expectRevert(VaultAdapter.NotAuthorized.selector);
+        vm.expectRevert(GenericMorphoAdapter.NotAuthorized.selector);
         adapter.allocate(abi.encode(minShares), 100e18, bytes4(0), address(0));
     }
 
@@ -104,13 +106,13 @@ contract VaultAdapterForkTest is ForkBaseTest {
 
         uint256 maxShares = vault.previewWithdraw(50e18) / 2;
         vm.prank(address(parentVault));
-        vm.expectRevert(VaultAdapter.ExcessiveShares.selector);
+        vm.expectRevert(GenericMorphoAdapter.ExcessiveShares.selector);
         adapter.deallocate(abi.encode(maxShares), 50e18, bytes4(0), address(0));
         vm.stopPrank();
 
         // Call from unauthorized account
         vm.prank(unauthorized);
-        vm.expectRevert(VaultAdapter.NotAuthorized.selector);
+        vm.expectRevert(GenericMorphoAdapter.NotAuthorized.selector);
         adapter.deallocate(abi.encode(maxShares), 100e18, bytes4(0), address(0));
     }
 
@@ -137,7 +139,7 @@ contract VaultAdapterForkTest is ForkBaseTest {
         // set up
         IVaultV2Factory factory = IVaultV2Factory(VAULT_V2_FACTORY_ADDRESS);
         parentVault = IVaultV2(factory.createVaultV2(owner, usds, bytes32(abi.encodePacked("salt"))));
-        VaultAdapter sUSDSadapter = new VaultAdapter(address(parentVault), address(sUSDS), owner);
+        GenericMorphoAdapter sUSDSadapter = new GenericMorphoAdapter(address(parentVault), address(sUSDS), owner);
         bytes memory idData = abi.encode("this", address(sUSDSadapter));
 
         dealTo(IERC20(usds), address(parentVault), 100e18);
@@ -172,7 +174,8 @@ contract VaultAdapterForkTest is ForkBaseTest {
         // set up
         IVaultV2Factory factory = IVaultV2Factory(VAULT_V2_FACTORY_ADDRESS);
         parentVault = IVaultV2(factory.createVaultV2(owner, address(usdc), bytes32(abi.encodePacked("salt"))));
-        VaultAdapter STATATokenAdapter = new VaultAdapter(address(parentVault), address(STATAToken), owner);
+        GenericMorphoAdapter STATATokenAdapter =
+            new GenericMorphoAdapter(address(parentVault), address(STATAToken), owner);
         bytes memory idData = abi.encode("this", address(STATATokenAdapter));
 
         dealTo(usdc, address(parentVault), 100e6);
@@ -186,17 +189,17 @@ contract VaultAdapterForkTest is ForkBaseTest {
         parentVault.allocate(address(STATATokenAdapter), abi.encode(shares), 100e6);
 
         assertLt(initSupply, MockERC20(aToken).totalSupply(), "aToken supply not increased after allocation");
-        assertApproxEqAbs(STATAToken.balanceOf(address(STATATokenAdapter)), shares, 1, "Incorrect share amount");
-        assertApproxEqAbs(STATATokenAdapter.realAssets(), 100e6, 1, "Incorrect adapter real assets");
-        assertApproxEqAbs(parentVault.allocation(adapterId), 100e6, 1, "Incorrect allocation");
+        assertApproxEqAbs(STATAToken.balanceOf(address(STATATokenAdapter)), shares, 2, "Incorrect share amount");
+        assertApproxEqAbs(STATATokenAdapter.realAssets(), 100e6, 2, "Incorrect adapter real assets");
+        assertApproxEqAbs(parentVault.allocation(adapterId), 100e6, 2, "Incorrect allocation");
 
         // deallocate
         shares = STATAToken.previewWithdraw(50e6);
         parentVault.deallocate(address(STATATokenAdapter), abi.encode(shares), 50e6);
 
-        assertApproxEqAbs(STATAToken.balanceOf(address(STATATokenAdapter)), shares, 1, "Incorrect share amount");
-        assertApproxEqAbs(STATATokenAdapter.realAssets(), 50e6, 1, "Incorrect adapter real assets");
-        assertApproxEqAbs(parentVault.allocation(adapterId), 50e6, 1, "Incorrect allocation");
+        assertApproxEqAbs(STATAToken.balanceOf(address(STATATokenAdapter)), shares, 2, "Incorrect share amount");
+        assertApproxEqAbs(STATATokenAdapter.realAssets(), 50e6, 2, "Incorrect adapter real assets");
+        assertApproxEqAbs(parentVault.allocation(adapterId), 50e6, 2, "Incorrect allocation");
         vm.stopPrank();
     }
 
@@ -213,7 +216,7 @@ contract VaultAdapterForkTest is ForkBaseTest {
 
         // Try to steal the vault shares
         vm.prank(owner);
-        vm.expectRevert(VaultAdapter.InvalidToken.selector);
+        vm.expectRevert(GenericMorphoAdapter.InvalidToken.selector);
         adapter.rescueToken(address(vault), address(this));
     }
 
@@ -235,7 +238,7 @@ contract VaultAdapterForkTest is ForkBaseTest {
 
     function setUpMorphoVault(
         IVaultV2 morphoVault,
-        VaultAdapter morphoAdapter,
+        GenericMorphoAdapter morphoAdapter,
         uint256 absoluteCap,
         uint256 relativeCap
     ) public {

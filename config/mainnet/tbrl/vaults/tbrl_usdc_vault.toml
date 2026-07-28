@@ -10,9 +10,10 @@ symbol = "tBRLv-USDC"
 allocator = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"        # dev multisig
 asset = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"            # usdc
 curator = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"          # admin multisig
-initial_vault = "0xbeef088055857739C12CD3765F20b7679Def0f51"    # steakhouse usdc prime (v2)
+initial_vault = "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"    # steakhouse usdc
 owner = "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"            # owner multisig
 sentinel = "0x9A4441238fc27d9f1c5Ae3E05E6517b0389FB513"         # gatekeeper key
+manager = "0xcE60B879261512F649585996F7D3fA7f083d6dDA"          # collateral manager contract
 
 [mainnet.uint]
 dead_deposit = 1_000000                         # 1 usdc
@@ -20,3 +21,6 @@ initial_absolute_cap = 100_000_000_000000       # 100m usdc
 initial_relative_cap = 1_000000000000000000     # 100%
 max_rate = 63419583967                          # 2000% APR
 timelock_duration = 172800                      # 2 days
+
+[mainnet.bool]
+is_new_asset_vault = false                      # Wether this is a new asset vault

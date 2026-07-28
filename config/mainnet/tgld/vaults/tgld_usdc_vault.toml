@@ -13,6 +13,7 @@ curator = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"          # admin multisig
 initial_vault = "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"    # steakhouse usdc
 owner = "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"            # owner multisig
 sentinel = "0x44C24D0937A829B3057be462b0e069516f1D9D45"         # gatekeeper key
+manager = "0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa"          # collateral manager contract
 
 [mainnet.uint]
 dead_deposit = 1_000000                         # 1 usdc
@@ -20,3 +21,6 @@ initial_absolute_cap = 100_000_000_000000       # 100m usdc
 initial_relative_cap = 1_000000000000000000     # 100%
 max_rate = 63419583967                          # 2000% APR
 timelock_duration = 172800                      # 2 days
+
+[mainnet.bool]
+is_new_asset_vault = false                      # Wether this is a new asset vault

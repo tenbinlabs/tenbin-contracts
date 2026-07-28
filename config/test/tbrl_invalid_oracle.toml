@@ -1,0 +1,42 @@
+# CONFIG TO TEST WRONG ORACLE ADDRESS FOR TMXN
+# mainnet
+[mainnet]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[mainnet.string]
+asset_name = "Tenbin Brazilian Real"
+asset_symbol = "tBRL"
+custodian_name = "custodian1"
+staked_asset_name = "Staked Tenbin Brazilian Real"
+staked_asset_symbol = "stBRL"
+mint_limit = "50000000000000000000000000"           # 50 million asset tokens
+redeem_limit = "50000000000000000000000000"         # 50 million asset tokens
+instant_unstake_cap = "50000000000000000000000000"  # 50 million asset tokens
+
+[mainnet.uint]
+cooldown_period = 604_800                   # 7 days
+oracle_tolerance = 80_000000000000000       # 8%
+ratio = 170_000000000000000                 # 17%
+rebalance_cap = 100_000_000_000000          # 100m
+vesting_period = 259_200                    # 3 days
+
+[mainnet.address]
+admin_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"               # admin multisig
+cap_adjuster_role = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"        # dev multisig
+collateral = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"               # usdc
+curator_role = "0xdaa880d1bdf3fb04b760235d0a4b384f2c403a43"             # keeper key
+custodian = "0x1f766513abc0DD46b26590Ea83A6b20377460a18"                # hrp deposit address
+custodian_keeper_role = "0xdaa880d1bdf3fb04b760235d0a4b384f2c403a43"    # keeper key
+default_admin_role = "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"       # owner multisig
+gatekeeper_role = "0x9A4441238fc27d9f1c5Ae3E05E6517b0389FB513"          # gatekeeper key
+minter_role = "0xcc5e557169033933c99a2ade24092f4297797f98"              # minter key
+multicaller_role = "0xcc5e557169033933c99a2ade24092f4297797f98"         # minter key
+multisig = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"                 # tenbin multisig
+one_inch_router = "0x111111125421cA6dc452d289314280a0f8842A65"          # 1inch router v6
+oracle = "0x369C67E8b026CC4Ef98350f332D7Dd52b85b7674"                   # wrong oracle
+rebalancer_role = "0xdaa880d1bdf3fb04b760235d0a4b384f2c403a43"          # keeper key
+restricter_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"          # admin multisig
+revenue_keeper_role = "0xdaa880d1bdf3fb04b760235d0a4b384f2c403a43"      # keeper key
+rewarder_role = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"            # tenbin multisig
+signer_manager_role = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"      # dev multisig
+vault = "0x3C1A2D1C5d7AcfBFb9adcB168694e2fcd6e713C1"                    # tbrl usdc morpho vault

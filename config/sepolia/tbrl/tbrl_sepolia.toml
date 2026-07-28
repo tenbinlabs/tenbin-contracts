@@ -5,6 +5,7 @@ endpoint_url = "${SEPOLIA_RPC_URL}"
 [11155111.string]
 asset_name = "Tenbin Brazilian Real"
 asset_symbol = "tBRL"
+custodian_name = "test"
 staked_asset_name = "Staked Tenbin Brazilian Real"
 staked_asset_symbol = "stBRL"
 mint_limit = "50000000000000000000000000"           # 50 million asset tokens
@@ -13,11 +14,9 @@ instant_unstake_cap = "50000000000000000000000000"  # 50 million asset tokens
 
 [11155111.uint]
 cooldown_period = 600                       # 10 minutes
-min_swap_price = 0                          # 0
 oracle_tolerance = 80_000000000000000       # 8%
 ratio = 170_000000000000000                 # 17%
 rebalance_cap = 100_000_000_000000          # 100m
-swap_cap = 0                                # 0
 vesting_period = 259_200                    # 3 days
 
 [11155111.address]

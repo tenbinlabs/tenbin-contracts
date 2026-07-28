@@ -20,3 +20,6 @@ initial_absolute_cap = 100_000_000_000000       # 100m usdc
 initial_relative_cap = 1_000000000000000000     # 100%
 max_rate = 63419583967                          # 2000% APR
 timelock_duration = 172800                      # 2 days
+
+[sepolia.bool]
+is_new_asset_vault = false                      # Wether this is a new asset vault

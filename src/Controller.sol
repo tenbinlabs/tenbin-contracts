@@ -208,21 +208,15 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
         emit SignerStatusChanged(account, status);
     }
 
-    /// @notice Set whether or not an account is a recipient for a given signer
-    /// Recipients for a signer can receive tokens when an order is executed
-    /// @param recipient Account to change recipient status for
-    /// @param status True if an account is a valid recipient address for a signer
-    function setRecipientStatus(address recipient, bool status) external {
+    /// @inheritdoc IController
+    function setRecipientStatus(address recipient, bool status) external override {
         if (!signers[msg.sender]) revert InvalidSigner();
         recipients[msg.sender][recipient] = status;
         emit RecipientStatusChanged(msg.sender, recipient, status);
     }
 
-    /// @notice Allow an account to delegate a signer to sign orders on their behalf
-    /// @param signer Signer account to delegate to
-    /// @param status Status for delegate signer
-    /// @dev New delegations require signer to be active
-    function setDelegateStatus(address signer, bool status) external {
+    /// @inheritdoc IController
+    function setDelegateStatus(address signer, bool status) external override {
         if (status && !signers[signer]) revert InvalidSigner();
         delegates[msg.sender][signer] = status;
         emit DelegateStatusChanged(msg.sender, signer, status);

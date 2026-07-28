@@ -1,6 +1,8 @@
 [profile.default]
 out = "out"
 libs = ["lib"]
+remappings = ["deploy-target/=./"]
+skip = ["test/echidna/**/*"]
 deny = "warnings"
 optimizer = true
 optimizer_runs = 1000
@@ -30,10 +32,40 @@ fs_permissions = [{ access = "read-write", path = "./" }]
 [profile.production]
 src = "src"
 skip = ["test/**/*"]
+remappings = ["deploy-target/=./"]
 via_ir = true
 ffi = true
 optimizer = true
 optimizer_runs = 18888
+
+[profile.development]
+src = "src"
+skip = ["test/**/*"]
+remappings = ["deploy-target/=./"]
+via_ir = true
+ffi = true
+optimizer = true
+optimizer_runs = 18888
+
+[profile.production-test]
+remappings = ["deploy-target/=./"]
+via_ir = true
+ffi = true
+optimizer = true
+optimizer_runs = 18888
+
+[profile.development-test]
+remappings = ["deploy-target/=."]
+src = "src"
+optimizer = true
+optimizer_runs = 1000
+
+[profile.echidna]
+remappings = ["deploy-target/=."]
+skip = ["script/**", "test/fork/**", "test/integration/**", "test/harness/**"]
+src = "src"
+optimizer = true
+optimizer_runs = 1000
 
 [lint]
 ignore = ["test/external/**/*", "test/echidna/**/*"]
@@ -46,7 +78,7 @@ exclude_lints = [
 ]
 
 [fuzz]
-runs = 1000
+runs = 5000
 
 [profile.coverage]
 skip = [
@@ -65,6 +97,6 @@ sepolia = "${SEPOLIA_RPC_URL}"
 dstSepolia = "${RPC_URL_ARBITRUM_SEPOLIA}"
 
 [invariant]
-runs = 100
-depth = 10
+runs = 444
+depth = 50
 fail_on_revert = false
