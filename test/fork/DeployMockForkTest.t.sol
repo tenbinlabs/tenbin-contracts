@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 
 import {Config} from "forge-std/Config.sol";
-import {DeployDevelopmentMock} from "../../script/DeployDevelopmentMock.s.sol";
+import {Deploy} from "../../script/Deploy.s.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ForkBaseTest} from "./ForkBaseTest.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -13,17 +13,17 @@ contract DeployMockForkTest is ForkBaseTest, Config {
     using SafeERC20 for IERC20;
 
     // variables
-    DeployDevelopmentMock.DeploymentResult deployment;
+    Deploy.CoreDeploymentResult deployment;
 
     function setUp() public override {
         super.setUp();
         string memory rpc = vm.rpcUrl("sepolia"); // eth sepolia
         vm.createSelectFork(rpc);
-        DeployDevelopmentMock deployer = new DeployDevelopmentMock();
-        deployment = deployer.run("");
+        Deploy deployer = new Deploy();
+        deployment = deployer.runCoreOnly("", true);
     }
 
-    function test_DeployDevelopmentMockFork() public {
+    function test_DeployMockFork() public {
         _loadConfig("./config/sepolia/tgld/tgld_sepolia.toml", false);
         // check default admin roles
         assertEq(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
@@ -140,10 +140,10 @@ contract DeployMockForkTest is ForkBaseTest, Config {
         assertGe(deployment.vault.totalSupply(), 1e18);
     }
 
-    function test_Revert_DeployDevelopmentMockFork() public {
-        DeployDevelopmentMock deployer = new DeployDevelopmentMock();
+    function test_Revert_DeployMockFork() public {
+        Deploy deployer = new Deploy();
         vm.chainId(5);
         vm.expectRevert(bytes("chain not supported"));
-        deployer.run("");
+        deployer.runCoreOnly("", true);
     }
 }

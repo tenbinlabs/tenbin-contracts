@@ -3,19 +3,16 @@ pragma solidity 0.8.30;
 
 import {BaseTest} from "../BaseTest.sol";
 import {BuildSafeBatchHarness} from "../harness/BuildSafeBatchHarness.sol";
-import {MultiSendCallOnlyMock} from "../mocks/MultiSendCallOnlyMock.sol";
 import {SafeMock} from "../mocks/SafeMock.sol";
 
 contract BuildSafeBatchHarnessIntegration is BaseTest {
     SafeMock safe;
-    MultiSendCallOnlyMock multisend;
     BuildSafeBatchHarness builder;
 
     function setUp() public override {
         super.setUp();
-        // Deploy Safe + MultiSend + script
+        // Deploy Safe + script
         safe = new SafeMock();
-        multisend = new MultiSendCallOnlyMock();
         builder = new BuildSafeBatchHarness();
     }
 
@@ -34,12 +31,14 @@ contract BuildSafeBatchHarnessIntegration is BaseTest {
             csv = (i == 0) ? vm.toString(a) : string.concat(csv, ",", vm.toString(a));
         }
 
-        // 2) Run script builder to get safeData (calldata for multiSend(bytes))
-        bytes memory safeData = builder.run(address(controller), true, csv);
+        // 2) Run script builder to get safeData
+        bytes[] memory safeData = builder.run(address(controller), true, csv, "");
 
-        // 3) Execute the Safe tx: Safe DELEGATECALL -> MultiSendCallOnly.multiSend(packed)
-        (bool ok,) = safe.exec(address(multisend), 0, safeData, 1);
-        assertTrue(ok);
+        // 3) Execute the Safe tx
+        for (uint256 i = 0; i < addrs.length; i++) {
+            (bool ok,) = safe.exec(address(controller), 0, safeData[i], 0);
+            assertTrue(ok);
+        }
 
         // 4) Assert all addresses are restricted
         for (uint256 i = 0; i < addrs.length; i++) {

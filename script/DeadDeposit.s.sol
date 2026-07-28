@@ -2,7 +2,6 @@
 pragma solidity 0.8.30;
 
 import {BaseScript} from "./Base.s.sol";
-import {console2} from "forge-std/console2.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 

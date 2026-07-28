@@ -1275,7 +1275,7 @@ contract ControllerTest is BaseTest {
         assertEq(blockNumber, block.number);
         assertEq(amount, 1e18);
 
-        // limt resets after new block
+        // limit resets after new block
         vm.roll(block.number + 1);
         order = getMintOrder(collateral, 4000e18, 1e18, 1);
         mint(order, signOrder(payerKey, hashOrder(order)));
@@ -1311,7 +1311,7 @@ contract ControllerTest is BaseTest {
         controller.setBlockMintLimit(1e18);
 
         // can mint up to the limit
-        // succesfull mint
+        // successful mint
         controller.mint(order, signedOrder, context, signedContext);
 
         // new mint surpass limit
@@ -1339,7 +1339,7 @@ contract ControllerTest is BaseTest {
         assertEq(blockNumber, block.number);
         assertEq(amount, 1e18);
 
-        // limt resets after new block
+        // limit resets after new block
         vm.roll(block.number + 1);
         order = getRedeemOrder(collateral, 4000e18, 1e18, 1);
         redeem(order, signOrder(payerKey, hashOrder(order)));
@@ -1376,7 +1376,7 @@ contract ControllerTest is BaseTest {
         controller.setBlockRedeemLimit(1e18);
 
         // can redeem up to the limit
-        // succesfull redeem
+        // successful redeem
         controller.redeem(order, signedOrder, context, signedContext);
 
         // new redeem surpass limit

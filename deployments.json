@@ -13,6 +13,98 @@
             "owner_multisig": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
             "tenbin_multisig": "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"
         },
+        "tBRL": {
+            "config": {
+                "asset_name": "Tenbin Brazilian Real",
+                "asset_symbol": "tBRL",
+                "deployer": "0x224D7291D3E05d848B35364836Dfa9a01e3Ba69b",
+                "deployment_block": 25382749,
+                "domain_separator": "0xca9bdbdbdeb8ff511e37be5502bac1f2f8343eb6f5d861341c16f3761362d635",
+                "staked_asset_name": "Staked Tenbin Brazilian Real",
+                "staked_asset_symbol": "stBRL",
+                "version": "1.4.3"
+            },
+            "contracts": {
+                "asset_token": "0x4C1b46adb8877E389171EC6Ef67b385094C0afaD",
+                "collateral": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                "collateral_manager": "0x67eB9338bAd71443aDC1f6C319D5400292a8b7e4",
+                "controller": "0x0EF47CC8E244dBc8628FdEfFD4EE4DD747d14081",
+                "custodian_module": "0xfb3C3d52a60aea06064B13833dD730F18c61cB29",
+                "multicall": "0x5399170161aF5f8f769Cb6B185034579A00c8765",
+                "oracle_adapter": "0xDfD57C54F970910dCcc843d37EE0B84E45b62a06",
+                "revenue_module": "0x83cF329b9cbD2790aB2002E880592358C7c8Ff5F",
+                "silo": "0xE6dF42C4B7A38A17e5A831D7Ec443bc949D33b31",
+                "staked_asset": "0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f",
+                "swap_module": "0xe4f4Ff36055e9FffACB81be65B241CDe356bB0e4"
+            },
+            "roles": {
+                "admin_role": [
+                    "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "cap_adjuster_role": [
+                    "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"
+                ],
+                "curator_role": [
+                    "0xdAA880D1BdF3fB04B760235D0a4B384F2c403A43"
+                ],
+                "custodian_keeper_role": [
+                    "0xdAA880D1BdF3fB04B760235D0a4B384F2c403A43"
+                ],
+                "default_admin_role": [
+                    "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"
+                ],
+                "gatekeeper_role": [
+                    "0x9A4441238fc27d9f1c5Ae3E05E6517b0389FB513",
+                    "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "minter_role": [
+                    "0xcC5e557169033933c99A2Ade24092F4297797f98",
+                    "0x5399170161aF5f8f769Cb6B185034579A00c8765"
+                ],
+                "multicaller_role": [
+                    "0xcC5e557169033933c99A2Ade24092F4297797f98"
+                ],
+                "rebalancer_role": [
+                    "0xdAA880D1BdF3fB04B760235D0a4B384F2c403A43"
+                ],
+                "restricter_role": [
+                    "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "revenue_keeper_role": [
+                    "0xdAA880D1BdF3fB04B760235D0a4B384F2c403A43"
+                ],
+                "rewarder_role": [
+                    "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8",
+                    "0x83cF329b9cbD2790aB2002E880592358C7c8Ff5F"
+                ],
+                "signer_manager_role": [
+                    "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"
+                ]
+            },
+            "vault": {
+                "adapters": [
+                    {
+                        "address": "0x255944977585ADAc9e8015368A247b2e5EC59152",
+                        "id": "0xe9ac342ed7c72a42be3b9d584f18b258365375dd0cb8d6f5e87efeebf46c7412",
+                        "name": "Steakhouse USDC"
+                    }
+                ],
+                "config": {
+                    "asset": "usdc",
+                    "deployment_block": 25382501
+                },
+                "contracts": {
+                    "gate": "0xCF57CB92E0af71C1E3A2918e3FEe77D062f2E663",
+                    "vault": "0xE275a69B93A5745e1560ee82D033205D323BfAd9"
+                },
+                "roles": {
+                    "allocator": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
+                    "curator": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
+                    "owner": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
+                    "sentinel": "0x9A4441238fc27d9f1c5Ae3E05E6517b0389FB513"
+                }
+            }
+        },
         "tGLD": {
             "config": {
                 "asset_name": "Tenbin Gold",
@@ -56,7 +148,8 @@
                     "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"
                 ],
                 "gatekeeper_role": [
-                    "0x44C24D0937A829B3057be462b0e069516f1D9D45"
+                    "0x44C24D0937A829B3057be462b0e069516f1D9D45",
+                    "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
                 ],
                 "minter_role": [
                     "0xCa2D7CfAa96290171c98e112c73fC87c2AE2fe9B",
@@ -75,6 +168,7 @@
                     "0xD1a89086428E2b208414201712cbE0952DabEA03"
                 ],
                 "rewarder_role": [
+                    "0x933745Dc6fcBcCDc491d9A8322672d731C8a262e",
                     "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"
                 ],
                 "signer_manager_role": [
@@ -82,12 +176,18 @@
                 ]
             },
             "vault": {
+                "adapters": [
+                    {
+                        "address": "0x932E0ba317897D4a3142929B95CaaDA33df5fC35",
+                        "id": "0x73ac6ab5f77d02bad8fce25e0de14d703ce1747cb48d8c0b7ef854958bbc5d26",
+                        "name": "Steakhouse USDC"
+                    }
+                ],
                 "config": {
                     "asset": "usdc",
                     "deployment_block": 24398720
                 },
                 "contracts": {
-                    "adapter": "0x932E0ba317897D4a3142929B95CaaDA33df5fC35",
                     "gate": "0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1",
                     "vault": "0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75"
                 },
@@ -96,6 +196,98 @@
                     "curator": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
                     "owner": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
                     "sentinel": "0x44C24D0937A829B3057be462b0e069516f1D9D45"
+                }
+            }
+        },
+        "tMXN": {
+            "config": {
+                "asset_name": "Tenbin Mexican Peso",
+                "asset_symbol": "tMXN",
+                "deployer": "0x224D7291D3E05d848B35364836Dfa9a01e3Ba69b",
+                "deployment_block": 25382903,
+                "domain_separator": "0x9f6bedfe82c9313c4cfd859c5cf0fe902d81e6f923a3641057470a9d38774c33",
+                "staked_asset_name": "Staked Tenbin Mexican Peso",
+                "staked_asset_symbol": "stMXN",
+                "version": "1.4.3"
+            },
+            "contracts": {
+                "asset_token": "0x8d015aFcb6F437010653352EB1E58152c4e23734",
+                "collateral": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                "collateral_manager": "0x2a21014B89F72de3Ffa6d645F89b8Ca5A6eFfe75",
+                "controller": "0xB5EBDeC6DA02119DD7BEB4782C181261f8BfEcC2",
+                "custodian_module": "0xb6CE19EC436a4ea57E0196973f65eF47353fA674",
+                "multicall": "0xbE4b8f1cEb7710F896c963b0452335394eFAC166",
+                "oracle_adapter": "0xb5c72C24794bbcc2cab1773b7fE05C77194F7273",
+                "revenue_module": "0xD7D6C0c722b918045F1D725C5BB09F79Fc851033",
+                "silo": "0x997ba5538fE0C0b6acb10fF2Ba71Ab0b3E66f63F",
+                "staked_asset": "0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba",
+                "swap_module": "0xC274d87c8Ed44d85A1b0975a82a41e55eB891d86"
+            },
+            "roles": {
+                "admin_role": [
+                "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "cap_adjuster_role": [
+                "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"
+                ],
+                "curator_role": [
+                "0xB6BA562eF547c94C2A863D5e4E0395695CfCF714"
+                ],
+                "custodian_keeper_role": [
+                "0xB6BA562eF547c94C2A863D5e4E0395695CfCF714"
+                ],
+                "default_admin_role": [
+                "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"
+                ],
+                "gatekeeper_role": [
+                    "0xa1B49D8597CeC8C7f26B551C825D3F864c14d32c",
+                    "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "minter_role": [
+                "0x1B24074Ceb5d4A911E9eFf77c90601C12b98A8be",
+                "0xbE4b8f1cEb7710F896c963b0452335394eFAC166"
+                ],
+                "multicaller_role": [
+                "0x1B24074Ceb5d4A911E9eFf77c90601C12b98A8be"
+                ],
+                "rebalancer_role": [
+                "0xB6BA562eF547c94C2A863D5e4E0395695CfCF714"
+                ],
+                "restricter_role": [
+                "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "revenue_keeper_role": [
+                "0xB6BA562eF547c94C2A863D5e4E0395695CfCF714"
+                ],
+                "rewarder_role": [
+                "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8",
+                "0xD7D6C0c722b918045F1D725C5BB09F79Fc851033"
+                ],
+                "signer_manager_role": [
+                "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"
+                ]
+            },
+            "vault": {
+                "adapters": [
+                    {
+                        "address": "0x78AC7Ea86B5deFf61b9e24712f0c75c7A87d2A7a",
+                        "id": "0x5f812945d4fe9a43ce2dca1c7461000689e30da21867c4ade3840567f56013da",
+                        "name": "Steakhouse USDC"
+                    }
+                ],
+                "config": {
+                    "asset": "usdc",
+                    "deployment_block": 25382606
+                },
+                "contracts": {
+                    "gate": "0x0C4D7b141479b93826b27e5D81b86f5E9B52B136",
+                    "vault": "0x43E3f5e27422C3a938269368eb7c3A3B545Bb6ca"
+                },
+                "roles": {
+                    "allocator": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
+                    "curator": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
+                    "owner": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
+                    "sentinel": "0xa1B49D8597CeC8C7f26B551C825D3F864c14d32c"
                 }
             }
         }
@@ -181,12 +373,18 @@
                 ]
             },
             "vault": {
+                "adapters": [
+                    {
+                        "address": "0xc9267234F8507674260714BEcbCb9ff1a657b6f0",
+                        "id": "0x6d0b3833c863ae010f02d4a2e888c0b9b9b4bdf559a355132f7923e558891138",
+                        "name": "Test Adapter"
+                    }
+                ],
                 "config": {
                     "asset": "usdc",
                     "deployment_block": 10881316
                 },
                 "contracts": {
-                    "adapter": "0xc9267234F8507674260714BEcbCb9ff1a657b6f0",
                     "gate": "0x6Ab00c4Ead3EAd30ceC9caC326c54d73304c586a",
                     "vault": "0xc2A045588dbF523972Ded07D95b11C92b094F416"
                 },
@@ -265,12 +463,18 @@
                 ]
             },
             "vault": {
+                "adapters": [
+                    {
+                        "address": "0xFea6a2c483F7ce7D13ba8c8BcF29e93580F3640A",
+                        "id": "0x1e35f99ad0755b7fc8cc3034491327e94a82bc9f89507a43d5a611bcd183e465",
+                        "name": "Test Adapter"
+                    }
+                ],
                 "config": {
                     "asset": "usdc",
                     "deployment_block": 10881382
                 },
                 "contracts": {
-                    "adapter": "0xFea6a2c483F7ce7D13ba8c8BcF29e93580F3640A",
                     "gate": "0xCcdE3C136c7A757E4064C07c5A437Ac3931f01Ae",
                     "vault": "0x69e19bF76bf01EC84059F48C7E0Ee2f5C11e5692"
                 },
@@ -349,12 +553,18 @@
                 ]
             },
             "vault": {
+                "adapters": [
+                    {
+                        "address": "0x9249c95033493138fFe52ad163e008422019de95",
+                        "id": "0xf91e868389db0a08b31b1cfa518c793330553e250dc0c5e3b0112df9428c4ab5",
+                        "name": "Test Adapter"
+                    }
+                ],
                 "config": {
                     "asset": "usdc",
                     "deployment_block": 10881433
                 },
                 "contracts": {
-                    "adapter": "0x9249c95033493138fFe52ad163e008422019de95",
                     "gate": "0xae64FABF709F3E8b876ecc77054897226f3c9FaD",
                     "vault": "0xec95F37af2ff03b4c06585D766d6c42A0a5042b7"
                 },

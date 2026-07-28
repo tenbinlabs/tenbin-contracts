@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 
 import {Config} from "forge-std/Config.sol";
-import {DeployDevelopmentMock} from "../../script/DeployDevelopmentMock.s.sol";
+import {Deploy} from "../../script/Deploy.s.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Test} from "forge-std/Test.sol";
@@ -29,14 +29,15 @@ contract DeployMockTest is Test, Config {
     bytes32 internal constant INSTANT_UNSTAKER_ROLE = keccak256("INSTANT_UNSTAKER_ROLE");
 
     // variables
-    DeployDevelopmentMock.DeploymentResult deployment;
+    Deploy.CoreDeploymentResult deployment;
+    Deploy deployer;
 
     function setUp() public {
-        DeployDevelopmentMock deployer = new DeployDevelopmentMock();
-        deployment = deployer.run("");
+        deployer = new Deploy();
+        (deployment,) = deployer.run("", "", true);
     }
 
-    function test_DeployDevelopmentMockIntegration() public {
+    function test_DeployMockIntegration() public {
         _loadConfig("./config/local/local.toml", false);
         // check default admin roles
         assertEq(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
@@ -148,5 +149,14 @@ contract DeployMockTest is Test, Config {
         assertEq(deployment.revenue_module.staking(), address(deployment.staked_asset));
         assertEq(deployment.revenue_module.asset(), address(deployment.asset));
         assertEq(deployment.revenue_module.controller(), address(deployment.controller));
+    }
+
+    function test_Revert_Collateral_DeployMock() public {
+        vm.chainId(11155111);
+
+        string memory dir = "./config/test/tmxn.toml";
+
+        vm.expectRevert("invalid collateral");
+        deployer.runCoreOnly(dir, true);
     }
 }

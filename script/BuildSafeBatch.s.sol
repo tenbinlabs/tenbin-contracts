@@ -5,61 +5,49 @@ import {BaseScript} from "./Base.s.sol";
 import {console2} from "forge-std/console2.sol";
 import {IRestrictedRegistry} from "../src/interface/IRestrictedRegistry.sol";
 
-/// @notice Script to build a batch safe transaction to restrict or remove the restriction from a set of addresses
+/// @notice Script to build a batch json safe transaction to restrict or remove the restriction from a set of addresses
 /// 1) Ensure CSV_ADDRESSES is set as environment variable.
-/// 2) Run the following command including the correct target contract and restricted status`forge script script/BuildSafeBatch.s.sol:BuildSafeBatch --sig "run(address,bool,string)" <target_contract_address> <bool_status> $CSV_ADDRESSES `
+/// 2) Run the following command including the correct target contract and restricted status`forge script script/BuildSafeBatch.s.sol:BuildSafeBatch --sig "run(address,bool,string,string)" <target_contract_address> <bool_status> $CSV_ADDRESSES <context_string>
 contract BuildSafeBatch is BaseScript {
-    // MultiSendCallOnly ABI: function multiSend(bytes transactions)
-    bytes4 constant MULTISEND_SELECTOR = bytes4(keccak256("multiSend(bytes)"));
-
-    /// @dev Build Safe MultiSend calldata to batch `setIsRestricted` calls for multiple accounts
+    /// @dev Build Safe json to batch `setIsRestricted` calls for multiple accounts.
+    /// The printed json can be uploaded directly to the Safe Transaction Builder UI
     /// @param target The contract that implements setIsRestricted (final call destination)
     /// @param newStatus The restriction status to set for every account
     /// @param accounts Comma-separated list of Ethereum addresses
-    /// @return safeData Calldata to be executed by the Safe against MultiSendCallOnly
-    function run(address target, bool newStatus, string calldata accounts)
+    /// @param context Description to add context when signers see the transaction
+    /// @return txData Calldata to be executed by the Safe
+    function run(address target, bool newStatus, string calldata accounts, string calldata context)
         external
         pure
-        returns (bytes memory safeData)
+        returns (bytes[] memory txData)
     {
-        // Provide addresses as comma-separated string in env
         address[] memory addrs = _parseCsvAddresses(accounts);
 
-        // Build packed transactions
-        bytes memory packed;
-        for (uint256 i = 0; i < addrs.length; i++) {
+        txData = new bytes[](addrs.length);
+
+        console2.log("{");
+        console2.log('"version":"1.0",');
+        console2.log('"chainId":"1",');
+        console2.log(string.concat('"meta":{"name":"Restrict batch for ', context, '"},'));
+        console2.log('"transactions":[');
+
+        for (uint256 i; i < addrs.length; ++i) {
             bytes memory callData = abi.encodeCall(IRestrictedRegistry.setIsRestricted, (addrs[i], newStatus));
-            packed = bytes.concat(packed, _packOne(target, 0, callData));
+
+            txData[i] = callData;
+
+            console2.log("{");
+            console2.log(string.concat('"to":"', vm.toString(target), '",'));
+            console2.log('"value":"0",');
+            console2.log(string.concat('"data":"', vm.toString(callData), '",'));
+            console2.log('"operation":0');
+            console2.log(i == addrs.length - 1 ? "}" : "},");
         }
 
-        // calldata that Safe must execute (to MultiSendCallOnly)
-        safeData = abi.encodeWithSelector(MULTISEND_SELECTOR, packed);
-
-        console2.log("\n\n=== SAFE TX FIELDS ===");
-        console2.log("to (MultiSendCallOnly): 0x9641d764fc13c8B624c04430C7356C1C7C8102e2");
-        console2.log("value:", uint256(0));
-        console2.log("operation:", uint256(1), "(DELEGATECALL)");
-        console2.logBytes(safeData);
-        console2.log("data (hex above) length:", safeData.length);
+        console2.log("]}");
     }
 
     // Helpers
-
-    /// @dev Safe MultiSend encoding:
-    /// transactions = concat of:
-    ///   operation (1 byte) 0=CALL, 1=DELEGATECALL
-    ///   to        (20 bytes)
-    ///   value     (32 bytes)
-    ///   dataLen   (32 bytes)
-    ///   data      (dataLen bytes)
-    function _packOne(address to, uint256 value, bytes memory data) internal pure returns (bytes memory) {
-        // operation inside multisend should be CALL (0) so that when this code runs in Safe context,
-        // each inner call is a CALL from the Safe to the target contract.
-        uint8 op = 0;
-
-        return abi.encodePacked(bytes1(op), bytes20(to), bytes32(value), bytes32(uint256(data.length)), data);
-    }
-
     /// @dev Parse a csv string to an array of addresses
     /// @param s containing a csv with the addresses
     /// @return array of addresses

@@ -25,7 +25,6 @@ contract MorphoForkTest is ForkBaseTest {
     address internal morphoAllocator;
 
     // contracts
-    IAdapter internal adapter;
     IAdapter internal usdcAdapter;
     IAdapter internal usdtAdapter;
     IVaultV2 internal morpho;
@@ -46,12 +45,11 @@ contract MorphoForkTest is ForkBaseTest {
         morpho = IVaultV2(vaultFactory.createVaultV2(address(this), address(collateral), SALT));
         usdcMorpho = IVaultV2(vaultFactory.createVaultV2(address(this), address(usdc), SALT));
         usdtMorpho = IVaultV2(vaultFactory.createVaultV2(address(this), address(usdt), SALT));
-        adapter = IAdapter(adapterFactory.createMorphoVaultV1Adapter(address(morpho), address(vault)));
         usdcAdapter = IAdapter(adapterFactory.createMorphoVaultV1Adapter(address(usdcMorpho), address(usdcVault)));
         usdtAdapter = IAdapter(adapterFactory.createMorphoVaultV1Adapter(address(usdtMorpho), address(usdtVault)));
-        setUpMorhpoVault(morpho, adapter);
-        setUpMorhpoVault(usdcMorpho, usdcAdapter);
-        setUpMorhpoVault(usdtMorpho, usdtAdapter);
+
+        setUpMorphoVault(usdcMorpho, usdcAdapter);
+        setUpMorphoVault(usdtMorpho, usdtAdapter);
         setUpLabels();
         setUpMorphoLabels();
         setUpController();
@@ -63,7 +61,6 @@ contract MorphoForkTest is ForkBaseTest {
         label(address(usdcMorpho), "usdcMorpho");
         label(address(usdtMorpho), "usdtMorpho");
         label(address(morpho), "morpho");
-        label(address(adapter), "adapter");
         label(address(usdcAdapter), "usdcAdapter");
         label(address(usdtAdapter), "usdtAdapter");
         label(depositor, "depositor");
@@ -83,7 +80,7 @@ contract MorphoForkTest is ForkBaseTest {
         vm.stopPrank();
     }
 
-    function setUpMorhpoVault(IVaultV2 morphoVault, IAdapter morphoAdapter) public {
+    function setUpMorphoVault(IVaultV2 morphoVault, IAdapter morphoAdapter) public {
         // set curator
         morphoVault.setCurator(curator);
 

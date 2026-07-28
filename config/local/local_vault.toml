@@ -1,0 +1,22 @@
+# local
+[31337]
+endpoint_url = "wss://localhost:8545"
+
+[31337.string]
+name = "tGLD USDC Vault"
+symbol = "tGLDv-USDC"
+
+[31337.address]
+allocator = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
+asset = "0x0000000000000000000000000000000000000000"            # mock collateral deployed by the script
+curator = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
+initial_vault = "0x0000000000000000000000000000000000000000"     # mock vault deployed by the script
+owner = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
+sentinel = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"
+
+[31337.uint]
+dead_deposit = 1_000000                         # 1 usdc
+initial_absolute_cap = 100_000_000_000000       # 100m usdc
+initial_relative_cap = 1_000000000000000000     # 100%
+max_rate = 63419583967                          # 2000% APR
+timelock_duration = 0                           # no timelock on local dev

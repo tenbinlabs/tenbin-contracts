@@ -29,6 +29,12 @@
       "rev": "e725abddf1e01cf05ace496e950fc8e243cc7cab"
     }
   },
+  "lib/tenbin-contracts": {
+    "tag": {
+      "name": "v1.4.3",
+      "rev": "47a04ebe9238b0c9fa21209fd03678f44042e35a"
+    }
+  },
   "lib/vault-v2": {
     "tag": {
       "name": "2025-12-04",

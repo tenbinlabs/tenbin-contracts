@@ -2,11 +2,11 @@
 pragma solidity 0.8.30;
 
 import {console2} from "forge-std/console2.sol";
-import {Controller} from "../src/Controller.sol";
+import {Controller} from "tenbin-contracts/src/Controller.sol";
 import {DeployBase} from "./DeployBase.s.sol";
-import {GoldOracleAdapter} from "../src/oracle/GoldOracleAdapter.sol";
-import {IOracleAdapter} from "../src/interface/IOracleAdapter.sol";
-import {RevenueModule} from "../src/RevenueModule.sol";
+import {GoldOracleAdapter} from "tenbin-contracts/src/oracle/GoldOracleAdapter.sol";
+import {IOracleAdapter} from "tenbin-contracts/src/interface/IOracleAdapter.sol";
+import {RevenueModule} from "tenbin-contracts/src/RevenueModule.sol";
 
 /// @notice Deploy and configure new controller and new revenue module using config/*.toml
 /// @dev To upgrade a set of core contracts to a new controller, the following steps need to be performed after running this script:
@@ -24,17 +24,15 @@ import {RevenueModule} from "../src/RevenueModule.sol";
 /// Running this script:
 /// FOUNDRY_PROFILE=production forge script script/DeployController.s.sol $CONFIG_DIR --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow
 contract DeployController is DeployBase {
-    /// @notice Default mainnet config directory to be used if none was specified
-    string constant DEFAULT_DIR = "./config/mainnet/tgld/tgld.toml";
-
-    // configuration for tGLD controller
+    // configuration for the controller that is being upgraded
     string constant TARGET_VERSION = "1.4.3";
-    address constant ASSET_TOKEN_ADDRESS = 0x6a547b25534234bb79CE6961a23Db13DE154b6F4;
-    address constant COLLATERAL_MANAGER_ADDRESS = 0x42F3F01D45E67294e20cE98AcFDC24dD7EA75dEa;
-    address constant CUSTODIAN_MODULE_ADDRESS = 0x97e1C8dc9a3CcA064fAA8318f9b5C7AdB26b0e89;
-    address constant MULTICALL_ADDRESS = 0xdA8B85Cd62CDB3C104c80b479f9094e07EBcF7e8;
+    address constant ASSET_TOKEN_ADDRESS = 0x8d015aFcb6F437010653352EB1E58152c4e23734;
+    address constant COLLATERAL_MANAGER_ADDRESS = 0x2a21014B89F72de3Ffa6d645F89b8Ca5A6eFfe75;
+    address constant CUSTODIAN_MODULE_ADDRESS = 0x22503f510C87040C6a16F9880dd3dAacB742e192;
+    address constant MULTICALL_ADDRESS = 0x80A5c0A4c09F76E67CB6397858A5a1890a4ec5a9;
     address constant MULTISIG_ADDRESS = 0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8;
-    address constant STAKED_ASSET_ADDRESS = 0x8d301801d899dC81fEabBDE69407A53b82bdBF19;
+    address constant STAKED_ASSET_ADDRESS = 0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba;
+    address constant ORACLE_ADAPTER_ADDRESS = 0xb5c72C24794bbcc2cab1773b7fE05C77194F7273;
 
     /// @notice Results returned when running this deployment script
     struct DeploymentResult {
@@ -50,11 +48,12 @@ contract DeployController is DeployBase {
     }
 
     function run(string memory configDir) public returns (DeploymentResult memory deployment) {
-        loadConfig(configDir);
+        loadCoreConfig(configDir);
+        loadRolesConfig();
         deployment = deploy();
     }
 
-    function deploy() public broadcast returns (DeploymentResult memory deployment) {
+    function deploy() internal broadcast returns (DeploymentResult memory deployment) {
         console2.log("\n========================= Accounts ==========================\n");
         console2.log("broadcaster address: ", broadcaster);
 
@@ -63,7 +62,7 @@ contract DeployController is DeployBase {
 
         // deploy controller
         deployment.controller = new Controller{salt: SALT}(
-            ASSET_TOKEN_ADDRESS, STAKED_ASSET_ADDRESS, params.ratio, CUSTODIAN_MODULE_ADDRESS, broadcaster
+            ASSET_TOKEN_ADDRESS, STAKED_ASSET_ADDRESS, coreParams.ratio, CUSTODIAN_MODULE_ADDRESS, broadcaster
         );
 
         // deploy revenue module
@@ -77,7 +76,7 @@ contract DeployController is DeployBase {
         );
 
         // deploy oracle adapter
-        deployment.oracle_adapter = IOracleAdapter(address(new GoldOracleAdapter()));
+        deployment.oracle_adapter = IOracleAdapter(ORACLE_ADAPTER_ADDRESS);
 
         // hard enforce version
         require(
@@ -98,12 +97,12 @@ contract DeployController is DeployBase {
         deployment.controller.grantRole(ADMIN_ROLE, broadcaster);
 
         // configure controller
-        deployment.controller.setIsCollateral(address(params.collateral), true);
+        deployment.controller.setIsCollateral(address(coreParams.collateral), true);
         deployment.controller.setManager(COLLATERAL_MANAGER_ADDRESS);
         deployment.controller.setOracleAdapter(address(deployment.oracle_adapter));
-        deployment.controller.setOracleTolerance(uint96(params.oracle_tolerance));
-        deployment.controller.setBlockMintLimit(params.mint_limit);
-        deployment.controller.setBlockRedeemLimit(params.redeem_limit);
+        deployment.controller.setOracleTolerance(uint96(coreParams.oracle_tolerance));
+        deployment.controller.setBlockMintLimit(coreParams.mint_limit);
+        deployment.controller.setBlockRedeemLimit(coreParams.redeem_limit);
 
         // configure revenue module
         deployment.revenue_module.grantRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role);
