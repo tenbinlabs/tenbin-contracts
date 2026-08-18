@@ -12,12 +12,16 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol"
 /// @notice Gate used to restrict vault deposits/withdrawals to a single manager account
 /// https://docs.morpho.org/curate/concepts/gates/#gates-in-vault-v2
 contract Gate is IReceiveSharesGate, ISendSharesGate, IReceiveAssetsGate, ISendAssetsGate, Ownable {
+    /// @notice Zero address not allowed
+    error NonZeroAddress();
+
     /// @notice Manager can receive/send shares and receive/send assets
     address manager;
 
     constructor(address owner_) Ownable(owner_) {}
 
     function setManager(address newManager) external onlyOwner {
+        if (newManager == address(0)) revert ZeroAddress();
         manager = newManager;
     }
 
