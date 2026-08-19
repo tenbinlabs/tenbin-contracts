@@ -13,7 +13,7 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol"
 /// https://docs.morpho.org/curate/concepts/gates/#gates-in-vault-v2
 contract Gate is IReceiveSharesGate, ISendSharesGate, IReceiveAssetsGate, ISendAssetsGate, Ownable {
     /// @notice Zero address not allowed
-    error NonZeroAddress();
+    error ZeroAddress();
 
     /// @notice Manager can receive/send shares and receive/send assets
     address manager;
