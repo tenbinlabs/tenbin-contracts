@@ -263,4 +263,60 @@ contract GenericMorphoAdapterForkTest is ForkBaseTest {
         morphoVault.increaseRelativeCap(adapterId, relativeCap);
         vm.stopPrank();
     }
+
+    function testSharesDonationResistanceIfNoAllocation() public {
+        bytes32 id = adapter.adapterId();
+
+        uint256 donatedAssets = 10e18;
+        uint256 allocatedAssets = 20e18;
+        address donor = address(0xD0D0);
+
+        // Start with zero recorded allocation
+
+        assertEq(parentVault.allocation(id), 0, "allocation should start at zero");
+        assertEq(adapter.realAssets(), 0, "realAssets should start at zero");
+
+        // Donate shares directly to the adapter.
+        collateral.mint(donor, donatedAssets);
+
+        vm.startPrank(donor);
+        collateral.approve(address(vault), donatedAssets);
+
+        uint256 donatedShares = vault.deposit(donatedAssets, address(adapter));
+
+        vm.stopPrank();
+
+        assertGt(donatedShares, 0, "donation should mint shares");
+        assertGt(vault.balanceOf(address(adapter)), 0, "adapter should hold donated shares");
+
+        // The parent still has no allocation recorded for this adapter.
+        assertEq(parentVault.allocation(id), 0, "donation must not create allocation");
+
+        // donated shares must NOT be counted by realAssets while allocation == 0.
+        assertEq(adapter.realAssets(), 0, "realAssets must ignore donation at zero allocation");
+
+        // Perform the first legitimate allocation after the donation.
+        uint256 minShares = vault.previewDeposit(allocatedAssets);
+
+        vm.prank(allocator);
+        parentVault.allocate(address(adapter), abi.encode(minShares), allocatedAssets);
+
+        uint256 recordedAllocation = parentVault.allocation(id);
+
+        assertGt(recordedAllocation, 0, "first allocation after donation must register a nonzero change");
+        assertGt(adapter.realAssets(), 0, "realAssets should become nonzero once allocation exists");
+
+        assertEq(
+            adapter.realAssets(),
+            vault.previewRedeem(vault.balanceOf(address(adapter))),
+            "realAssets should equal fee-aware position value"
+        );
+
+        // Verify the position is actually deallocatable
+        vm.prank(allocator);
+        parentVault.deallocate(address(adapter), abi.encode(type(uint256).max), recordedAllocation);
+
+        assertEq(parentVault.allocation(id), 0, "allocation should return to zero");
+        assertEq(adapter.realAssets(), 0, "realAssets should return to zero with zero allocation");
+    }
 }
