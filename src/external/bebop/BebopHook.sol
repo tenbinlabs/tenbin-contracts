@@ -224,11 +224,9 @@ contract BebopHook is IBebopHook, Ownable2Step {
         // Maker-signed rate bound: output/input must not exceed the signed quote.
         // outputAmount / inputAmount <= quoteOutputAmount / quoteInputAmount
         // Compute both sides using 512-bit multiplication to prevent uint256 overflow.
-        (uint256 lhsHigh, uint256 lhsLow) =
-            Math.mul512(outputAmount, data.quoteInputAmount);
+        (uint256 lhsHigh, uint256 lhsLow) = Math.mul512(outputAmount, data.quoteInputAmount);
 
-        (uint256 rhsHigh, uint256 rhsLow) =
-            Math.mul512(data.quoteOutputAmount, inputAmount);
+        (uint256 rhsHigh, uint256 rhsLow) = Math.mul512(data.quoteOutputAmount, inputAmount);
         // Compare the full 512-bit products: high bits first, then low bits if equal.
         if (lhsHigh > rhsHigh || (lhsHigh == rhsHigh && lhsLow > rhsLow)) {
             revert InvalidAmount();
