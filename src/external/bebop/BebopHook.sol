@@ -14,6 +14,8 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 ///  - Controller orders are fixed-size ⇒ partial fills are unsupported: any fill other than
 ///  100% reverts with InputAmountMismatch. Maker must quote these orders fill-or-kill.
 ///  - Rebasing input tokens are unsupported
+///  - Redeem orders support only standard asset redemptions. Instant redemption of staked
+///    assets is unsupported and will revert during controller validation.
 /// @dev https://github.com/bebop-dex/bebop-rfqa/blob/master/README.md#hooks
 contract BebopHook is IBebopHook, Ownable2Step {
     using SafeERC20 for IERC20;
