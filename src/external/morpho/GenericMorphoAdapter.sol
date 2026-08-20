@@ -70,6 +70,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
         uint256 oldAllocation = parentVault.allocation(adapterId);
 
         uint256 shares;
+        // If minShares equals zero the slippage check is skipped.
         if (assets > 0 && minShares > 0) {
             shares = vault.deposit(assets, address(this));
             if (shares < minShares) revert InsufficientShares();
@@ -97,6 +98,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
         uint256 oldAllocation = parentVault.allocation(adapterId);
 
         uint256 shares;
+        // If maxShares equals zero the slippage check is skipped.
         if (assets > 0 && maxShares > 0) {
             shares = vault.withdraw(assets, address(this), address(this));
             if (shares > maxShares) revert ExcessiveShares();
