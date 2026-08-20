@@ -12,8 +12,9 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 /// @title GenericMorphoAdapter
 /// @notice Adapter that connects a Vault V2 parent vault to a single ERC4626 vault.
 /// @dev The parent vault allocates the underlying asset to this adapter, and the adapter
-/// deposits those assets into the configured ERC4626 vault. Accounting is reported
-/// back to the parent vault through a single adapter-specific allocation ID.
+/// deposits those assets into the configured ERC4626 vault, said vault will always be a standard 
+/// ERC4626 vault. Accounting is reported back to the parent vault through a single 
+/// adapter-specific allocation ID.
 ///
 /// @dev IMPORTANT: The configured ERC4626 vault MUST be resistant to inflation/donation
 /// attacks, for example through virtual shares/assets or a provably adequate initial seed
@@ -23,6 +24,9 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
+
+    /// @notice Thrown when trying parent vault matches vault
+    error InvalidVault();
 
     /// @notice Thrown when a caller other than the parent vault calls an adapter entrypoint.
     error NotAuthorized();
@@ -55,6 +59,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     /// @param parentVault_ Address of the Vault V2 parent vault that will use this adapter.
     /// @param vault_ Address of the ERC4626 vault where allocated assets will be deposited.
     constructor(address parentVault_, address vault_, address owner_) Ownable(owner_) {
+        if(parentVault_ == vault_) revert InvalidVault();
         parentVault = IVaultV2(parentVault_);
         vault = IERC4626(vault_);
         asset = parentVault.asset();
@@ -117,11 +122,11 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     }
 
     /// @inheritdoc IAdapter
-    /// @notice Returns the current value of this adapter's ERC4626 share balance in underlying assets.
+    /// @notice Returns the current value of this adapter's ERC4626 share balance in underlying assets, excluding fees.
     /// @dev Uses ERC4626 conversion logic, so the result may be rounded down by the vault.
     function realAssets() public view returns (uint256) {
         uint256 balance = vault.balanceOf(address(this));
-        return vault.convertToAssets(balance);
+        return vault.previewRedeem(balance);
     }
 
     /// @notice Rescue tokens sent to this contract
