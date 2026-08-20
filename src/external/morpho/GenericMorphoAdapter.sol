@@ -18,6 +18,9 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
+    /// @notice Thrown when trying parent vault matches vault
+    error InvalidVault();
+
     /// @notice Thrown when a caller other than the parent vault calls an adapter entrypoint.
     error NotAuthorized();
 
@@ -49,6 +52,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     /// @param parentVault_ Address of the Vault V2 parent vault that will use this adapter.
     /// @param vault_ Address of the ERC4626 vault where allocated assets will be deposited.
     constructor(address parentVault_, address vault_, address owner_) Ownable(owner_) {
+        if(parentVault_ == vault_) revert InvalidVault();
         parentVault = IVaultV2(parentVault_);
         vault = IERC4626(vault_);
         asset = parentVault.asset();
