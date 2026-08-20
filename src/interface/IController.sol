@@ -321,4 +321,10 @@ interface IController {
     /// @param recipient Account to change recipient status for
     /// @param status True if an account is a valid recipient address for a signer
     function setRecipientStatus(address recipient, bool status) external;
+
+    /// @notice Returns whether a recipient is authorized by a signer.
+    /// @param signer The account that manages the recipient authorization.
+    /// @param recipient The account whose authorization status is queried.
+    /// @return True if `recipient` is authorized by `signer`, otherwise false.
+    function recipients(address signer, address recipient) external view returns (bool);
 }

@@ -176,8 +176,11 @@ contract BebopHook is IBebopHook, Ownable2Step {
     /// @notice Updates the market maker address allowed to interact with this hook
     /// @param maker New maker address
     /// @dev maker must already be a whitelisted signer in the controller
+    /// @dev Requires new maker to have previously added the hook as recipient
     function setMarketMaker(address maker) external onlyOwner {
         if (maker == address(0)) revert NonZeroAddress();
+        // verify hook is already a valid recipient
+        if (controller.recipients(maker, address(this))) revert InvalidMaker();
         // remove delegate status of current maker
         // slither-disable-next-line reentrancy-no-eth
         controller.setDelegateStatus(marketMaker, false);
