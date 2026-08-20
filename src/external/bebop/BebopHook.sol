@@ -176,7 +176,7 @@ contract BebopHook is IBebopHook, Ownable2Step {
     /// @notice Updates the market maker address allowed to interact with this hook
     /// @param maker New maker address
     /// @dev maker must already be a whitelisted signer in the controller
-    /// @dev New maker MUST mark the hook as recipient for the controller
+    /// @dev New maker MUST mark the hook as recipient in the controller
     function setMarketMaker(address maker) external onlyOwner {
         if (maker == address(0)) revert NonZeroAddress();
         // remove delegate status of current maker

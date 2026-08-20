@@ -572,9 +572,6 @@ contract BebopHookTest is BaseTest {
     }
 
     function test_RevertSetMarketMaker() public {
-        address newMaker = makeAddr("newMaker");
-        allowSigner(newMaker);
-
         // zero address as new maker
         vm.prank(owner);
         vm.expectRevert(BebopHook.NonZeroAddress.selector);
@@ -582,7 +579,7 @@ contract BebopHookTest is BaseTest {
 
         // non owner call
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-        hook.setMarketMaker(newMaker);
+        hook.setMarketMaker(makeAddr("newMaker"));
     }
 
     function test_setDelegateStatus() public {
