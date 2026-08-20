@@ -111,11 +111,11 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     }
 
     /// @inheritdoc IAdapter
-    /// @notice Returns the current value of this adapter's ERC4626 share balance in underlying assets.
+    /// @notice Returns the current value of this adapter's ERC4626 share balance in underlying assets, excluding fees.
     /// @dev Uses ERC4626 conversion logic, so the result may be rounded down by the vault.
     function realAssets() public view returns (uint256) {
         uint256 balance = vault.balanceOf(address(this));
-        return vault.convertToAssets(balance);
+        return vault.previewRedeem(balance);
     }
 
     /// @notice Rescue tokens sent to this contract
