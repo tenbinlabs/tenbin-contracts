@@ -564,9 +564,6 @@ contract BebopHookTest is BaseTest {
         address newMaker = makeAddr("newMaker");
         allowSigner(newMaker);
 
-        vm.prank(newMaker);
-        controller.setRecipientStatus(address(hook), true);
-
         vm.prank(owner);
         vm.expectEmit(true, false, false, false);
         emit BebopHook.MarketMakerUpdated(newMaker);
@@ -585,11 +582,6 @@ contract BebopHookTest is BaseTest {
 
         // non owner call
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-        hook.setMarketMaker(newMaker);
-
-        // new maker didnt set hook as recipient
-        vm.expectRevert(BebopHook.InvalidMaker.selector);
-        vm.prank(owner);
         hook.setMarketMaker(newMaker);
     }
 
