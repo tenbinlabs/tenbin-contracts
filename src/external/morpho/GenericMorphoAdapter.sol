@@ -14,6 +14,12 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 /// @dev The parent vault allocates the underlying asset to this adapter, and the adapter
 /// deposits those assets into the configured ERC4626 vault. Accounting is reported
 /// back to the parent vault through a single adapter-specific allocation ID.
+///
+/// @dev IMPORTANT: The configured ERC4626 vault MUST be resistant to inflation/donation
+/// attacks, for example through virtual shares/assets or a provably adequate initial seed
+/// that cannot be controlled or recovered by an attacker. This adapter does not enforce
+/// inflation resistance on-chain; deployers and curators MUST verify the target vault
+/// before admission.
 contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
