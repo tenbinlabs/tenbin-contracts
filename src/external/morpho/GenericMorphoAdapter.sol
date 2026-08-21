@@ -87,7 +87,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
             if (shares < minShares) revert InsufficientShares();
         }
 
-        uint256 newAllocation = realAssets();
+        uint256 newAllocation = _position();
 
         bytes32[] memory ids = new bytes32[](1);
         ids[0] = adapterId;
@@ -115,7 +115,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
             if (shares > maxShares) revert ExcessiveShares();
         }
 
-        uint256 newAllocation = realAssets();
+        uint256 newAllocation = _position();
 
         bytes32[] memory ids = new bytes32[](1);
         ids[0] = adapterId;
@@ -127,8 +127,15 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     /// @notice Returns the current value of this adapter's ERC4626 share balance in underlying assets, excluding fees.
     /// @dev Uses ERC4626 conversion logic, so the result may be rounded down by the vault.
     function realAssets() public view returns (uint256) {
-        uint256 balance = vault.balanceOf(address(this));
-        return vault.previewRedeem(balance);
+        return parentVault.allocation(adapterId) != 0 ? _position() : 0;
+    }
+
+    /// @notice Returns the current fee-aware value of the adapter's entire position in the child vault.
+    /// @dev Unlike `realAssets()`, this function does not consider the parent vault's recorded allocation.
+    /// It is intended for internal accounting during allocation and deallocation.
+    /// @return assets The amount of underlying assets redeemable for all child-vault shares held by the adapter.
+    function _position() internal view returns (uint256) {
+        return vault.previewRedeem(vault.balanceOf(address(this)));
     }
 
     /// @notice Rescue tokens sent to this contract
