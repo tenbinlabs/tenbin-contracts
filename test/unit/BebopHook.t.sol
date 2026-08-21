@@ -697,6 +697,58 @@ contract BebopHookTest is BaseTest {
         assertEq(collateral.balanceOf(address(hook)), 0);
     }
 
+    function test_RevertWhen_StakedAssetRedeem(uint256 amount) public {
+        // set bounds
+        amount = bound(amount, 1, 1e40);
+
+        processMint(amount);
+
+        // Swap collateral token -> tToken
+        vm.prank(hookRouter);
+        asset.approve(address(hook), amount);
+
+        IController.Order memory redeemOrder = IController.Order({
+            order_type: IController.OrderType.Redeem,
+            expiry: block.timestamp + 1000,
+            nonce: 1,
+            payer: address(hook),
+            recipient: address(hook),
+            collateral_token: address(collateral),
+            collateral_amount: amount,
+            order_token: address(staking),
+            asset_amount: amount
+        });
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(makerKey, hashOrder(redeemOrder));
+        IController.Signature memory redeemSignature = IController.Signature({
+            signature_type: IController.SignatureType.EIP712, signature_bytes: abi.encodePacked(r, s, v)
+        });
+        IController.Context memory redeemContext = getContext(hashOrder(redeemOrder), 0, false);
+        IController.Signature memory redeemApproval = signContext(makerKey, hashContext(redeemContext));
+
+        BebopHook.IssuerData memory redeemIssuerData = BebopHook.IssuerData({
+            order: redeemOrder, orderSignature: redeemSignature, context: redeemContext, approval: redeemApproval
+        });
+
+        BebopHook.HookData memory redeemHookData = BebopHook.HookData({
+            action: uint8(IController.OrderType.Redeem),
+            inputToken: address(asset),
+            outputToken: address(collateral),
+            quoteInputAmount: amount,
+            quoteOutputAmount: amount,
+            issuerData: abi.encode(redeemIssuerData)
+        });
+
+        Swap[] memory redeemSwaps = new Swap[](1);
+        redeemSwaps[0] = Swap({
+            takerToken: address(collateral), makerToken: address(collateral), takerAmount: amount, makerAmount: amount
+        });
+
+        vm.expectRevert(BebopHook.InvalidInputToken.selector);
+        vm.prank(hookRouter);
+        hook.bebopHook(maker, abi.encode(redeemHookData), redeemSwaps);
+    }
+
     // Helpers
     function processMint(uint256 amount) internal {
         // mint collateral, approve controller, and allow hook to sign order
