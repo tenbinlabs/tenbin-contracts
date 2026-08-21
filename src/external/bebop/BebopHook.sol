@@ -224,7 +224,8 @@ contract BebopHook is IBebopHook, Ownable2Step {
         // slither-disable-end incorrect-equality
         // Maker-signed rate bound: output/input must not exceed the signed quote.
         // outputAmount / inputAmount <= quoteOutputAmount / quoteInputAmount
-        if (Math.mulDiv(outputAmount, data.quoteInputAmount, inputAmount) > data.quoteOutputAmount) {
+        if (Math.mulDiv(outputAmount, data.quoteInputAmount, inputAmount, Math.Rounding.Ceil) > data.quoteOutputAmount)
+        {
             revert InvalidAmount();
         }
         if (order.payer != address(this) || order.recipient != address(this)) revert InvalidOrder();
