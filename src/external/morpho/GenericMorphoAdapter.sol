@@ -72,7 +72,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
 
     /// @inheritdoc IAdapter
     /// @notice Deposits allocated assets into the ERC4626 vault.
-    /// @dev `data` must encode `minShares`, the minimum acceptable shares to receive.
+    /// @dev `data` must encode `minShares`, the minimum acceptable shares to receive. If `minShares` equals zero the slippage check is skipped.
     function allocate(bytes memory data, uint256 assets, bytes4, address) external returns (bytes32[] memory, int256) {
         if (msg.sender != address(parentVault)) revert NotAuthorized();
 
@@ -81,7 +81,8 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
         uint256 oldAllocation = parentVault.allocation(adapterId);
 
         uint256 shares;
-        if (assets > 0) {
+        // If minShares equals zero the slippage check is skipped.
+        if (assets > 0 && minShares > 0) {
             shares = vault.deposit(assets, address(this));
             if (shares < minShares) revert InsufficientShares();
         }
@@ -96,7 +97,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
 
     /// @inheritdoc IAdapter
     /// @notice Withdraws allocated assets from the ERC4626 vault back into this adapter.
-    /// @dev `data` must encode `maxShares`, the maximum acceptable shares to burn.
+    /// @dev `data` must encode `maxShares`, the maximum acceptable shares to burn. If `maxShares` equals zero the slippage check is skipped.
     function deallocate(bytes memory data, uint256 assets, bytes4, address)
         external
         returns (bytes32[] memory, int256)
@@ -108,7 +109,8 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
         uint256 oldAllocation = parentVault.allocation(adapterId);
 
         uint256 shares;
-        if (assets > 0) {
+        // If maxShares equals zero the slippage check is skipped.
+        if (assets > 0 && maxShares > 0) {
             shares = vault.withdraw(assets, address(this), address(this));
             if (shares > maxShares) revert ExcessiveShares();
         }
