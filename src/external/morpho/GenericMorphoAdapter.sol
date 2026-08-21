@@ -124,7 +124,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
 
     /// @notice Returns the current fee-aware value of the adapter's entire position in the child vault.
     /// @dev Unlike `realAssets()`, this function does not consider the parent vault's recorded allocation.
-    ///      It is intended for internal accounting during allocation and deallocation.
+    /// It is intended for internal accounting during allocation and deallocation.
     /// @return assets The amount of underlying assets redeemable for all child-vault shares held by the adapter.
     function _position() internal view returns (uint256) {
         return vault.previewRedeem(vault.balanceOf(address(this)));
