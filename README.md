@@ -17,7 +17,7 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 
 # Audit
 
-Tenbin uses a continuous auditing policy with a target of one audit cycle per quarter. Two rounds of audits have been conducted on the tenbin contracts codebase. The first core protocol audits occured on 1/22/26 and the second on 4/12/26. An audit on external integrations with Morpho and Bebop occured on  Notable auditors include Spearbit, Zellic, Fuzzland, and Verilog. Starting after 8/3/26, tenbin will start publishing remediations in addition to the final audit reports.
+Tenbin uses a continuous auditing policy with a target of one audit cycle per quarter. Two rounds of audits have been conducted on the tenbin core contracts codebase. The first core protocol audits occured on 1/22/26 and the second on 4/12/26. An audit on external integrations with Morpho and Bebop occured on 8/3/26. Notable auditors include Spearbit, Zellic, Fuzzland, and Verilog. Starting after 8/3/26, tenbin will start publishing remediations in addition to the final audit reports.
 
 ## 8/3/26 Audit
 
