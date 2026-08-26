@@ -1,5 +1,5 @@
 # GenericMorphoAdapter
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/64004be494549e5de52bb55a6490bd85d73a4f57/src/external/morpho/GenericMorphoAdapter.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/51cfcc3be55c1fc66666f437e8175c7820cc2918/src/external/morpho/GenericMorphoAdapter.sol)
 
 **Inherits:**
 IAdapter, Ownable2Step
@@ -10,8 +10,15 @@ GenericMorphoAdapter
 Adapter that connects a Vault V2 parent vault to a single ERC4626 vault.
 
 The parent vault allocates the underlying asset to this adapter, and the adapter
-deposits those assets into the configured ERC4626 vault. Accounting is reported
-back to the parent vault through a single adapter-specific allocation ID.
+deposits those assets into the configured ERC4626 vault, said vault will always be a standard
+ERC4626 vault. Accounting is reported back to the parent vault through a single
+adapter-specific allocation ID.
+
+IMPORTANT: The configured ERC4626 vault MUST be resistant to inflation/donation
+attacks, for example through virtual shares/assets or a provably adequate initial seed
+that cannot be controlled or recovered by an attacker. This adapter does not enforce
+inflation resistance on-chain; deployers and curators MUST verify the target vault
+before admission.
 
 
 ## Constants
@@ -73,7 +80,7 @@ constructor(address parentVault_, address vault_, address owner_) Ownable(owner_
 
 Deposits allocated assets into the ERC4626 vault.
 
-`data` must encode `minShares`, the minimum acceptable shares to receive.
+`data` must encode `minShares`, the minimum acceptable shares to receive. If `minShares` equals zero the slippage check is skipped.
 
 
 ```solidity
@@ -84,7 +91,7 @@ function allocate(bytes memory data, uint256 assets, bytes4, address) external r
 
 Withdraws allocated assets from the ERC4626 vault back into this adapter.
 
-`data` must encode `maxShares`, the maximum acceptable shares to burn.
+`data` must encode `maxShares`, the maximum acceptable shares to burn. If `maxShares` equals zero the slippage check is skipped.
 
 
 ```solidity
@@ -95,7 +102,7 @@ function deallocate(bytes memory data, uint256 assets, bytes4, address)
 
 ### realAssets
 
-Returns the current value of this adapter's ERC4626 share balance in underlying assets.
+Returns the current value of this adapter's ERC4626 share balance in underlying assets, excluding fees.
 
 Uses ERC4626 conversion logic, so the result may be rounded down by the vault.
 
@@ -103,6 +110,24 @@ Uses ERC4626 conversion logic, so the result may be rounded down by the vault.
 ```solidity
 function realAssets() public view returns (uint256);
 ```
+
+### _position
+
+Returns the current fee-aware value of the adapter's entire position in the child vault.
+
+Unlike `realAssets()`, this function does not consider the parent vault's recorded allocation.
+It is intended for internal accounting during allocation and deallocation.
+
+
+```solidity
+function _position() internal view returns (uint256);
+```
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`<none>`|`uint256`|assets The amount of underlying assets redeemable for all child-vault shares held by the adapter.|
+
 
 ### rescueToken
 
@@ -123,6 +148,14 @@ function rescueToken(address token, address to) external onlyOwner;
 
 
 ## Errors
+### InvalidVault
+Thrown when trying parent vault matches vault
+
+
+```solidity
+error InvalidVault();
+```
+
 ### NotAuthorized
 Thrown when a caller other than the parent vault calls an adapter entrypoint.
 
