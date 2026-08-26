@@ -1,5 +1,5 @@
 # BebopHook
-[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/64004be494549e5de52bb55a6490bd85d73a4f57/src/external/bebop/BebopHook.sol)
+[Git Source](https://github.com/tenbinlabs/tenbin-contracts/blob/51cfcc3be55c1fc66666f437e8175c7820cc2918/src/external/bebop/BebopHook.sol)
 
 **Inherits:**
 [IBebopHook](/src/external/bebop/IBebopHook.sol/interface.IBebopHook.md), Ownable2Step
@@ -12,6 +12,8 @@ Executes controller mint and redeem orders through the Bebop hook interface.
 - Controller orders are fixed-size ⇒ partial fills are unsupported: any fill other than
 100% reverts with InputAmountMismatch. Maker must quote these orders fill-or-kill.
 - Rebasing input tokens are unsupported
+- Redeem orders support only standard asset redemptions. Instant redemption of staked
+assets is unsupported and will revert during controller validation.
 
 https://github.com/bebop-dex/bebop-rfqa/blob/master/README.md#hooks
 
@@ -100,6 +102,8 @@ function bebopHook(address makerAddress, bytes calldata data, Swap[] calldata sw
 Updates the market maker address allowed to interact with this hook
 
 maker must already be a whitelisted signer in the controller
+
+New maker MUST mark the hook as recipient in the controller
 
 
 ```solidity

@@ -17,7 +17,21 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 
 # Audit
 
-Tenbin uses a continuous auditing policy with a target of one audit cycle per quarter. Two rounds of audits have been conducted on the tenbin contracts codebase. The first on 1/22/26 and the second on 4/12/26. Notable auditors include Spearbit, Zellic, and Fuzzland.
+Tenbin uses a continuous auditing policy with a target of one audit cycle per quarter. Two rounds of audits have been conducted on the tenbin core contracts codebase. The first core protocol audits occured on 1/22/26 and the second on 4/12/26. An audit on external integrations with Morpho and Bebop occured on 8/3/26. Notable auditors include Spearbit, Zellic, Fuzzland, and Verilog. Starting after 8/3/26, tenbin will start publishing remediations in addition to the final audit reports.
+
+## 8/3/26 Audit
+
+The auditing firms zellic and verilog (formerly fuzzland) performed an audit focused on adapters for Morpho V2 vault and a hook contract to allow inventory-free RFQ swaps. Additionaly, the audit covered a cross chain adapter for Chainlink CCIP which can be found in this repo (pending open source): https://github.com/tenbinlabs/cross-chain-erc4626-vault
+
+[scope](audit/8_03_26_scope.pdf)
+ 
+[zellic](audit/8_03_26_zellic.pdf)
+ 
+[zellic remediations](audit/8_03_26_zellic_remediations.pdf)
+ 
+[verilog (draft)](audit/8_03_26_verilog%20(draft).pdf)
+  
+[verilog remediations (draft)](audit/8_03_26_verilog_remediations%20(draft).pdf)
 
 ## 4/12/26 Audit
 

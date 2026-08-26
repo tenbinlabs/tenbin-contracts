@@ -162,7 +162,7 @@ Configuration: https://getfoundry.sh/config/static-analyzers/#mythril
 
 # Deploy
 
-Use `config/` to configure roles and parameters. `Deploy.s.sol` is the single protocol deployment entrypoint. `FOUNDRY_PROFILE=production` deploys contracts from `lib/tenbin-contracts`; `FOUNDRY_PROFILE=development` deploys contracts from `src`. Output is written under `broadcast/Deploy.s.sol/{chainid}/`.
+Use `config/` to configure roles and parameters. `Deploy.s.sol` is the single protocol deployment entrypoint. `FOUNDRY_PROFILE=production` deploys production contracts; `FOUNDRY_PROFILE=development` deploys development contracts. Output is written under `broadcast/Deploy.s.sol/{chainid}/`.
 
 ## Deploy locally
 
