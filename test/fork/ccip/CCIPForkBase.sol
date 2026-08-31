@@ -275,7 +275,7 @@ abstract contract CCIPForkBase is ForkBaseTest {
         string memory DESTINATION_RPC_URL = vm.rpcUrl("dstSepolia");
 
         sourceFork = vm.createFork(SOURCE_RPC_URL, 11590237);
-        destinationFork = vm.createFork(DESTINATION_RPC_URL);
+        destinationFork = vm.createFork(DESTINATION_RPC_URL, 302799693);
 
         ccipLocalSimulatorFork = new CCIPLocalSimulatorFork();
         vm.makePersistent(address(ccipLocalSimulatorFork));
