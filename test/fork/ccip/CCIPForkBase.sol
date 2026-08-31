@@ -38,7 +38,6 @@ abstract contract CCIPForkBase is ForkBaseTest {
     address public alice = makeAddr("alice");
 
     function setUp() public virtual override {
-        forkBlock = 11590237;
         super.setUp();
         deployContracts();
 
