@@ -26,6 +26,7 @@ contract GenericMorphoAdapterFactory {
     /// @param vault Address of the ERC4626 vault the adapter will allocate into.
     /// @return The address of the deployed GenericMorphoAdapter.
     function createGenericMorphoAdapter(address parentVault, address vault, address owner) external returns (address) {
+        require(genericMorphoAdapter[parentVault][vault] == address(0), "Adapter already exists");
         address _genericMorphoAdapter = address(new GenericMorphoAdapter{salt: bytes32(0)}(parentVault, vault, owner));
 
         genericMorphoAdapter[parentVault][vault] = _genericMorphoAdapter;

@@ -18,12 +18,13 @@ contract GenericMorphoAdapterForkTest is ForkBaseTest {
     // contracts
     IVaultV2 parentVault;
     GenericMorphoAdapter adapter;
+    GenericMorphoAdapterFactory adapterFactory;
 
     bytes32 constant SALT = bytes32(abi.encodePacked("salt"));
 
     function setUp() public override {
         super.setUp();
-        GenericMorphoAdapterFactory adapterFactory = new GenericMorphoAdapterFactory();
+        adapterFactory = new GenericMorphoAdapterFactory();
         unauthorized = address(0xBEEF);
         allocator = vm.addr(0xC001);
         IVaultV2Factory factory = IVaultV2Factory(VAULT_V2_FACTORY_ADDRESS);
@@ -349,5 +350,10 @@ contract GenericMorphoAdapterForkTest is ForkBaseTest {
         assertEq(vault.balanceOf(address(adapter)), 50e18, "Incorrect vault balance of adapter");
         assertEq(parentVault.allocation(adapterId), 50e18, "Incorrect allocation");
         assertEq(adapter.realAssets(), 50e18, "Incorrect adapter real assets");
+    }
+
+    function test_Revert_AdapterReDeploy() public {
+        vm.expectRevert("Adapter already exists");
+        adapterFactory.createGenericMorphoAdapter(address(parentVault), address(vault), owner);
     }
 }
