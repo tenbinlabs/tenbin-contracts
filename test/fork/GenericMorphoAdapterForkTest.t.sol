@@ -319,4 +319,35 @@ contract GenericMorphoAdapterForkTest is ForkBaseTest {
         assertEq(parentVault.allocation(id), 0, "allocation should return to zero");
         assertEq(adapter.realAssets(), 0, "realAssets should return to zero with zero allocation");
     }
+
+    function test_Allocate_SkipsSlippageCheckWhenMinSharesIsZero() public {
+        bytes32 adapterId = adapter.adapterId();
+
+        vm.prank(allocator);
+        parentVault.allocate(address(adapter), abi.encode(uint256(0)), 100e18);
+
+        assertEq(vault.balanceOf(address(adapter)), 100e18, "Incorrect vault balance of adapter");
+        assertEq(parentVault.allocation(adapterId), 100e18, "Incorrect allocation");
+        assertEq(adapter.realAssets(), 100e18, "Incorrect adapter real assets");
+    }
+
+    function test_Deallocate_SkipsSlippageCheckWhenMaxSharesIsZero() public {
+        bytes32 adapterId = adapter.adapterId();
+
+        uint256 minShares = vault.previewDeposit(100e18);
+
+        vm.startPrank(allocator);
+
+        // First create an allocation.
+        parentVault.allocate(address(adapter), abi.encode(minShares), 100e18);
+
+        // maxShares == 0 should disable the slippage check.
+        parentVault.deallocate(address(adapter), abi.encode(uint256(0)), 50e18);
+
+        vm.stopPrank();
+
+        assertEq(vault.balanceOf(address(adapter)), 50e18, "Incorrect vault balance of adapter");
+        assertEq(parentVault.allocation(adapterId), 50e18, "Incorrect allocation");
+        assertEq(adapter.realAssets(), 50e18, "Incorrect adapter real assets");
+    }
 }

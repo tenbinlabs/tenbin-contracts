@@ -30,6 +30,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           cache: true
+          version: v1.7.1
 
       - name: Run Forge build
         run: forge build
