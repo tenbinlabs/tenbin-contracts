@@ -12,7 +12,7 @@ contract SpokeAssetForkTest is CCIPForkBase {
         vm.selectFork(destinationFork);
         destinationCCIPBnMToken = new SpokeERC20("AssetToken2", "STK", owner);
 
-        vm.selectFork(sourceFork, 11590237);
+        vm.selectFork(sourceFork);
         asset = AssetToken(ASSET_ADDRESS);
         sourceCCIPBnMToken = IERC20(ASSET_ADDRESS);
     }
