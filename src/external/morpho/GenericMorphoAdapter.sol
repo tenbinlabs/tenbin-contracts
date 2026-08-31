@@ -12,8 +12,8 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 /// @title GenericMorphoAdapter
 /// @notice Adapter that connects a Vault V2 parent vault to a single ERC4626 vault.
 /// @dev The parent vault allocates the underlying asset to this adapter, and the adapter
-/// deposits those assets into the configured ERC4626 vault, said vault will always be a standard 
-/// ERC4626 vault. Accounting is reported back to the parent vault through a single 
+/// deposits those assets into the configured ERC4626 vault, said vault will always be a standard
+/// ERC4626 vault. Accounting is reported back to the parent vault through a single
 /// adapter-specific allocation ID.
 ///
 /// @dev IMPORTANT: The configured ERC4626 vault MUST be resistant to inflation/donation
@@ -59,7 +59,7 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
     /// @param parentVault_ Address of the Vault V2 parent vault that will use this adapter.
     /// @param vault_ Address of the ERC4626 vault where allocated assets will be deposited.
     constructor(address parentVault_, address vault_, address owner_) Ownable(owner_) {
-        if(parentVault_ == vault_) revert InvalidVault();
+        if (parentVault_ == vault_) revert InvalidVault();
         parentVault = IVaultV2(parentVault_);
         vault = IERC4626(vault_);
         asset = parentVault.asset();
@@ -82,9 +82,9 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
 
         uint256 shares;
         // If minShares equals zero the slippage check is skipped.
-        if (assets > 0 && minShares > 0) {
+        if (assets > 0) {
             shares = vault.deposit(assets, address(this));
-            if (shares < minShares) revert InsufficientShares();
+            if (minShares > 0 && shares < minShares) revert InsufficientShares();
         }
 
         uint256 newAllocation = _position();
@@ -110,9 +110,9 @@ contract GenericMorphoAdapter is IAdapter, Ownable2Step {
 
         uint256 shares;
         // If maxShares equals zero the slippage check is skipped.
-        if (assets > 0 && maxShares > 0) {
+        if (assets > 0) {
             shares = vault.withdraw(assets, address(this), address(this));
-            if (shares > maxShares) revert ExcessiveShares();
+            if (maxShares > 0 && shares > maxShares) revert ExcessiveShares();
         }
 
         uint256 newAllocation = _position();
