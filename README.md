@@ -408,3 +408,16 @@ Due to legal restrictions, yield cannot be paid to stakers without regulatory co
 ### Upgradeability 
 
 The manager is a UUPS upgradeable smart contract. The intention of upgradeability is to support new staking models in the future. In the case the design is considered stable and immutability is desired, the upgrade feature can be permanently disabled.
+
+## Security
+
+### Bug Bounty
+
+We maintain an active bug bounty program for responsible disclosure of
+security vulnerabilities.
+
+Please report vulnerabilities through our
+[cantina.review/tenbin](https://cantina.xyz/bounties/0420bc1a-9177-4e4e-8da7-826d273e3d3e).
+
+Do not disclose potential vulnerabilities publicly or open a GitHub issue
+before they have been reviewed and resolved.
