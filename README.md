@@ -29,9 +29,9 @@ The auditing firms zellic and verilog (formerly fuzzland) performed an audit foc
  
 [zellic remediations](audit/8_03_26_zellic_remediations.pdf)
  
-[verilog (draft)](audit/8_03_26_verilog%20(draft).pdf)
+[verilog](audit/8_03_26_verilog.pdf)
   
-[verilog remediations (draft)](audit/8_03_26_verilog_remediations%20(draft).pdf)
+[verilog remediations](audit/8_03_26_verilog_remediations.pdf)
 
 ## 4/12/26 Audit
 
