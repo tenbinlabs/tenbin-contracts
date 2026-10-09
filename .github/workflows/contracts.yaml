@@ -1,5 +1,7 @@
 name: Tenbin Contracts
 
+# Least privilege by default: no token scopes are granted unless a job opts in.
+# Individual jobs widen this to the single scope they actually need.
 permissions: {}
 
 on:
@@ -9,25 +11,37 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
-  MAINNET_RPC_URL: ${{ secrets.MAINNET_FORK_URL }}
-  SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_FORK_URL }}
-  RPC_URL_ARBITRUM_SEPOLIA: ${{ secrets.RPC_URL_ARBITRUM_SEPOLIA }}
-  TEST_MNEMONIC: ${{ secrets.TEST_MNEMONIC }}
 
 jobs:
   check:
     name: Tenbin project
     runs-on: ubuntu-latest
+    # Read-only source access. The GITHUB_TOKEN is never used to push, tag, or
+    # publish, so a compromised build step cannot modify the repository.
     permissions:
       contents: read
+    # Cancel superseded runs on the same ref to avoid wasting CI minutes.
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    # Bound the job so a hung build or a hostile test cannot burn the runner budget.
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      # Dependencies are git submodules under lib/ and are live import targets
+      # for src/ and test/ (see remappings.txt). They must be checked out or
+      # every remapping resolves to an empty directory and `forge build` fails.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          submodules: false
+          submodules: recursive
           fetch-depth: 1
+          # Do not leave the job token in .git/config; no later step needs to push.
+          persist-credentials: false
 
+      # RPC endpoints and the test mnemonic are only consumed by `forge test`,
+      # so they are scoped to that step instead of the whole job. This keeps them
+      # out of the environment of the third-party action installed above.
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
         with:
           cache: true
           version: v1.7.1
@@ -35,5 +49,13 @@ jobs:
       - name: Run Forge build
         run: forge build
 
+      # Secrets are unavailable to workflows triggered by a fork, so fork PRs
+      # skip the RPC-dependent suite instead of failing on empty endpoints.
       - name: Run Forge tests
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_FORK_URL }}
+          SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_FORK_URL }}
+          RPC_URL_ARBITRUM_SEPOLIA: ${{ secrets.RPC_URL_ARBITRUM_SEPOLIA }}
+          TEST_MNEMONIC: ${{ secrets.TEST_MNEMONIC }}
         run: forge test -vvv

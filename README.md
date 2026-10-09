@@ -72,7 +72,9 @@ Ensure foundry is installed: `curl -L https://foundry.paradigm.xyz | bash`
  
 Ensure foundry is up-to-date: `foundryup`
  
-Install dependencies: `forge install`
+Install dependencies (they are git submodules pinned by `foundry.lock`):
+
+`git submodule update --init --recursive`
  
 Build contracts: `forge build`
 
@@ -126,11 +128,11 @@ View coverage with uncovered branches and lines:
 
 #### Sync foundry dependencies with git submodules
  
-`./sync_foundry_deps.sh`
+`git submodule update --init --recursive`
 
 #### Nuke and reinstall dependencies from scratch
  
-`repair_foundry_deps.sh`
+`./repair_foundry_deps.sh`
  
 When updating dependencies, ensure to add/update tag names in `foundry.lock` and `repair_foundry_deps.sh`.
 

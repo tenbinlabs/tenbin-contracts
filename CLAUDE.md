@@ -16,9 +16,9 @@ Fuzzland). See `README.md` for mainnet addresses and audit history.
 
 ## Globals
 
-@../../AGENTS.md
-
+Shared monorepo conventions live in the organisation-level `AGENTS.md`:
 <https://github.com/tenbinlabs/monorepo/blob/master/AGENTS.md>
+
 
 ## Customizations
 
@@ -26,8 +26,7 @@ Fuzzland). See `README.md` for mainnet addresses and audit history.
 
 - Build: `forge build`. Test: `forge test`. Fuzz: `./echidna.sh`. Static analysis: `slither .`.
 - `test/echidna/**` holds Echidna fork-mode harnesses (live mainnet addresses, hevm cheatcodes). `[profile.default] skip` excludes them so `forge test` never collects their `invariant_*`; they are compiled and fuzzed only under `FOUNDRY_PROFILE=echidna`.
-- Deploy development contracts with `FOUNDRY_PROFILE=development`; deploy pinned production contracts with `FOUNDRY_PROFILE=production`. Both use `script/Deploy.s.sol`.
-- Restore / sync deps: `./sync_foundry_deps.sh` (repair: `./repair_foundry_deps.sh`).
+- Restore / sync deps: `git submodule update --init --recursive` (nuke + repair: `./repair_foundry_deps.sh`).
 
 ### Where to make a change
 

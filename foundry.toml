@@ -67,6 +67,19 @@ src = "src"
 optimizer = true
 optimizer_runs = 1000
 
+# CI profile selected by FOUNDRY_PROFILE=ci in .github/workflows/contracts.yaml.
+# Identical to `default` in intent, but named explicitly so the CI behaviour is
+# pinned here rather than inherited implicitly from whichever profile moves.
+[profile.ci]
+out = "out"
+libs = ["lib"]
+remappings = ["deploy-target/=./"]
+skip = ["test/echidna/**/*"]
+deny = "warnings"
+optimizer = true
+optimizer_runs = 1000
+isolate = true
+
 [lint]
 ignore = ["test/external/**/*", "test/echidna/**/*"]
 exclude_lints = [
