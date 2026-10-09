@@ -1,0 +1,2 @@
+# Keep this fallback first: GitHub uses the last matching rule, so later paths customize ownership.
+*  @tenbinlabs/engineering
