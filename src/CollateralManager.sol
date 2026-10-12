@@ -170,6 +170,8 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         IERC20(collateral).forceApprove(vault, type(uint256).max);
         vaults[collateral] = IERC4626(vault);
         lastTotalAssets[collateral] = _totalAssets(IERC4626(vault));
+        // The vault membership check above guarantees this collateral is absent from the set.
+        // slither-disable-next-line unused-return
         collaterals.add(collateral);
         emit CollateralAdded(collateral, vault);
     }
@@ -185,6 +187,8 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
         IERC20(collateral).forceApprove(address(vault), 0);
         pendingRevenue[collateral] = 0;
         lastTotalAssets[collateral] = 0;
+        // The supported vault check above guarantees this collateral is present in the set.
+        // slither-disable-next-line unused-return
         collaterals.remove(collateral);
         delete vaults[collateral];
         emit CollateralRemoved(collateral, address(vault));
@@ -198,6 +202,8 @@ contract CollateralManager is ICollateralManager, UUPSUpgradeable, AccessControl
     function redeemLegacyShares(IERC4626 vault, uint256 shares) external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
         address collateral = vault.asset();
         if (address(vaults[collateral]) != address(0)) revert CollateralAlreadySupported();
+        // Emergency recovery redeems shares; the returned assets are not used for vault accounting.
+        // slither-disable-next-line unused-return
         vault.redeem(shares, address(this), address(this));
         emit LegacySharesRedeemed(address(vault), shares);
     }

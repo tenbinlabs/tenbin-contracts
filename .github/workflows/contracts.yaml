@@ -9,25 +9,27 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
-  MAINNET_RPC_URL: ${{ secrets.MAINNET_FORK_URL }}
-  SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_FORK_URL }}
-  RPC_URL_ARBITRUM_SEPOLIA: ${{ secrets.RPC_URL_ARBITRUM_SEPOLIA }}
-  TEST_MNEMONIC: ${{ secrets.TEST_MNEMONIC }}
+  TEST_MNEMONIC: ten ten ten ten ten ten ten ten ten ten ten test
 
 jobs:
   check:
     name: Tenbin project
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
+    env:
+      MAINNET_RPC_URL: ${{ secrets.MAINNET_FORK_URL }}
+      SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_FORK_URL }}
+      RPC_URL_ARBITRUM_SEPOLIA: ${{ secrets.RPC_URL_ARBITRUM_SEPOLIA }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          submodules: false
+          submodules: recursive
           fetch-depth: 1
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           cache: true
           version: v1.7.1
@@ -36,4 +38,87 @@ jobs:
         run: forge build
 
       - name: Run Forge tests
-        run: forge test -vvv
+        run: forge test --no-match-path 'test/fork/**' -vvv
+
+      - name: Run fork tests
+        if: env.MAINNET_RPC_URL != '' && env.SEPOLIA_RPC_URL != '' && env.RPC_URL_ARBITRUM_SEPOLIA != ''
+        run: forge test --match-path 'test/fork/**' --no-match-path 'test/fork/monitoring/**' -vvv
+
+  monitoring:
+    name: Live deployment checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      MAINNET_RPC_URL: ${{ secrets.MAINNET_FORK_URL }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+        with:
+          cache: true
+          version: v1.7.1
+
+      - name: Run monitoring tests
+        if: env.MAINNET_RPC_URL != ''
+        run: forge test --match-path 'test/fork/monitoring/**' -vvv
+
+  slither:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+        with:
+          cache: true
+          version: v1.7.1
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Slither
+        run: python -m pip install slither-analyzer==0.11.6 crytic-compile==0.4.2 solc-select==1.2.0
+
+      - name: Run Slither and generate JSON report
+        run: slither . --json slither-report.json || true
+
+      - name: Check Slither analysis and findings
+        run: |
+          if ! jq -e '.success == true' slither-report.json > /dev/null; then
+            echo "Slither did not complete"
+            jq -r '.error' slither-report.json
+            exit 1
+          fi
+          SEVERITY_COUNT=$(jq '[.results.detectors // [] | .[] | select(.impact == "Medium" or .impact == "High")] | length' slither-report.json)
+          echo "Found $SEVERITY_COUNT medium/high issues"
+          if [ "$SEVERITY_COUNT" -gt 0 ]; then
+            jq '.results.detectors[] | select(.impact == "Medium" or .impact == "High") | {impact, check, description}' slither-report.json
+            exit 1
+          fi
+
+  ci-success:
+    needs: [check, slither]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check required jobs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'all(.[]; .result == "success")'

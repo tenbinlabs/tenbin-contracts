@@ -452,6 +452,8 @@ contract Controller is IController, IRestrictedRegistry, AccessControl, EIP712 {
 
         // handle redemption for staked assets
         if (order.order_token == stakedAsset) {
+            // Unstaking delivers the requested assets or reverts; the burned share count is not used.
+            // slither-disable-next-line unused-return
             IStakedAsset(stakedAsset).instantUnstake(order.asset_amount, order.payer, order.payer);
         }
 
