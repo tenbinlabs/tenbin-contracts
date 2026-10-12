@@ -48,7 +48,7 @@ contract AssetTokenTest is Test {
         // test burning own tokens
         vm.prank(account0);
         token.burn(1000e18);
-        assertEq(token.balanceOf(account0), 2001e18);
+        assertEq(token.balanceOf(account0), 2000e18);
 
         // approve another account to burn
         vm.prank(account0);
