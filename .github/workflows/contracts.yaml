@@ -40,6 +40,10 @@ jobs:
       - name: Run Forge tests
         run: forge test --no-match-path 'test/fork/**' -vvv
 
+      - name: Warn when fork tests are skipped
+        if: env.MAINNET_RPC_URL == '' || env.SEPOLIA_RPC_URL == '' || env.RPC_URL_ARBITRUM_SEPOLIA == ''
+        run: echo "::warning::Fork tests skipped because one or more RPC secrets are unavailable."
+
       - name: Run fork tests
         if: env.MAINNET_RPC_URL != '' && env.SEPOLIA_RPC_URL != '' && env.RPC_URL_ARBITRUM_SEPOLIA != ''
         run: forge test --match-path 'test/fork/**' --no-match-path 'test/fork/monitoring/**' -vvv
