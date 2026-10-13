@@ -22,6 +22,8 @@ contract GoldOracleAdapter is IOracleAdapter {
     /// @inheritdoc IOracleAdapter
     /// @dev Return price in USD with 18 decimals
     function getPrice() external view returns (uint256) {
+        // Pricing uses only the answer and update timestamp, both validated below.
+        // slither-disable-next-line unused-return
         (, int256 answer,, uint256 updatedAt,) = AggregatorV3Interface(oracle).latestRoundData();
 
         // Check for stale price
