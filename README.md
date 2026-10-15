@@ -122,6 +122,10 @@ View coverage with uncovered branches and lines:
 
 `forge doc`
 
+### Pinning
+
+The `pinning` job in `.github/workflows/contracts.yaml`, part of `ci-success`, fails on an action not pinned by commit SHA, a container image without a digest, a Dockerfile `FROM` without `@sha256`, a `*-latest` runner label, a release download without a `sha256sum -c` check, a download piped into a shell, or an inline `zizmor: ignore`. It runs zizmor, installed by hash from `.github/zizmor/requirements.txt`, and `scripts/check-pinning.sh`, whose fixture test is `scripts/check-pinning-test.sh`. A zizmor exception is an entry in `.github/zizmor.yml`, and a script exception is a line in `.github/pinning-exceptions.txt`. Each carries `expires YYYY-MM-DD`, which the same job checks.
+
 ### Updating and Fixing Dependencies
 
 #### Sync foundry dependencies with git submodules

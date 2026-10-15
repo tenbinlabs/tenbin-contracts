@@ -1,0 +1,3 @@
+# Exceptions for scripts/check-pinning.sh, one per line:
+#   <path> <text on the offending line, no spaces> expires YYYY-MM-DD <reason>
+# The `pinning` job in contracts.yaml fails on a missing or past date.

@@ -1,0 +1,4 @@
+# The zizmor the security scan installs. Regenerate requirements.txt with:
+#   uv pip compile --generate-hashes --python-version 3.14 --python-platform x86_64-manylinux_2_28 \
+#     .github/zizmor/requirements.in -o .github/zizmor/requirements.txt
+zizmor==1.30.1
