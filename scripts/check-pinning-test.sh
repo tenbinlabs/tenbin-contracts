@@ -140,12 +140,13 @@ printf 'jobs:\n  a:\n    runs-on: ubuntu-24.04\n' >"$clean/.github/workflows/w.y
 git -C "$clean" add -A
 expect "a pinned repository passes" "$clean" 0 "All images, runner labels, and release downloads are pinned."
 
-# An unreadable Bake file stops the scan on its first read; the check must fail, not pass.
+# A directory at the Bake path stops the scan on its first read, including for root.
 broken="$work/broken"
 repo "$broken"
 cp "$clean/Dockerfile" "$broken/Dockerfile"
 git -C "$broken" add -A
-chmod 000 "$broken/docker/docker-bake.hcl"
+rm "$broken/docker/docker-bake.hcl"
+mkdir "$broken/docker/docker-bake.hcl"
 actual_status=0
 last=$(cd "$broken" && bash "$check" 2>/dev/null | tail -n 1) || actual_status=$?
 if [ "$actual_status" = 1 ] && [ "$last" = "::error::the pinning scan did not complete, so its findings cannot be trusted" ]; then
