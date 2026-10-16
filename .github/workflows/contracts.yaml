@@ -14,7 +14,7 @@ env:
 jobs:
   check:
     name: Tenbin project
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -27,6 +27,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
@@ -50,7 +51,7 @@ jobs:
 
   monitoring:
     name: Live deployment checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -61,6 +62,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
@@ -73,7 +75,7 @@ jobs:
         run: forge test --match-path 'test/fork/monitoring/**' -vvv
 
   slither:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -82,6 +84,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
@@ -114,10 +117,79 @@ jobs:
             exit 1
           fi
 
+  # Every action is pinned by commit SHA and every image by digest, no runner label floats,
+  # and no release download goes unverified. Exceptions carry `expires YYYY-MM-DD`.
+  pinning:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Install zizmor
+        run: pip install --require-hashes -r .github/zizmor/requirements.txt
+
+      # Offline audits only, configured by .github/zizmor.yml; any finding fails. The
+      # checks below run even when it fails, so one run reports every unpinned item.
+      - name: Audit workflows with zizmor
+        run: zizmor --offline --format=github .github/workflows
+
+      # The regular persona accepts an image pinned by tag; only a digest passes here.
+      - name: Fail on an unpinned action or container image
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          zizmor --offline --persona=pedantic --no-exit-codes --format=json .github/workflows > zizmor.json
+          jq -r '.[] | select(.ident == "unpinned-uses" or .ident == "unpinned-images")
+            | .ident as $ident | .locations[0] | "::error file=\(.symbolic.key.Local.verbatim_path),line=\(.concrete.location.start_point.row + 1)::\($ident): \(.symbolic.annotation)"' zizmor.json
+          jq -e '[.[] | select(.ident == "unpinned-uses" or .ident == "unpinned-images")] | length == 0' zizmor.json > /dev/null
+
+      - name: Test the pinning script against its fixtures
+        if: ${{ !cancelled() }}
+        run: bash scripts/check-pinning-test.sh
+
+      - name: Check Dockerfile bases, runner labels and release downloads
+        if: ${{ !cancelled() }}
+        run: bash scripts/check-pinning.sh
+
+      # An ignore entry (block or flow style) or a disabled audit in the zizmor configuration,
+      # and every non-comment line of the pinning exceptions, is an exception entry.
+      - name: Fail on a pinning exception without a date or past it
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          today=$(date -u +%F)
+          failed=0
+          for f in .github/zizmor.yml .github/pinning-exceptions.txt; do
+            case "$f" in
+              .github/zizmor.yml) entry='^[[:space:]]*(- |disable:|ignore:[[:space:]]*[^#[:space:]])' ;;
+              *) entry='^[[:space:]]*[^#[:space:]]' ;;
+            esac
+            while IFS=: read -r line text; do
+              date=$(grep -oE 'expires [0-9]{4}-[0-9]{2}-[0-9]{2}' <<<"$text" | cut -d' ' -f2 || true)
+              if [ -z "$date" ]; then
+                echo "::error file=$f,line=$line::pinning exception has no expires date"
+                failed=1
+              elif [[ "$date" < "$today" ]]; then
+                echo "::error file=$f,line=$line::pinning exception expired on $date; fix it or renew it with a reason"
+                failed=1
+              fi
+            done < <(grep -nE "$entry" "$f" || true)
+          done
+          exit "$failed"
+
   ci-success:
-    needs: [check, slither]
+    needs: [check, slither, pinning]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Check required jobs
