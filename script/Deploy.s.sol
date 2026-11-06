@@ -8,7 +8,6 @@ import {CollateralManager} from "deploy-target/src/CollateralManager.sol";
 import {console2} from "forge-std/console2.sol";
 import {Controller} from "deploy-target/src/Controller.sol";
 import {CustodianModule} from "deploy-target/src/CustodianModule.sol";
-import {DeployBase} from "./DeployBase.s.sol";
 import {ERC1967Proxy} from "deploy-target/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Gate} from "deploy-target/src/external/morpho/Gate.sol";
 import {GoldOracleAdapter} from "deploy-target/src/oracle/GoldOracleAdapter.sol";
@@ -16,16 +15,21 @@ import {IAdapter} from "vault-v2/src/interfaces/IAdapter.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import {IMorphoVaultV1AdapterFactory} from "vault-v2/src/adapters/interfaces/IMorphoVaultV1AdapterFactory.sol";
+import {IMorpho, Id, MarketParams} from "vault-v2/lib/morpho-blue/src/interfaces/IMorpho.sol";
+import {IMorphoMarketV1AdapterV2} from "vault-v2/src/adapters/interfaces/IMorphoMarketV1AdapterV2.sol";
 import {IOracleAdapter} from "deploy-target/src/interface/IOracleAdapter.sol";
 import {IVaultV2} from "vault-v2/src/interfaces/IVaultV2.sol";
 import {IVaultV2Factory} from "vault-v2/src/interfaces/IVaultV2Factory.sol";
+import {MarketParamsLib} from "vault-v2/lib/morpho-blue/src/libraries/MarketParamsLib.sol";
 import {Mock1InchRouter} from "../test/mocks/Mock1InchRouter.sol";
 import {MockDistributor} from "../test/mocks/MockDistributor.sol";
 import {MockERC20} from "../test/mocks/MockERC20.sol";
 import {MockERC4626} from "../test/mocks/MockERC4626.sol";
+import {MockOracleAdapter} from "../test/mocks/MockOracleAdapter.sol";
+import {MorphoAdapterDeployer} from "./MorphoAdapterDeployer.s.sol";
 import {MultiCall} from "deploy-target/src/MultiCall.sol";
 import {MXNOracleAdapter} from "deploy-target/src/oracle/MXNOracleAdapter.sol";
+import {OracleMock} from "vault-v2/lib/morpho-blue/src/mocks/OracleMock.sol";
 import {RevenueModule} from "deploy-target/src/RevenueModule.sol";
 import {StakedAsset} from "deploy-target/src/StakedAsset.sol";
 import {SwapModule} from "deploy-target/src/SwapModule.sol";
@@ -37,22 +41,48 @@ import {SwapModule} from "deploy-target/src/SwapModule.sol";
 /// public release contracts with mock integrations (how chain_integration and bdd-e2e test against anvil).
 ///
 /// Deployment instructions
-/// 1) Ensure `MAINNET_RPC_URL`, `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and (for verification) `ETHERSCAN_API_KEY` are set.
-/// 2) Run `FOUNDRY_PROFILE=production forge script script/Deploy.s.sol --sig "run(string,string,bool)" $ASSET_CONFIG $VAULT_CONFIG false --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --slow --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY`
+/// 1) Ensure `MAINNET_RPC_URL`, `BROADCASTER_ACCOUNT`, `BROADCASTER_ADDRESS` and (for verification) `ETHERSCAN_API_KEY` are set.
+/// 2) Run `FOUNDRY_PROFILE=production forge script script/Deploy.s.sol --sig "run(string,string,bool)" $ASSET_CONFIG $VAULT_CONFIG false --rpc-url $MAINNET_RPC_URL --account "$BROADCASTER_ACCOUNT" --sender "$BROADCASTER_ADDRESS" --slow --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY`
 /// Add --broadcast to broadcast
 /// 3) Read the output via `broadcast/Deploy.s.sol/<chainid>/contracts.json`
 ///
 /// Post Deployment:
 /// 1) Call claimOwnership() on AssetToken
-contract Deploy is DeployBase {
+contract Deploy is MorphoAdapterDeployer {
+    using MarketParamsLib for MarketParams;
+
     /// @notice Morpho Vault V2 Factory Mainnet
     address constant VAULT_V2_FACTORY_ADDRESS = 0xA1D94F746dEfa1928926b84fB2596c06926C0405;
     /// @notice Morpho Vault V2 Factory Sepolia
     address constant VAULT_V2_FACTORY_ADDRESS_SEPOLIA = 0xb3fE2D5f8Af90f194B01db546397058Fcebb85D1;
-    /// @notice Morpho VaultV1Adapter Factory Mainnet
-    address constant VAULT_V1_ADAPTER_FACTORY_ADDRESS = 0xD1B8E2dee25c2b89DCD2f98448a7ce87d6F63394;
-    /// @notice Morpho VaultV1Adapter Factory Sepolia
-    address constant VAULT_V1_ADAPTER_FACTORY_ADDRESS_SEPOLIA = 0x6a86a72C13cd29350A779befa70E3B08Cd870F84;
+    /// @notice Local mock oracle price of one 18-decimal collateral unit in 6-decimal loan units:
+    /// morpho scales prices by 1e36, so $1 per unit is 1e36 * 1e6 / 1e18 = 1e24.
+    uint256 constant LOCAL_ORACLE_PRICE = 1e24;
+
+    /// @notice Starting prices for the mock oracle adapter, USD at 18 decimals — the same scale
+    /// the real adapters normalise Chainlink to.
+    ///
+    /// Per asset rather than a single constant. A flat `1e18` is $1.00, which is wrong by one to
+    /// four orders of magnitude for every asset this serves, and it lands on the dashboards this
+    /// change exists to make trustworthy — swapping an obviously-fake zero for a plausible-looking
+    /// wrong number is the same failure that let the original bug survive.
+    ///
+    /// Indicative, not maintained: `oracle_price` is write-only in RE (persisted at
+    /// `db/rebalancing.rs:1015`, surfaced by the `0099` display view, never read by engine logic),
+    /// so these cannot affect behaviour. A scenario that cares about the number moves it with
+    /// `MockOracleAdapter.setPrice` rather than depending on a default (ENG-2664).
+    uint256 constant MOCK_ORACLE_PRICE_GLD = 3_500e18;
+    uint256 constant MOCK_ORACLE_PRICE_BRL = 18e16;
+    uint256 constant MOCK_ORACLE_PRICE_MXN = 5e16;
+    /// @notice Fallback for an asset with no per-asset figure above.
+    uint256 constant MOCK_ORACLE_PRICE_DEFAULT = 1e18;
+
+    /// @notice Dead-deposit seed for each mocked ERC4626 adapter target, in 6-decimal collateral
+    /// units. The engine annualizes share-price growth linearly, so a donation of D into a pot of
+    /// S reads as D/S * 31_536_000 / window: over the e2e 20s window, 5 USDC into 20M is ~39% APY,
+    /// inside the 50% `max_apy` cap. A small pot puts every usable donation over that cap, where
+    /// the sample is discarded and the adapter drops out of yield ranking entirely.
+    uint256 constant MOCK_TARGET_DEAD_DEPOSIT = 20_000_000e6;
 
     /// @notice Core protocol contracts deployed by this script
     struct CoreDeploymentResult {
@@ -72,30 +102,53 @@ contract Deploy is DeployBase {
         SwapModule swap_module;
     }
 
+    /// @notice A single adapter deployed for the vault
+    struct DeployedAdapter {
+        IAdapter adapter;
+        string adapter_type;
+        string name;
+    }
+
+    /// @notice A morpho market the vault's MARKET adapter allocates to, with resolved params
+    struct DeployedMarket {
+        string name;
+        MarketParams params;
+    }
+
     /// @notice Morpho vault contracts deployed by this script
     struct VaultDeploymentResult {
         Gate gate;
         IVaultV2 vault;
-        IAdapter adapter;
+        IAdapter liquidity_adapter;
+        DeployedAdapter[] adapters;
+        DeployedMarket[] markets;
     }
+
+    /// @notice Adapter parameters loaded from the adapter configs declared by the vault config
+    AdapterParameters[] internal adapterParamsList;
+
+    /// @notice Market parameters loaded from the market configs declared by the vault config
+    MarketParameters[] internal marketConfigList;
 
     function defaultAssetConfigDir() internal view returns (string memory) {
         if (block.chainid == 1) return "./config/mainnet/tgld/tgld.toml";
         if (block.chainid == 11155111) return "./config/sepolia/tgld/tgld_sepolia.toml";
-        return "./config/local/local.toml";
+        return "./config/local/tgld/tgld_local.toml";
     }
 
     function defaultVaultConfigDir() internal view returns (string memory) {
         if (block.chainid == 1) return "./config/mainnet/tgld/vaults/tgld_usdc_vault.toml";
         if (block.chainid == 11155111) return "./config/sepolia/tgld/vaults/tgld_sepolia_vault.toml";
-        return "./config/local/local_vault.toml";
+        return "./config/local/tgld/vaults/tgld_local_vault.toml";
     }
 
     function run(string memory assetConfigDir, string memory vaultConfigDir, bool useMockIntegrations)
         public
+        virtual
         returns (CoreDeploymentResult memory core, VaultDeploymentResult memory vault)
     {
         require(block.chainid == 1 || block.chainid == 11155111 || block.chainid == 31337, "chain not supported");
+        require(!(useMockIntegrations && block.chainid == 1), "mocks not allowed on mainnet");
 
         if (bytes(assetConfigDir).length == 0) assetConfigDir = defaultAssetConfigDir();
         if (bytes(vaultConfigDir).length == 0) vaultConfigDir = defaultVaultConfigDir();
@@ -104,8 +157,10 @@ contract Deploy is DeployBase {
         loadCoreConfig(assetConfigDir);
         loadRolesConfig();
         loadVaultConfig(vaultConfigDir);
+        loadAdapterConfigs(vaultConfigDir);
+        loadMarketConfigs(vaultConfigDir);
 
-        // 2. deploy vault and liquidity adapter
+        // 2. deploy vault and its adapters
         vault = deployVault();
 
         // 3. deploy core contracts
@@ -121,90 +176,246 @@ contract Deploy is DeployBase {
         printLogo();
     }
 
+    // Run only core contracts deployment
     function runCoreOnly(string memory assetConfigDir, bool useMockIntegrations)
         public
+        virtual
         returns (CoreDeploymentResult memory core)
     {
         require(block.chainid == 1 || block.chainid == 11155111 || block.chainid == 31337, "chain not supported");
+        require(!(useMockIntegrations && block.chainid == 1), "mocks not allowed on mainnet");
 
         if (bytes(assetConfigDir).length == 0) assetConfigDir = defaultAssetConfigDir();
 
+        // load config
         loadCoreConfig(assetConfigDir);
         loadRolesConfig();
 
         address vault = assetConfig.get("vault").toAddress();
         require(vault != address(0), "vault not set in asset config");
 
+        // deploy
         core = deployCore(IERC4626(vault), useMockIntegrations);
+
+        // serialize and print
         serializeCore(core);
         printCoreDeployment(core);
         printLogo();
     }
 
-    function runVaultOnly(string memory vaultConfigDir) public returns (VaultDeploymentResult memory vault) {
+    // Run only vault deployment
+    function runVaultOnly(string memory assetConfigDir, string memory vaultConfigDir)
+        public
+        virtual
+        returns (VaultDeploymentResult memory vault)
+    {
         require(block.chainid == 1 || block.chainid == 11155111 || block.chainid == 31337, "chain not supported");
 
+        if (bytes(assetConfigDir).length == 0) assetConfigDir = defaultAssetConfigDir();
         if (bytes(vaultConfigDir).length == 0) vaultConfigDir = defaultVaultConfigDir();
 
+        // load config
+        loadCoreConfig(assetConfigDir);
+        loadRolesConfig();
         loadVaultConfig(vaultConfigDir);
+        loadAdapterConfigs(vaultConfigDir);
+        loadMarketConfigs(vaultConfigDir);
+
+        // if not a new asset vault the manager can be set after deployment
         address manager;
         if (!vaultConfig.get("is_new_asset_vault").toBool()) manager = vaultConfig.get("manager").toAddress();
 
+        // deploy
         vault = deployVault();
+
+        // finalize gate
         finalizeGate(vault, manager);
+
+        // serialize and print
         serializeVaultOnly(vault);
         printVaultDeployment(vault);
         printLogo();
     }
 
-    /// @notice Deploy and configure a morpho v2 vault, its liquidity adapter, and the gate.
+    /// @notice Load every adapter config declared by the vault config. Call outside `broadcast`.
+    function loadAdapterConfigs(string memory vaultConfigDir) internal {
+        delete adapterParamsList; // a second call must not leave the list longer than vaultParams.adapters
+        uint256 marketAdapters;
+        for (uint256 i = 0; i < vaultParams.adapters.length; i++) {
+            adapterParamsList.push(loadAdapterParams(adapterConfigPath(vaultConfigDir, vaultParams.adapters[i])));
+            if (stringMatches(vaultParams.adapters[i], vaultParams.liquidity_adapter)) {
+                require(
+                    stringMatches(adapterParamsList[i].adapter_type, "VAULT")
+                        || stringMatches(adapterParamsList[i].adapter_type, "GENERIC"),
+                    "liquidity_adapter must be VAULT or GENERIC"
+                );
+            }
+            if (stringMatches(adapterParamsList[i].adapter_type, "MARKET")) marketAdapters++;
+        }
+        require(marketAdapters <= 1, "at most one MARKET adapter per vault");
+    }
+
+    /// @notice Load every market config declared by the vault config's `markets` key. Only read when
+    /// a MARKET adapter is configured, so existing vault configs keep working without the key.
+    /// Call outside `broadcast`.
+    function loadMarketConfigs(string memory vaultConfigDir) internal {
+        delete marketConfigList;
+        if (!hasMarketAdapter()) return;
+        string[] memory names = vaultConfig.get("markets").toStringArray();
+        require(names.length == 1, "exactly one market required for the MARKET adapter");
+        for (uint256 i = 0; i < names.length; i++) {
+            marketConfigList.push(loadMarketParams(marketConfigPath(vaultConfigDir, names[i])));
+        }
+    }
+
+    /// @notice Whether the loaded adapter configs include a MARKET adapter.
+    function hasMarketAdapter() internal view returns (bool) {
+        for (uint256 i = 0; i < adapterParamsList.length; i++) {
+            if (stringMatches(adapterParamsList[i].adapter_type, "MARKET")) return true;
+        }
+        return false;
+    }
+
+    /// @notice Testnets only: deploy a seeded mock ERC4626 target for each VAULT/GENERIC adapter
+    /// config without a vault address. MARKET adapters have no target vault and are skipped.
+    function deployMockTargets(bytes32 salt) internal {
+        // loop through adapters, load from storage, and deploy a mock ERC4626 for each adapter
+        for (uint256 i = 0; i < adapterParamsList.length; i++) {
+            AdapterParameters storage params = adapterParamsList[i];
+            if (params.vault != address(0) || stringMatches(params.adapter_type, "MARKET")) continue;
+
+            // mint the seed, deploy a mock named after the adapter, and burn the seed as a dead deposit
+            MockERC20(vaultParams.asset).mint(broadcaster, MOCK_TARGET_DEAD_DEPOSIT);
+            params.vault = deployMockTarget(salt, params);
+            IERC20(vaultParams.asset).approve(params.vault, MOCK_TARGET_DEAD_DEPOSIT);
+            IERC4626(params.vault).deposit(MOCK_TARGET_DEAD_DEPOSIT, address(0xDEAD));
+        }
+    }
+
+    /// @notice Create an ERC4626 target; e2e fixtures may override individual targets.
+    function deployMockTarget(bytes32 salt, AdapterParameters memory params) internal virtual returns (address) {
+        return address(
+            new MockERC4626{salt: keccak256(abi.encodePacked(salt, params.name))}(
+                params.name, params.name, IERC20(vaultParams.asset)
+            )
+        );
+    }
+
+    /// @notice Local dev only: fill each market config's unset fields with mocks (collateral token,
+    /// $1 oracle, local adaptive curve IRM), create the market on the local morpho blue, and seed it
+    /// with one unit of supply as an inflation-attack guard (see MorphoMarketV1AdapterV2).
+    function createLocalMarkets(bytes32 salt) internal {
+        resolveLocalMorphoSingletons();
+        for (uint256 i = 0; i < marketConfigList.length; i++) {
+            MarketParameters storage params = marketConfigList[i];
+            if (params.collateral_token == address(0)) {
+                string memory name = string.concat(params.name, " Collateral");
+                params.collateral_token =
+                    address(new MockERC20{salt: keccak256(abi.encodePacked(salt, name))}(name, name, 18));
+            }
+            if (params.oracle == address(0)) {
+                OracleMock oracle = new OracleMock{salt: keccak256(abi.encodePacked(salt, params.name))}();
+                oracle.setPrice(LOCAL_ORACLE_PRICE);
+                params.oracle = address(oracle);
+            }
+            if (params.irm == address(0)) params.irm = adaptiveCurveIrm;
+
+            MarketParams memory marketParams = toMarketParams(params);
+            if (!IMorpho(morphoBlue).isIrmEnabled(marketParams.irm)) IMorpho(morphoBlue).enableIrm(marketParams.irm);
+            if (!IMorpho(morphoBlue).isLltvEnabled(marketParams.lltv)) {
+                IMorpho(morphoBlue).enableLltv(marketParams.lltv);
+            }
+            IMorpho(morphoBlue).createMarket(marketParams);
+
+            MockERC20(vaultParams.asset).mint(broadcaster, 1e6);
+            IERC20(vaultParams.asset).approve(morphoBlue, 1e6);
+            IMorpho(morphoBlue).supply(marketParams, 1e6, 0, address(0xDEAD), hex"");
+        }
+    }
+
+    /// @notice Cap each configured market on the vault. The market adapter reports three ids per
+    /// allocation (adapterId, collateralToken, this/marketParams) and every one needs a cap or
+    /// allocate reverts with ZeroAbsoluteCap; the adapterId cap already comes from the adapter's
+    /// own config, so this sets the two market-derived ids from the market's config.
+    function capMarkets(VaultDeploymentResult memory deployment) internal {
+        address marketAdapter = marketAdapterAddress(deployment);
+        IMorpho morpho = IMorpho(IMorphoMarketV1AdapterV2(marketAdapter).morpho());
+        for (uint256 i = 0; i < marketConfigList.length; i++) {
+            MarketParameters memory params = marketConfigList[i];
+            MarketParams memory marketParams = toMarketParams(params);
+            requireMarketExists(morpho, marketParams);
+            bytes memory collateralId = abi.encode("collateralToken", params.collateral_token);
+            bytes memory marketId = abi.encode("this/marketParams", marketAdapter, marketParams);
+            deployment.vault.submit(abi.encodeCall(IVaultV2.increaseAbsoluteCap, (collateralId, params.absolute_cap)));
+            deployment.vault.submit(abi.encodeCall(IVaultV2.increaseRelativeCap, (collateralId, params.relative_cap)));
+            deployment.vault.submit(abi.encodeCall(IVaultV2.increaseAbsoluteCap, (marketId, params.absolute_cap)));
+            deployment.vault.submit(abi.encodeCall(IVaultV2.increaseRelativeCap, (marketId, params.relative_cap)));
+            deployment.vault.increaseAbsoluteCap(collateralId, params.absolute_cap);
+            deployment.vault.increaseRelativeCap(collateralId, params.relative_cap);
+            deployment.vault.increaseAbsoluteCap(marketId, params.absolute_cap);
+            deployment.vault.increaseRelativeCap(marketId, params.relative_cap);
+        }
+    }
+
+    /// @notice Require Morpho to return the exact configured market parameters.
+    function requireMarketExists(IMorpho morpho, MarketParams memory expected) internal view {
+        require(
+            keccak256(abi.encode(morpho.idToMarketParams(expected.id()))) == keccak256(abi.encode(expected)),
+            "configured Morpho market does not exist"
+        );
+    }
+
+    /// @notice Address of the vault's single MARKET adapter.
+    function marketAdapterAddress(VaultDeploymentResult memory deployment) internal pure returns (address) {
+        for (uint256 i = 0; i < deployment.adapters.length; i++) {
+            if (stringMatches(deployment.adapters[i].adapter_type, "MARKET")) {
+                return address(deployment.adapters[i].adapter);
+            }
+        }
+        revert("no MARKET adapter deployed");
+    }
+
+    /// @notice Deploy and configure a morpho v2 vault, its adapters, and the gate.
     /// Gate ownership stays with the broadcaster until finalizeGate wires the collateral manager.
     function deployVault() internal broadcast returns (VaultDeploymentResult memory deployment) {
-        IVaultV2Factory vaultFactory;
-        IMorphoVaultV1AdapterFactory adapterFactory;
+        deployment = createVault(true);
+        configureVault(deployment);
+    }
 
+    function createVault(bool initializeLocalMarkets) internal returns (VaultDeploymentResult memory deployment) {
+        require(roles.rebalancer_role != address(0), "rebalancer role not set");
+        IVaultV2Factory vaultFactory;
         bytes32 salt = keccak256(abi.encodePacked(SALT, vaultParams.symbol));
 
         // load factory addresses and set up mocks based on chain
         if (block.chainid == 1) {
             vaultFactory = IVaultV2Factory(VAULT_V2_FACTORY_ADDRESS);
-            adapterFactory = IMorphoVaultV1AdapterFactory(VAULT_V1_ADAPTER_FACTORY_ADDRESS);
         } else if (block.chainid == 11155111) {
             vaultFactory = IVaultV2Factory(VAULT_V2_FACTORY_ADDRESS_SEPOLIA);
-            adapterFactory = IMorphoVaultV1AdapterFactory(VAULT_V1_ADAPTER_FACTORY_ADDRESS_SEPOLIA);
-            // mint mock collateral to cover the dead deposits and deploy a mock initial vault
-            MockERC20(vaultParams.asset).mint(broadcaster, 1e6 + vaultParams.dead_deposit);
-            vaultParams.initial_vault =
-                address(new MockERC4626{salt: salt}("Steakhouse USDC", "SUSDC", IERC20(vaultParams.asset)));
-            IERC20(vaultParams.asset).approve(vaultParams.initial_vault, 1e6);
-            IERC4626(vaultParams.initial_vault).deposit(1e6, address(0xDEAD));
         } else {
-            // local dev: deploy the morpho factories and a mock collateral shared with the core deployment.
-            // Artifact-path form is required: the "File.sol:Name" form only resolves artifacts in the
-            // current compile graph, and the solc-0.8.28 morpho contracts can't be imported across the
-            // pragma split — they exist only on disk after a project-wide build (see MorphoArtifacts.sol).
+            // local dev: deploy the morpho factory and a mock collateral shared with the core deployment.
+            // Uses artifacts from compiled code to support morpho's solidity version (see MorphoArtifacts.sol).
             vaultFactory = IVaultV2Factory(deployCode("out/VaultV2Factory.sol/VaultV2Factory.json"));
-            adapterFactory = IMorphoVaultV1AdapterFactory(
-                deployCode("out/MorphoVaultV1AdapterFactory.sol/MorphoVaultV1AdapterFactory.json")
-            );
             MockERC20 collateral = new MockERC20{salt: salt}("Mock USDC", "USDC", 6);
             coreParams.collateral = address(collateral);
             vaultParams.asset = address(collateral);
-            vaultParams.initial_vault = address(new MockERC4626{salt: salt}("Steakhouse USDC", "SUSDC", collateral));
-            collateral.mint(broadcaster, 1e6 + vaultParams.dead_deposit);
-            collateral.approve(vaultParams.initial_vault, 1e6);
-            IERC4626(vaultParams.initial_vault).deposit(1e6, address(0xDEAD));
         }
         if (coreParams.collateral != address(0)) {
             require(vaultParams.asset == coreParams.collateral, "vault asset does not match collateral");
         }
 
+        if (initializeLocalMarkets && block.chainid == 31337 && marketConfigList.length > 0) {
+            createLocalMarkets(salt);
+        }
+
+        // testnet only: mock the adapter target vaults and mint the collateral the dead deposit needs
+        if (block.chainid == 11155111 || block.chainid == 31337) {
+            deployMockTargets(salt);
+            MockERC20(vaultParams.asset).mint(broadcaster, vaultParams.dead_deposit);
+        }
+
         // deploy new vault with broadcaster as initial owner
         deployment.vault = IVaultV2(vaultFactory.createVaultV2(broadcaster, vaultParams.asset, salt));
-
-        // deploy adapter
-        deployment.adapter =
-            IAdapter(adapterFactory.createMorphoVaultV1Adapter(address(deployment.vault), vaultParams.initial_vault));
 
         // deploy gate
         deployment.gate = new Gate(broadcaster);
@@ -216,39 +427,80 @@ contract Deploy is DeployBase {
         // transfer curator permissions to broadcaster
         deployment.vault.setCurator(broadcaster);
 
-        // add adapter
-        deployment.vault.submit(abi.encodeCall(IVaultV2.addAdapter, address(deployment.adapter)));
-        deployment.vault.addAdapter(address(deployment.adapter));
-
         // set broadcaster as allocator
         deployment.vault.submit(abi.encodeCall(IVaultV2.setIsAllocator, (broadcaster, true)));
         deployment.vault.setIsAllocator(broadcaster, true);
+    }
 
-        // set caps
-        bytes memory adapterId = abi.encode("this", deployment.adapter);
-        deployment.vault
-            .submit(abi.encodeCall(IVaultV2.increaseAbsoluteCap, (adapterId, vaultParams.initial_absolute_cap)));
-        deployment.vault
-            .submit(abi.encodeCall(IVaultV2.increaseRelativeCap, (adapterId, vaultParams.initial_relative_cap)));
-        deployment.vault.increaseAbsoluteCap(adapterId, vaultParams.initial_absolute_cap);
-        deployment.vault.increaseRelativeCap(adapterId, vaultParams.initial_relative_cap);
+    function configureVault(VaultDeploymentResult memory deployment) internal {
+        // deploy every adapter listed in the vault config; a fresh vault needs all of them,
+        // so is_new_adapter is ignored (only DeployMorphoAdapter.s.sol respects it)
+        deployment.adapters = new DeployedAdapter[](adapterParamsList.length);
+        bytes memory liquidityData;
+        for (uint256 i = 0; i < adapterParamsList.length; i++) {
+            // load parameters
+            AdapterParameters memory params = adapterParamsList[i];
+
+            // deploy adapter
+            params.parent = address(deployment.vault);
+            params.asset = vaultParams.asset;
+            (, address adapter) = deployAdapter(params);
+            deployment.adapters[i] = DeployedAdapter(IAdapter(adapter), params.adapter_type, params.name);
+
+            // set liquidity adapter if configured
+            if (stringMatches(vaultParams.adapters[i], vaultParams.liquidity_adapter)) {
+                deployment.liquidity_adapter = IAdapter(adapter);
+                if (stringMatches(params.adapter_type, "GENERIC")) liquidityData = abi.encode(uint256(0));
+            }
+        }
+        require(address(deployment.liquidity_adapter) != address(0), "liquidity adapter not deployed");
+
+        // add adapters (submit + immediate call works because timelocks are configured last)
+        for (uint256 i = 0; i < deployment.adapters.length; i++) {
+            deployment.vault.submit(abi.encodeCall(IVaultV2.addAdapter, address(deployment.adapters[i].adapter)));
+            deployment.vault.addAdapter(address(deployment.adapters[i].adapter));
+        }
+
+        // set each adapter's caps from its config, keyed by adapterId
+        for (uint256 i = 0; i < deployment.adapters.length; i++) {
+            bytes memory adapterId = abi.encode("this", deployment.adapters[i].adapter);
+            deployment.vault
+                .submit(abi.encodeCall(IVaultV2.increaseAbsoluteCap, (adapterId, adapterParamsList[i].absolute_cap)));
+            deployment.vault
+                .submit(abi.encodeCall(IVaultV2.increaseRelativeCap, (adapterId, adapterParamsList[i].relative_cap)));
+            deployment.vault.increaseAbsoluteCap(adapterId, adapterParamsList[i].absolute_cap);
+            deployment.vault.increaseRelativeCap(adapterId, adapterParamsList[i].relative_cap);
+        }
+
+        // record the configured markets and cap each one on the vault
+        deployment.markets = new DeployedMarket[](marketConfigList.length);
+        for (uint256 i = 0; i < marketConfigList.length; i++) {
+            deployment.markets[i] = DeployedMarket(marketConfigList[i].name, toMarketParams(marketConfigList[i]));
+        }
+        if (deployment.markets.length > 0) capMarkets(deployment);
 
         // set max rate
         deployment.vault.submit(abi.encodeCall(IVaultV2.setMaxRate, (vaultParams.max_rate)));
         deployment.vault.setMaxRate(vaultParams.max_rate);
 
         // enable liquidity adapter
-        deployment.vault.setLiquidityAdapterAndData(address(deployment.adapter), new bytes(0));
+        deployment.vault.setLiquidityAdapterAndData(address(deployment.liquidity_adapter), liquidityData);
 
         // perform dead deposit
         IERC20(deployment.vault.asset()).approve(address(deployment.vault), vaultParams.dead_deposit);
         deployment.vault.deposit(vaultParams.dead_deposit, address(0xdead)); // Dead address for burned shares
 
-        // set sentinel and allocator
+        // set sentinel and allocators
         deployment.vault.submit(abi.encodeCall(IVaultV2.setIsSentinel, (vaultParams.sentinel, true)));
         deployment.vault.submit(abi.encodeCall(IVaultV2.setIsAllocator, (vaultParams.allocator, true)));
+        if (roles.rebalancer_role != vaultParams.allocator) {
+            deployment.vault.submit(abi.encodeCall(IVaultV2.setIsAllocator, (roles.rebalancer_role, true)));
+        }
         deployment.vault.setIsSentinel(vaultParams.sentinel, true);
         deployment.vault.setIsAllocator(vaultParams.allocator, true);
+        if (roles.rebalancer_role != vaultParams.allocator) {
+            deployment.vault.setIsAllocator(roles.rebalancer_role, true);
+        }
 
         // set gate
         deployment.vault.submit(abi.encodeCall(IVaultV2.setSendAssetsGate, (address(deployment.gate))));
@@ -264,7 +516,15 @@ contract Deploy is DeployBase {
         deployment.vault.submit(abi.encodeCall(IVaultV2.setIsAllocator, (broadcaster, false)));
         deployment.vault.setIsAllocator(broadcaster, false);
 
-        // set timelock
+        // set timelock; market adapters gate their own submit on the vault's curator, so this has to
+        // run while the broadcaster still holds that role
+        for (uint256 i = 0; i < deployment.adapters.length; i++) {
+            if (stringMatches(deployment.adapters[i].adapter_type, "MARKET")) {
+                configureMarketAdapterTimelock(
+                    IMorphoMarketV1AdapterV2(address(deployment.adapters[i].adapter)), vaultParams.timelock_duration
+                );
+            }
+        }
         configureTimelock(deployment.vault, vaultParams.timelock_duration);
 
         deployment.vault.setCurator(vaultParams.curator);
@@ -272,6 +532,15 @@ contract Deploy is DeployBase {
     }
 
     /// @notice Deploy and configure the selected core protocol contracts.
+    /// @notice An indicative starting price for `assetSymbol`, USD at 18 decimals.
+    /// @dev Mirrors the asset dispatch used for the real adapters, so the two stay side by side.
+    function mockOraclePrice(string memory assetSymbol) internal pure returns (uint256) {
+        if (stringMatches(assetSymbol, "tGLD")) return MOCK_ORACLE_PRICE_GLD;
+        if (stringMatches(assetSymbol, "tBRL")) return MOCK_ORACLE_PRICE_BRL;
+        if (stringMatches(assetSymbol, "tMXN")) return MOCK_ORACLE_PRICE_MXN;
+        return MOCK_ORACLE_PRICE_DEFAULT;
+    }
+
     function deployCore(IERC4626 vault, bool useMockIntegrations)
         internal
         broadcast
@@ -346,21 +615,7 @@ contract Deploy is DeployBase {
             address(coreParams.multisig)
         );
 
-        if (useMockIntegrations) {
-            deployment.oracle_adapter = IOracleAdapter(address(0));
-        } else if (stringMatches(coreParams.asset_symbol, "tGLD")) {
-            deployment.oracle_adapter = IOracleAdapter(address(new GoldOracleAdapter()));
-            require(deployment.oracle_adapter.oracle() == coreParams.oracle, "oracle mismatch");
-        } else if (stringMatches(coreParams.asset_symbol, "tBRL")) {
-            deployment.oracle_adapter = IOracleAdapter(address(new BRLOracleAdapter()));
-            require(deployment.oracle_adapter.oracle() == coreParams.oracle, "oracle mismatch");
-        } else if (stringMatches(coreParams.asset_symbol, "tMXN")) {
-            deployment.oracle_adapter = IOracleAdapter(address(new MXNOracleAdapter()));
-            require(deployment.oracle_adapter.oracle() == coreParams.oracle, "oracle mismatch");
-        } else {
-            require(coreParams.oracle == address(0), "oracle mismatch");
-            deployment.oracle_adapter = IOracleAdapter(address(0));
-        }
+        deployment.oracle_adapter = deployOracleAdapter(useMockIntegrations);
 
         // set asset permissions
         deployment.asset.setMinter(address(deployment.controller));
@@ -414,11 +669,23 @@ contract Deploy is DeployBase {
         // configure controller
         deployment.controller.setIsCollateral(address(deployment.collateral), true);
         deployment.controller.setManager(address(deployment.manager));
-        deployment.controller.setOracleAdapter(address(deployment.oracle_adapter));
+        // Registered on the controller only for live integrations. `deployment.oracle_adapter` is
+        // still the mock's address either way — that is what reaches `contracts.json` and what the
+        // execution-engine reads for the chain-state price, which is the whole of ENG-2664.
+        //
+        // Arming the controller as well would switch on `verifyOrder`'s price-delta check
+        // (`Controller.sol:525`), dormant in mock deploys until now. Against a mock oracle whose
+        // price we choose, that check is circular: it proves the fixtures agree with a number we
+        // picked, not that the check works. Its real exercise is the fork tests against a live
+        // Chainlink feed. A scenario that wants to test the delta check calls `setOracleAdapter`
+        // and `MockOracleAdapter.setPrice` itself, deliberately.
+        if (!useMockIntegrations) {
+            deployment.controller.setOracleAdapter(address(deployment.oracle_adapter));
+        }
         deployment.controller.setOracleTolerance(uint96(coreParams.oracle_tolerance));
         deployment.controller.setBlockMintLimit(coreParams.mint_limit);
         deployment.controller.setBlockRedeemLimit(coreParams.redeem_limit);
-        if (useMockIntegrations) deployment.controller.setSignerStatus(coreParams.signer, true);
+        configureSigners(deployment, useMockIntegrations);
 
         // configure manager
         deployment.manager.addCollateral(address(deployment.collateral), address(deployment.vault));
@@ -459,6 +726,9 @@ contract Deploy is DeployBase {
             }
         }
 
+        // DeployNewAsset seeds staking with the dead deposit before roles are revoked.
+        initializeStaking(deployment);
+
         // renounce broadcaster roles (except for local dev)
         if (block.chainid != 31337) {
             deployment.controller.revokeRole(ADMIN_ROLE, broadcaster);
@@ -475,6 +745,34 @@ contract Deploy is DeployBase {
             deployment.revenue_module.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
             deployment.custodian_module.revokeRole(DEFAULT_ADMIN_ROLE, broadcaster);
         }
+    }
+
+    function initializeStaking(CoreDeploymentResult memory) internal virtual {}
+
+    function deployOracleAdapter(bool useMockIntegrations) internal virtual returns (IOracleAdapter adapter) {
+        if (useMockIntegrations) {
+            // A real adapter cannot be used here: each one hardcodes a mainnet Chainlink
+            // aggregator, which does not exist on a fresh chain, so `getPrice` would revert every
+            // block. This used to be the zero address, which made the engine report a chain-state
+            // price of zero for every local and e2e run (ENG-2664).
+            adapter = IOracleAdapter(address(new MockOracleAdapter(mockOraclePrice(coreParams.asset_symbol))));
+        } else if (stringMatches(coreParams.asset_symbol, "tGLD")) {
+            adapter = IOracleAdapter(address(new GoldOracleAdapter()));
+            require(adapter.oracle() == coreParams.oracle, "oracle mismatch");
+        } else if (stringMatches(coreParams.asset_symbol, "tBRL")) {
+            adapter = IOracleAdapter(address(new BRLOracleAdapter()));
+            require(adapter.oracle() == coreParams.oracle, "oracle mismatch");
+        } else if (stringMatches(coreParams.asset_symbol, "tMXN")) {
+            adapter = IOracleAdapter(address(new MXNOracleAdapter()));
+            require(adapter.oracle() == coreParams.oracle, "oracle mismatch");
+        } else {
+            require(coreParams.oracle == address(0), "oracle mismatch");
+            adapter = IOracleAdapter(address(0));
+        }
+    }
+
+    function configureSigners(CoreDeploymentResult memory deployment, bool useMockIntegrations) internal virtual {
+        if (useMockIntegrations) deployment.controller.setSignerStatus(coreParams.signer, true);
     }
 
     /// @notice Wire the gate to the collateral manager deployed by this run and hand ownership to the curator
@@ -509,10 +807,32 @@ contract Deploy is DeployBase {
         for (uint256 i = 0; i < timelockedSelectors.length; i++) {
             vault.increaseTimelock(timelockedSelectors[i], timelock_duration);
         }
-        console2.log("Timelock increases executed for", timelockedSelectors.length, "functions");
+        console2.log("Vault Timelock increases executed for", timelockedSelectors.length, "functions");
+    }
+
+    /// @notice Configure timelock settings for adapter functions
+    function configureMarketAdapterTimelock(IMorphoMarketV1AdapterV2 adapter, uint256 timelock_duration) internal {
+        // Define function selectors that should be timelocked
+        bytes4[] memory timelockedSelectors = marketAdapterTimelockSelectors();
+
+        // Submit timelock increases for all selectors
+        for (uint256 i = 0; i < timelockedSelectors.length; i++) {
+            adapter.submit(abi.encodeCall(adapter.increaseTimelock, (timelockedSelectors[i], timelock_duration)));
+        }
+        console2.log("Adapter timelock increases submitted for", timelockedSelectors.length, "functions");
+
+        // Execute timelock increases for all selectors
+        for (uint256 i = 0; i < timelockedSelectors.length; i++) {
+            adapter.increaseTimelock(timelockedSelectors[i], timelock_duration);
+        }
+        console2.log("Adapter timelock increases executed for", timelockedSelectors.length, "functions");
     }
 
     /* ------------------------------------ SERIALIZATION ------------------------------------------ */
+
+    function outputDirectory() internal view virtual returns (string memory) {
+        return string.concat("broadcast/Deploy.s.sol/", vm.toString(block.chainid));
+    }
 
     // Given the deployment results, serialize the JSON
     function serialize(CoreDeploymentResult memory deployment, VaultDeploymentResult memory vaultResult) internal {
@@ -566,7 +886,7 @@ contract Deploy is DeployBase {
         string memory obj = vm.serializeString("root", chainKey, chainJson);
 
         // save to file
-        string memory path = string.concat("broadcast/Deploy.s.sol/", vm.toString(block.chainid));
+        string memory path = outputDirectory();
         vm.createDir(path, true);
         vm.writeJson(obj, string.concat(path, "/contracts.json"));
     }
@@ -613,25 +933,31 @@ contract Deploy is DeployBase {
         chainJson = vm.serializeString(chainKey, assetKey, assetJson);
         string memory obj = vm.serializeString("root", chainKey, chainJson);
 
-        string memory path = string.concat("broadcast/Deploy.s.sol/", vm.toString(block.chainid));
+        string memory path = outputDirectory();
         vm.createDir(path, true);
         vm.writeJson(obj, string.concat(path, "/contracts.json"));
     }
 
     function serializeVaultOnly(VaultDeploymentResult memory vaultResult) internal {
         console2.log("\nSerializing json...\n");
-        string memory path = string.concat("broadcast/Deploy.s.sol/", vm.toString(block.chainid));
+        string memory path = outputDirectory();
         vm.createDir(path, true);
         vm.writeJson(serializeVault(vaultResult), string.concat(path, "/vault.json"));
     }
 
     // Builds the vault JSON from the vault deployment result
     function serializeVault(VaultDeploymentResult memory vaultResult) internal returns (string memory vaultJson) {
-        // single liquidity adapter, named after the underlying vault it wraps
-        string memory adapterObj = vm.serializeAddress("adapter_obj", "address", address(vaultResult.adapter));
-        adapterObj =
-            vm.serializeBytes32("adapter_obj", "id", keccak256(abi.encode("this", address(vaultResult.adapter))));
-        adapterObj = vm.serializeString("adapter_obj", "name", IERC4626(vaultParams.initial_vault).name());
+        // adapter objects, keys in alphabetical order to match the hand-curated deployments.json
+        string memory adaptersArr;
+        for (uint256 i = 0; i < vaultResult.adapters.length; i++) {
+            string memory key = string.concat("adapter_obj_", vm.toString(i));
+            address adapter = address(vaultResult.adapters[i].adapter);
+            string memory adapterObj = vm.serializeString(key, "adapter_type", vaultResult.adapters[i].adapter_type);
+            adapterObj = vm.serializeAddress(key, "address", adapter);
+            adapterObj = vm.serializeBytes32(key, "id", keccak256(abi.encode("this", adapter)));
+            adapterObj = vm.serializeString(key, "name", vaultResult.adapters[i].name);
+            adaptersArr = i == 0 ? adapterObj : string.concat(adaptersArr, ",", adapterObj);
+        }
 
         // serialize config: label the vault's underlying asset by its real token symbol
         string memory configObj =
@@ -648,16 +974,41 @@ contract Deploy is DeployBase {
         rolesObj = vm.serializeAddress("vault_roles_obj", "owner", vaultParams.owner);
         rolesObj = vm.serializeAddress("vault_roles_obj", "sentinel", vaultParams.sentinel);
 
+        // market objects, ids precomputed so the backend never re-derives solidity abi encodings
+        string memory marketsArr;
+        for (uint256 i = 0; i < vaultResult.markets.length; i++) {
+            string memory key = string.concat("market_obj_", vm.toString(i));
+            MarketParams memory marketParams = vaultResult.markets[i].params;
+            string memory marketObj = vm.serializeBytes32(
+                key,
+                "cap_id",
+                keccak256(abi.encode("this/marketParams", marketAdapterAddress(vaultResult), marketParams))
+            );
+            marketObj = vm.serializeBytes32(
+                key, "collateral_cap_id", keccak256(abi.encode("collateralToken", marketParams.collateralToken))
+            );
+            marketObj = vm.serializeAddress(key, "collateral_token", marketParams.collateralToken);
+            marketObj = vm.serializeBytes32(key, "id", Id.unwrap(marketParams.id()));
+            marketObj = vm.serializeAddress(key, "irm", marketParams.irm);
+            marketObj = vm.serializeBytes32(key, "lltv", bytes32(marketParams.lltv));
+            marketObj = vm.serializeAddress(key, "loan_token", marketParams.loanToken);
+            marketObj = vm.serializeString(key, "name", vaultResult.markets[i].name);
+            marketObj = vm.serializeAddress(key, "oracle", marketParams.oracle);
+            marketsArr = i == 0 ? marketObj : string.concat(marketsArr, ",", marketObj);
+        }
+
         // Build vault object
         // concatenated by hand: vm.serialize* escapes array-of-object strings instead of embedding them
         vaultJson = string.concat(
             '{"adapters":[',
-            adapterObj,
+            adaptersArr,
             '],"config":',
             configObj,
             ',"contracts":',
             contractsObj,
-            ',"roles":',
+            ',"markets":[',
+            marketsArr,
+            '],"roles":',
             rolesObj,
             "}"
         );
@@ -691,7 +1042,12 @@ contract Deploy is DeployBase {
     function printVaultDeployment(VaultDeploymentResult memory vaultResult) internal pure {
         console2.log("\n========================= Vault =========================\n");
         console2.log("Vault: ", address(vaultResult.vault));
-        console2.log("Adapter: ", address(vaultResult.adapter));
+        for (uint256 i = 0; i < vaultResult.adapters.length; i++) {
+            console2.log("Adapter: ", address(vaultResult.adapters[i].adapter));
+            console2.log("  type: ", vaultResult.adapters[i].adapter_type);
+            console2.log("  name: ", vaultResult.adapters[i].name);
+        }
+        console2.log("Liquidity adapter: ", address(vaultResult.liquidity_adapter));
         console2.log("Gate: ", address(vaultResult.gate));
         console2.log("\n=============================================================\n");
     }

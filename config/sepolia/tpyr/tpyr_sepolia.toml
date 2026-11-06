@@ -1,0 +1,46 @@
+# sepolia
+[sepolia]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[sepolia.string]
+asset_name = "Tenbin Pyrite"
+asset_symbol = "tPYR"
+custodian_name = "test"
+staked_asset_name = "Staked Tenbin Pyrite"
+staked_asset_symbol = "stPYR"
+mint_limit = "3000000000000000000000"   # 3000 asset tokens
+redeem_limit = "3000000000000000000000" # 3000 asset tokens
+instant_unstake_cap = "3000000000000000000000" # 3000 asset tokens
+
+[sepolia.uint]
+staking_dead_deposit = 1_000000000000000    # 0.001 tPYR locked as stPYR for 0xdead
+mock_oracle_price = "3500000000000000000000" # USD, 18 decimals
+cooldown_period = 600                       # 10 minutes
+oracle_tolerance = 50_000000000000000       # 5%
+ratio = 170_000000000000000                 # 17%
+rebalance_cap = 100_000_000_000000          # 100m
+vesting_period = 259_200                    # 3 days
+
+[sepolia.address]
+admin_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+cap_adjuster_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+collateral = "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A"
+curator_role = "0x489f4E4c67a024f2f06b7E674fff328dcb809A92"
+custodian = "0xbb9d2e2f9084721de949e1426bce93d5cfabefe6"
+custodian_keeper_role = "0x489f4E4c67a024f2f06b7E674fff328dcb809A92"
+default_admin_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+gatekeeper_role = "0xd1fb442aE62f0C829aa7f0946A173c39F9515213"
+minter_role = "0x56Acd1c1c2961A82Bc842209D4E2b08F13e04943"
+multicaller_role = "0x56Acd1c1c2961A82Bc842209D4E2b08F13e04943"
+multisig = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+one_inch_router = "0x0000000000000000000000000000000000000000"
+oracle = "0x0000000000000000000000000000000000000000"
+rebalancer_role = "0x489f4E4c67a024f2f06b7E674fff328dcb809A92"
+restricter_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+revenue_keeper_role = "0x489f4E4c67a024f2f06b7E674fff328dcb809A92"
+rewarder_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+signer = "0x274e783e3c49C13C2035097AfD83106D6d47356c"                   # sepolia signer
+signer_manager_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+vault = "0xa82f9fc451965Cd2BfFd20Fe61BBeCd2c4D7Ad38" # Deployed tPYR USDC vault
+yield_signer = "0xE0314BC955477fE95C406DB18a885A3d8C0612AC" # protocol-delta
+leverage_signer = "0xDBC08aad7C82d6e09acCD043c5f968eeD7980495" # protocol-echo

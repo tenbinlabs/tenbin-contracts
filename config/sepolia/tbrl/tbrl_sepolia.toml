@@ -39,4 +39,4 @@ revenue_keeper_role = "0xD090155B35A68293449425Ef6A2Bdf157DF4C070"      # sepoli
 rewarder_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
 signer = "0x1FfBd72C0a8e62b2EEC29e52B7F37df8ba162070"                   # sepolia signer key
 signer_manager_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
-vault = "0xc2A045588dbF523972Ded07D95b11C92b094F416"                    # sepolia morpho vault
+vault = "0xc2A045588dbF523972Ded07D95b11C92b094F416" # existing vault for runCoreOnly

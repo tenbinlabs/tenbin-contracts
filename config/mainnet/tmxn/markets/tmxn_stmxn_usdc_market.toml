@@ -1,0 +1,16 @@
+# mainnet
+[mainnet]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[mainnet.string]
+name = "stMXN/USDC"                                             # market display name
+
+[mainnet.address]
+collateral_token = "0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba" # stMXN
+oracle = "0x51aAA61b6de864F9a41d968ce6b067322536d95A"           # morpho oracle
+irm = "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC"              # adaptive curve irm
+
+[mainnet.uint]
+lltv = 860000000000000000                       # 86% liquidation ltv
+absolute_cap = 1_000_000_000000                 # 1m usdc, on the collateralToken and marketParams ids
+relative_cap = 200000000000000000               # 20%

@@ -65,8 +65,9 @@ contract MonitorBase is ForkBaseTest {
         address vault;
     }
 
-    /// @notice Vault liquidity adapter (field order matches alphabetized JSON keys)
+    /// @notice Vault adapter (field order matches alphabetized JSON keys)
     struct VaultAdapter {
+        string adapter_type;
         address addr;
         bytes32 id;
         string name;
@@ -77,16 +78,21 @@ contract MonitorBase is ForkBaseTest {
     GlobalAccounts internal global;
     VaultContracts internal vaultContracts;
     VaultAdapter[] internal vaultAdapters;
+    bytes32[] internal marketIds;
     string internal assetName = "tGLD";
 
     function setUp() public virtual override {
         super.setUp();
         // Some tests makes changes on the fork, this is a counter meassure to avoid race conditions when running concurrent tests
-        string memory rpc = vm.rpcUrl("mainnet");
-        vm.createSelectFork(rpc);
+        createSelectLiveFork("mainnet");
         // load testnet addresses
         // forge-lint: disable-next-line(unsafe-cheatcode)
         string memory json = vm.readFile("./deployments.json");
+        delete marketIds;
+        string memory marketsPath = string.concat(".mainnet.", assetName, ".vault.markets");
+        for (uint256 i; vm.keyExistsJson(json, string.concat(marketsPath, "[", vm.toString(i), "]")); i++) {
+            marketIds.push(vm.parseJsonBytes32(json, string.concat(marketsPath, "[", vm.toString(i), "].id")));
+        }
 
         // get system contracts
         contracts =
@@ -148,7 +154,13 @@ contract MonitorBase is ForkBaseTest {
         );
 
         // get global accounts
-        global = abi.decode(vm.parseJson(json, ".mainnet.global"), (GlobalAccounts));
+        global = GlobalAccounts({
+            admin_multisig: vm.parseJsonAddress(json, ".mainnet.global.admin_multisig"),
+            custodians: vm.parseJson(json, ".mainnet.global.custodians"),
+            dev_multisig: vm.parseJsonAddress(json, ".mainnet.global.dev_multisig"),
+            owner_multisig: vm.parseJsonAddress(json, ".mainnet.global.owner_multisig"),
+            tenbin_multisig: vm.parseJsonAddress(json, ".mainnet.global.tenbin_multisig")
+        });
     }
 
     // Helper to call hasRole on each address

@@ -22,7 +22,7 @@ contract DeployDevelopmentForkTest is ForkBaseTest, Config {
         forkBlock = 24425410;
         super.setUp();
         devDeployer = new Deploy();
-        deployment = devDeployer.runCoreOnly("", true);
+        deployment = devDeployer.runCoreOnly("", false);
     }
 
     function test_Revert_Chain_DeployDevelopment() public {
@@ -146,6 +146,6 @@ contract DeployDevelopmentForkTest is ForkBaseTest, Config {
         DeployDevelopmentHarness deployer = new DeployDevelopmentHarness();
 
         vm.expectRevert(bytes("controller version mismatch"));
-        deployer.runCoreOnly("", true);
+        deployer.runCoreOnly("", false);
     }
 }

@@ -1,0 +1,16 @@
+[sepolia]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[sepolia.string]
+initial_price = "4300000000000000000000000000" # USDC per staked share * 1e24 (6/18 decimals)
+name = "stGLD/USDC"
+
+[sepolia.address]
+collateral_token = "0x66EE25a9749521907765FfDf44B64Bc7350f4e8a" # existing staked asset
+oracle = "0xb327e7e5A877441e8ABB5E34dEfEBeF81e77900D"
+irm = "0x8C5dDCD3F601c91D1BF51c8ec26066010ACAbA7c"
+
+[sepolia.uint]
+lltv = 860000000000000000
+absolute_cap = 1_000_000_000000
+relative_cap = 200000000000000000

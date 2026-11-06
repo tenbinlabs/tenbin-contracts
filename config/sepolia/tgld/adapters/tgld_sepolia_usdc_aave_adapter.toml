@@ -1,0 +1,20 @@
+# sepolia
+[sepolia]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[sepolia.string]
+adapter_type = "GENERIC"
+name = "Static Aave Ethereum USDC"
+
+[sepolia.address]
+asset = "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A"            # sepolia usdc
+vault = "0x0000000000000000000000000000000000000000"            # mock vault deployed by the script
+owner = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"            # owner key
+parent = "0x69e19bF76bf01EC84059F48C7E0Ee2f5C11e5692"           # parent vault
+
+[sepolia.uint]
+absolute_cap = 20_000_000_000000
+relative_cap = 500000000000000000
+
+[sepolia.bool]
+is_new_adapter = true                      # Whether this is a new adapter

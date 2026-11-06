@@ -1,0 +1,18 @@
+# mainnet
+[mainnet]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[mainnet.string]
+name = "stPYR/USDC"                                             # market display name
+
+[mainnet.address]
+base_feed = "0x369C67E8b026CC4Ef98350f332D7Dd52b85b7674"
+quote_feed = "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6"
+collateral_token = "0xa29D6c1f453D1bc709C829C29c5956B1C5de2BBF"
+oracle = "0xF59aDf087362C71BbD3D8aB8DEa52980E1b45c07"
+irm = "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC"              # adaptive curve irm
+
+[mainnet.uint]
+lltv = 860000000000000000                       # 86% liquidation ltv
+absolute_cap = 1_000_000_000000                 # 1m usdc, on the collateralToken and marketParams ids
+relative_cap = 200000000000000000               # 20%

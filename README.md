@@ -425,3 +425,28 @@ Please report vulnerabilities through our
 
 Do not disclose potential vulnerabilities publicly or open a GitHub issue
 before they have been reviewed and resolved.
+
+## Deployment configuration and regression tests
+
+Use Foundry v1.8.3 and initialize dependencies with `git submodule update --init --recursive`.
+Core deployments are recorded in `deployments.json`; cross-chain deployments are recorded in
+`cross-chain-deployments.json`. Both records and the configuration snapshot originate from
+monorepo commit `c3bd9d6b646104e1704e590d85c26f839c26bb1e`.
+
+Vault TOMLs declare `adapters`, a member named by `liquidity_adapter`, and `markets` for MARKET
+adapters. Their parameter files live in sibling `adapters/` and `markets/` directories. Local
+fixtures use `config/local/tgld/`. All deployment profiles use this repository's contracts.
+See [new-asset deployment](docs/new-asset-deployment.md) for explicit asset/vault inputs, staking
+seed requirements, pricing, and artifact output.
+
+Run `forge build`, then `forge test --no-match-path 'test/fork/**'`. Deployment forks require
+`MAINNET_RPC_URL` and `SEPOLIA_RPC_URL`; existing CCIP forks additionally require
+`RPC_URL_ARBITRUM_SEPOLIA`. Run forks with
+`forge test --match-path 'test/fork/**' --no-match-path 'test/fork/monitoring/**'`.
+Live deployment checks use `forge test --match-path 'test/fork/monitoring/**'` with
+`MAINNET_RPC_URL` and read head minus ten blocks. CI separates these lanes; skipped RPC checks
+are not successful validation.
+
+Cross-chain configs are published alongside their deployment records. Their additional deployment
+scripts and tests are tracked separately in
+[ENG-3658](https://linear.app/tenbin/issue/ENG-3658).

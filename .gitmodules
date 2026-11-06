@@ -16,3 +16,7 @@
 [submodule "lib/vault-v2"]
 	path = lib/vault-v2
 	url = https://github.com/morpho-org/vault-v2
+
+[submodule "lib/morpho-blue-oracles"]
+	path = lib/morpho-blue-oracles
+	url = https://github.com/morpho-org/morpho-blue-oracles.git

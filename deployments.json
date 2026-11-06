@@ -9,6 +9,10 @@
                     "address": "0x1f766513abc0DD46b26590Ea83A6b20377460a18"
                 }
             ],
+            "factories": {
+                "generic_morpho_adapter": "0x0Ef32Bd202A55Bb938Adf36814A1e545c1D2E86F",
+                "morpho_market_v1_adapter_v2": "0x32BB1c0D48D8b1B3363e86eeB9A0300BAd61ccc1"
+            },
             "dev_multisig": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
             "owner_multisig": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
             "tenbin_multisig": "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"
@@ -84,9 +88,28 @@
             "vault": {
                 "adapters": [
                     {
-                        "address": "0x255944977585ADAc9e8015368A247b2e5EC59152",
-                        "id": "0xe9ac342ed7c72a42be3b9d584f18b258365375dd0cb8d6f5e87efeebf46c7412",
-                        "name": "Steakhouse USDC"
+                        "adapter_type": "MARKET",
+                        "address": "0x5fb8838114449eec7c67262418C5c3B6a0AFC882",
+                        "id": "0xdb2b30469b83cf3854b33e14e536f045925c9928210e5a23e366f3185924ea0d",
+                        "name": "stBRL/USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x9e3F8CdaEE6f00d844a63103a668e347bAdFFa92",
+                        "id": "0x399f3406c1258d2f859344278af629607a6ddfad9d3526f148cc1e9860d8c8c6",
+                        "name": "Static Aave Ethereum USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xb8097b0403bC4Bd0f1cfd6E778b84f425CA44fcE",
+                        "id": "0xf5224a7d2015562f468a47aa546122ae75d2c231d56232af79d61df65e23f00f",
+                        "name": "Steakhouse Prime USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x0955406b249aDC374AB295769Efa5Dd2e252DcD4",
+                        "id": "0x4b1b8445e51e1b288ad0a11ed52d1a72c09f6aea45911a7799033c133d20b523",
+                        "name": "Spark USDC Vault"
                     }
                 ],
                 "config": {
@@ -97,6 +120,19 @@
                     "gate": "0xCF57CB92E0af71C1E3A2918e3FEe77D062f2E663",
                     "vault": "0xE275a69B93A5745e1560ee82D033205D323BfAd9"
                 },
+                "markets": [
+                    {
+                        "cap_id": "0xa1f8fc35ae81623e49f497e7a55d3dabfcf2c4550e67900183aa4c7bbdac270d",
+                        "collateral_cap_id": "0xc97091ad8694916c47de6af6afb7273f088e4ee1892f54d5b3949b7b314da96c",
+                        "collateral_token": "0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f",
+                        "id": "0xcac5902b997725b46ff9cc1eecc7607d566f591d88904daf6b4491f060495308",
+                        "irm": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                        "lltv": "0xbef55718ad60000",
+                        "loan_token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                        "name": "stBRL/USDC",
+                        "oracle": "0x17CD3E35B513B8174334593D203fEa3c44723DBC"
+                    }
+                ],
                 "roles": {
                     "allocator": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
                     "curator": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
@@ -178,9 +214,28 @@
             "vault": {
                 "adapters": [
                     {
-                        "address": "0x932E0ba317897D4a3142929B95CaaDA33df5fC35",
-                        "id": "0x73ac6ab5f77d02bad8fce25e0de14d703ce1747cb48d8c0b7ef854958bbc5d26",
-                        "name": "Steakhouse USDC"
+                        "adapter_type": "MARKET",
+                        "address": "0x61a28892e8c0C9a7A0F6498754FF43Bf8093A53F",
+                        "id": "0x3247ff10f7748cc530dae0e7d84b454cc922fdd00e95cea8c02c2a8ed54d448e",
+                        "name": "stGLD/USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x9135612801F9B9Ccce9b1E8Df76Cb546daDB7808",
+                        "id": "0x8e4efe72aed04aa3c20102df7061675dbf09c55ed84cc3e5f47418c71af46542",
+                        "name": "Static Aave Ethereum USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x1DC6c88d20fBC612dB99B7dE4763d6e9e1cAA318",
+                        "id": "0x9d8d7f739d39e4f7231f55dfb3b75bf27dc2179fa2c4a38f0b3d3d2b3f4493bc",
+                        "name": "Steakhouse Prime USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x2484A57D5D03d4bB2a142ec343d56Cde27EB05c5",
+                        "id": "0x0ffe0842445d3fb61a478b8514fba4456093daf8e2a7eebb4c6316ff610518c4",
+                        "name": "Spark USDC Vault"
                     }
                 ],
                 "config": {
@@ -191,6 +246,19 @@
                     "gate": "0x70056E107dFBb58B74739Ba095E1Dd77CCC7cab1",
                     "vault": "0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75"
                 },
+                "markets": [
+                    {
+                        "cap_id": "0x89b748c40aab5b141b7fa9986cf1b2748bf9b94b421a7c10eb88063db26ec5bb",
+                        "collateral_cap_id": "0x0198a1a75ab7c4db2d20e4e2f012c6429107aded3c9141c4f03992aa85f7bf27",
+                        "collateral_token": "0x8d301801d899dC81fEabBDE69407A53b82bdBF19",
+                        "id": "0x3c2ce083d3ac6329ae69fd68bf23d4fada5587271860d987788dfd4f0ac3b5f0",
+                        "irm": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                        "lltv": "0xbef55718ad60000",
+                        "loan_token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                        "name": "stGLD/USDC",
+                        "oracle": "0x150dB979573A2344dFC2Ee0D635194d0a71CEA19"
+                    }
+                ],
                 "roles": {
                     "allocator": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
                     "curator": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
@@ -270,9 +338,28 @@
             "vault": {
                 "adapters": [
                     {
-                        "address": "0x78AC7Ea86B5deFf61b9e24712f0c75c7A87d2A7a",
-                        "id": "0x5f812945d4fe9a43ce2dca1c7461000689e30da21867c4ade3840567f56013da",
-                        "name": "Steakhouse USDC"
+                        "adapter_type": "MARKET",
+                        "address": "0x0b35dd56404AB2A4F77ccE390dD53542c18665F9",
+                        "id": "0xfd57151a905b5578c48612c6e4556fbbe4404d2399e9ccfc7352ea170d6b62d8",
+                        "name": "stMXN/USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x94C865D901DE16de58E547c838459BdA0e436371",
+                        "id": "0x5b4692b1c1c2d9c69c793216d56c8f103bc73721b5d32a42d42677286afc11d8",
+                        "name": "Static Aave Ethereum USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xb95f63F04Cc717E0D6442efaBcAF73bCDFAb33ed",
+                        "id": "0x0e8f69d6a4bee59f0f1fd3ede29a99e455e6abee27793bbf4f51ac54e22c7aeb",
+                        "name": "Steakhouse Prime USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x1b550F733f42a4d25e51a63bCED49CA4a90a8f60",
+                        "id": "0x00e062e3523becafa0efc927cbd14a0bac9c0cd86f801de2b5de10de387547a2",
+                        "name": "Spark USDC Vault"
                     }
                 ],
                 "config": {
@@ -283,11 +370,148 @@
                     "gate": "0x0C4D7b141479b93826b27e5D81b86f5E9B52B136",
                     "vault": "0x43E3f5e27422C3a938269368eb7c3A3B545Bb6ca"
                 },
+                "markets": [
+                    {
+                        "cap_id": "0x8a77d11d62ddd71babbf6944fb10ce49cbb92c61888224ea9a06c045beb4ee99",
+                        "collateral_cap_id": "0xec0e465ac51bbb67421d859151b4a0b43bbbf73f68eeca40a189b4dd5df33ae2",
+                        "collateral_token": "0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba",
+                        "id": "0x245859412ff82dabcea25ddab15fe5ee5650e20b1af05f65ea1bd8db96416522",
+                        "irm": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                        "lltv": "0xbef55718ad60000",
+                        "loan_token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                        "name": "stMXN/USDC",
+                        "oracle": "0x51aAA61b6de864F9a41d968ce6b067322536d95A"
+                    }
+                ],
                 "roles": {
                     "allocator": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
                     "curator": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
                     "owner": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
                     "sentinel": "0xa1B49D8597CeC8C7f26B551C825D3F864c14d32c"
+                }
+            }
+        },
+        "tPYR": {
+            "config": {
+                "asset_name": "Tenbin Pyrite",
+                "asset_symbol": "tPYR",
+                "deployer": "0x224D7291D3E05d848B35364836Dfa9a01e3Ba69b",
+                "deployment_block": 26229606,
+                "domain_separator": "0xc25aa7a101debeb7a9571478693f7550dacaa708a4820bc38af628774972978e",
+                "staked_asset_name": "Staked Tenbin Pyrite",
+                "staked_asset_symbol": "stPYR",
+                "version": "1.4.3"
+            },
+            "contracts": {
+                "asset_token": "0x6dBe635c3AA75EA4C75595177EDC97B135dEd5Df",
+                "collateral": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                "collateral_manager": "0xc29A4Ba70A0820D1c4c220b5E9Af8aC0761670F7",
+                "controller": "0x3A8335b97839207B8F14290BDCADb9e0DE2B68B2",
+                "custodian_module": "0xfa6d96447fBEd930533f64468cb6517C0166172d",
+                "multicall": "0xD025D10941549e9F9983dE869016f36F46f3dcaC",
+                "oracle_adapter": "0x7fBc1EA5577D8253648518E84DbC22c10b4ef222",
+                "revenue_module": "0x1fc613ceA93Efe686204e4Fb392b841a2BD3Ebc0",
+                "silo": "0x550cf8037c8A182475f2D8bc41be0dBC2F9b8068",
+                "staked_asset": "0xa29D6c1f453D1bc709C829C29c5956B1C5de2BBF",
+                "swap_module": "0xa51cD1cc43fbC4F6326556f99D60CD412c04912B"
+            },
+            "roles": {
+                "admin_role": [
+                    "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "cap_adjuster_role": [
+                    "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"
+                ],
+                "curator_role": [
+                    "0x68E22EE43cE9e3115086C90Ac9113d7519C17129"
+                ],
+                "custodian_keeper_role": [
+                    "0x68E22EE43cE9e3115086C90Ac9113d7519C17129"
+                ],
+                "default_admin_role": [
+                    "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"
+                ],
+                "gatekeeper_role": [
+                    "0xe2DbAE2C3ae3B9d62c59676FCb76eFb358cA1e40",
+                    "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "minter_role": [
+                    "0x1Be36734873CaF55ce01a254a30a75b8cAcFCa84",
+                    "0xD025D10941549e9F9983dE869016f36F46f3dcaC"
+                ],
+                "multicaller_role": [
+                    "0x1Be36734873CaF55ce01a254a30a75b8cAcFCa84"
+                ],
+                "rebalancer_role": [
+                    "0x68E22EE43cE9e3115086C90Ac9113d7519C17129"
+                ],
+                "restricter_role": [
+                    "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+                ],
+                "revenue_keeper_role": [
+                    "0x68E22EE43cE9e3115086C90Ac9113d7519C17129"
+                ],
+                "rewarder_role": [
+                    "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8",
+                    "0x1fc613ceA93Efe686204e4Fb392b841a2BD3Ebc0"
+                ],
+                "signer_manager_role": [
+                    "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"
+                ]
+            },
+            "vault": {
+                "adapters": [
+                    {
+                        "adapter_type": "MARKET",
+                        "address": "0x28CD3D3301eeBC30d09718dFd540d15461b321A1",
+                        "id": "0xf8dae5576ecde832d11a85189c7f31374add20f41eec7b15310f65a5f60e6269",
+                        "name": "stPYR/USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x0Ca2F1f8f947F2664BC7B0AB1A2bDe35dC8aE098",
+                        "id": "0x71cb1991c188e9be6fbe358659ebb56043fda2428a83dccea78c4dedbbf31ee3",
+                        "name": "Static Aave Ethereum USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xF4Cb61477CE3fF30AA47Aa34c5741bD99275594F",
+                        "id": "0x433c2aaee0b30c1ade6b638585498895e944afbc5582abafb05a1665ceff9b79",
+                        "name": "Steakhouse Prime USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x4857b16CD67168fdB46A18E176DFA1BE1b2D43Ae",
+                        "id": "0x35298387eeb949fbc5eca3c5707e59d041fb5c20ce091e8aaab0ab3f7374ab8d",
+                        "name": "Spark USDC Vault"
+                    }
+                ],
+                "config": {
+                    "asset": "usdc",
+                    "deployment_block": 26229598
+                },
+                "contracts": {
+                    "gate": "0xA3b8185AA0AE5008eAd252ef77987534bc086725",
+                    "vault": "0x50b12e54Db5d0B9801966Ca3C3C799BAd90fAAA4"
+                },
+                "markets": [
+                    {
+                        "cap_id": "0xcbbd6aeb4b7788ca1046d8d0578aefc8fa7c12483ab90699bdf8821e5a655e4f",
+                        "collateral_cap_id": "0x11b35f3498457e3f55b873e63e312238f5d2fdd5e9d3da25cd3364103314f573",
+                        "collateral_token": "0xa29D6c1f453D1bc709C829C29c5956B1C5de2BBF",
+                        "id": "0x58c8770e03f7b08e979e3362b38c3d3d6a94fa522ec781ab2e29a2f8b92a4b79",
+                        "irm": "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC",
+                        "lltv": "0xbef55718ad60000",
+                        "loan_token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                        "name": "stPYR/USDC",
+                        "oracle": "0xF59aDf087362C71BbD3D8aB8DEa52980E1b45c07"
+                    }
+                ],
+                "roles": {
+                    "allocator": "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614",
+                    "curator": "0xE6Eb534f33A635e8d867414Af32F766D221F30d1",
+                    "owner": "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99",
+                    "sentinel": "0xe2DbAE2C3ae3B9d62c59676FCb76eFb358cA1e40"
                 }
             }
         }
@@ -298,6 +522,10 @@
             "dev_multisig": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
             "owner_multisig": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
             "tenbin_multisig": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
+            "factories": {
+                "generic_morpho_adapter": "0x06569B453AFb7c9328FAe293213bc5227861F8ca",
+                "morpho_market_v1_adapter_v2": "0x5481f54CACdf0aECE9f71F2Bb2c0A8e44b2d5D81"
+            },
             "custodians": [
                 {
                     "name": "test",
@@ -375,9 +603,28 @@
             "vault": {
                 "adapters": [
                     {
-                        "address": "0xc9267234F8507674260714BEcbCb9ff1a657b6f0",
-                        "id": "0x6d0b3833c863ae010f02d4a2e888c0b9b9b4bdf559a355132f7923e558891138",
-                        "name": "Test Adapter"
+                        "adapter_type": "MARKET",
+                        "address": "0xC6D727230Ec28C43118E666C2B049A12195f6b6D",
+                        "id": "0x37255a0d43783eb17f0c9ec94426687184891972d4418ce9c637dd0b9bab0c58",
+                        "name": "stBRL/USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x8BA03B5399c34Af57903852aD9a6f4fDDFdE322d",
+                        "id": "0x2efad3bb0857c2739c82f30dfc988baa99b9b83f86e1ed6544691c21e03f2347",
+                        "name": "Static Aave Ethereum USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xA854789545c5a70ED1EC5Bf110C85CDD3f806849",
+                        "id": "0x08be9ee6d7b6f02027176cb0a0b3e22621cacc3f5854ae9839d424b21716419a",
+                        "name": "Steakhouse Prime USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xd72a1fb8c476CDe56952b43A6eb77270B9AF877d",
+                        "id": "0xe6867c3a2073deb1a0b42d7a0a7226f7887f41f896e4aed1dfe425d2ff14c5eb",
+                        "name": "Spark USDC Vault"
                     }
                 ],
                 "config": {
@@ -393,7 +640,20 @@
                     "curator": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
                     "owner": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
                     "sentinel": "0x26a8Fc58F43e6e591c4335e7d61C4f9A6cfdCEb3"
-                }
+                },
+                "markets": [
+                    {
+                        "cap_id": "0x07d5dcb0295f905ed84d30c11a933a2b0bc33559646ba70a4a8abf829fdc0bc6",
+                        "collateral_cap_id": "0xfa4565a51c93efa87ba5ffebfb5f766cd4e29a938091e160fb8a5ac42ee4724c",
+                        "collateral_token": "0x00e4532bc7725D9Cb184B987d43252D8530060dE",
+                        "id": "0x6d6a5540688945a29617a63b9420951df75bb2b5cb1c041496fc9c395e6a9187",
+                        "irm": "0x8C5dDCD3F601c91D1BF51c8ec26066010ACAbA7c",
+                        "lltv": "0xbef55718ad60000",
+                        "loan_token": "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A",
+                        "name": "stBRL/USDC",
+                        "oracle": "0x22058a75bDc162578fad046559F69391104BC51b"
+                    }
+                ]
             }
         },
         "tGLD": {
@@ -465,9 +725,28 @@
             "vault": {
                 "adapters": [
                     {
-                        "address": "0xFea6a2c483F7ce7D13ba8c8BcF29e93580F3640A",
-                        "id": "0x1e35f99ad0755b7fc8cc3034491327e94a82bc9f89507a43d5a611bcd183e465",
-                        "name": "Test Adapter"
+                        "adapter_type": "MARKET",
+                        "address": "0x5dd94e4b3fFa44f96ea4c6083D19D85CdFb4dDea",
+                        "id": "0x71b94e46b393d01047a101ddd5108146c8d15cc45c61015342814c3e1bcb18e2",
+                        "name": "stGLD/USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xEa3F114cE7979043425ef1BfB2c85C93AAE9eb93",
+                        "id": "0x83a58ac6855c36df8b25bbc539a6231673910c4b9b61a30f38d9b71f6d274652",
+                        "name": "Static Aave Ethereum USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x02BcDA2801F69b502bd61eC7c66f62A2ae4B7F5B",
+                        "id": "0x7592f9e796c039c2892406284dc1b80d82de9f23b6cc810bb52f42d20c70f3ed",
+                        "name": "Steakhouse Prime USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xbD4cEd4b6caEDc516D1DE900a30512B7B5D1200a",
+                        "id": "0x1a5beaa5b8d6b4c167108084316412f2b9025618191089fe3cf438794c5b59c0",
+                        "name": "Spark USDC Vault"
                     }
                 ],
                 "config": {
@@ -483,7 +762,20 @@
                     "curator": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
                     "owner": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
                     "sentinel": "0xF43ABe43FcC915db2F3bDB677690a29FD6ef930e"
-                }
+                },
+                "markets": [
+                    {
+                        "cap_id": "0x7155f8c4a352e2116a6bbc4a798e57e6cc2b56fc43a5c958edcafd1a603dcfc2",
+                        "collateral_cap_id": "0x1eaff956b27706b833b5794873afe71418b712d380edec330b0daf3df8559925",
+                        "collateral_token": "0x66EE25a9749521907765FfDf44B64Bc7350f4e8a",
+                        "id": "0xd2a079141058119d018eb8d293702435bae5c95f5656dcf0640ad066f11f1505",
+                        "irm": "0x8C5dDCD3F601c91D1BF51c8ec26066010ACAbA7c",
+                        "lltv": "0xbef55718ad60000",
+                        "loan_token": "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A",
+                        "name": "stGLD/USDC",
+                        "oracle": "0xb327e7e5A877441e8ABB5E34dEfEBeF81e77900D"
+                    }
+                ]
             }
         },
         "tMXN": {
@@ -555,9 +847,28 @@
             "vault": {
                 "adapters": [
                     {
-                        "address": "0x9249c95033493138fFe52ad163e008422019de95",
-                        "id": "0xf91e868389db0a08b31b1cfa518c793330553e250dc0c5e3b0112df9428c4ab5",
-                        "name": "Test Adapter"
+                        "adapter_type": "MARKET",
+                        "address": "0x505e49A416A6aCBB2A6ddC3768a3763D86757556",
+                        "id": "0xd1d8be1b03252e60eb858ab33ec3c70db5f9aab6884f333c61c0ae98aa5d9fc3",
+                        "name": "stMXN/USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x2fcC3A9caB19E6b4E836dC19a6b6426e6dce44ef",
+                        "id": "0x1bc6f5b0da9f37ddf502143a7b7a60fa38d004158e737646e1e64a3ddaf4a761",
+                        "name": "Static Aave Ethereum USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x4eE067E62f46E96E1d9F2B0FE457e4a510b11f86",
+                        "id": "0xe6f50eedcd5db7fdbd1b572b7132577d0c81a5811b982282f9bd19a41949e346",
+                        "name": "Steakhouse Prime USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0x7EfeEA70E4Bf4056D233dB8f67D559f343585fBf",
+                        "id": "0x012a95a1402495ea2eebcf5a47a42073883eae8ecc841a8bde35b5d8a75f5653",
+                        "name": "Spark USDC Vault"
                     }
                 ],
                 "config": {
@@ -573,7 +884,144 @@
                     "curator": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
                     "owner": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
                     "sentinel": "0x2cfa1b9F9ce868B8CeB78D7E53ee0eEd0aB858b8"
-                }
+                },
+                "markets": [
+                    {
+                        "cap_id": "0x7da0db9b0ac4a87672e6544a4308e15165a8d14933cd8ee95e3bb9dfc7df8607",
+                        "collateral_cap_id": "0xb8b4534ebcb23a4e06dc2e592b026a1a88c3beb4d0f500fde97ef6d6d661eddf",
+                        "collateral_token": "0x9c2Da5F28381e2b9f8E3031D6BC90AF2C437Ca88",
+                        "id": "0xd046e3cf0940757c451831f0a1320776a2591d7d8d2df022b094d604f08153cc",
+                        "irm": "0x8C5dDCD3F601c91D1BF51c8ec26066010ACAbA7c",
+                        "lltv": "0xbef55718ad60000",
+                        "loan_token": "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A",
+                        "name": "stMXN/USDC",
+                        "oracle": "0x2Dc5BA2b9B0f052805fF8B3dFe985dc976aD2287"
+                    }
+                ]
+            }
+        },
+        "tPYR": {
+            "config": {
+                "asset_name": "Tenbin Pyrite",
+                "asset_symbol": "tPYR",
+                "deployer": "0x003893636F55f16409eF493115867986a0d3DAf1",
+                "deployment_block": 11929715,
+                "domain_separator": "0xf3cf6c6a6721bbf8dd04098300554a684b95c555c957058b3c30000e7fa8f173",
+                "staked_asset_name": "Staked Tenbin Pyrite",
+                "staked_asset_symbol": "stPYR",
+                "version": "1.4.3"
+            },
+            "contracts": {
+                "asset_token": "0xe37fa766699Fd31bB2a26f1c14270664CA10c53C",
+                "collateral": "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A",
+                "collateral_manager": "0xb5A35b1fcF046bA708186dfa306e8b15dc97C349",
+                "controller": "0x304E87d96882bfc48cB741d8aF0cD00Fe5e2A08C",
+                "custodian_module": "0xd804388e51912dA4cd5b268Eea8d7511E2936Daa",
+                "multicall": "0xEf285b2119c14a8416F83211aBB540328600a56F",
+                "oracle_adapter": "0x9DE5Db1a6656D921773E086d7A6b8D07FeC84b1E",
+                "revenue_module": "0x6963Cb1e1129cCEFff56DBf73bC15a31620b79E7",
+                "silo": "0xe8F33308ED7c160d9A85f56153b19C3DEb505771",
+                "staked_asset": "0xD2B8074ED22e2A49533c96458b2ACB1adCAa2de1",
+                "swap_module": "0x87dED6fD70CE3383DA747dD2fce89e4Ba6933688"
+            },
+            "roles": {
+                "admin_role": [
+                    "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+                ],
+                "cap_adjuster_role": [
+                    "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+                ],
+                "curator_role": [
+                    "0x489f4E4c67a024f2f06b7E674fff328dcb809A92"
+                ],
+                "custodian_keeper_role": [
+                    "0x489f4E4c67a024f2f06b7E674fff328dcb809A92"
+                ],
+                "default_admin_role": [
+                    "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+                ],
+                "gatekeeper_role": [
+                    "0xd1fb442aE62f0C829aa7f0946A173c39F9515213",
+                    "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+                ],
+                "minter_role": [
+                    "0x56Acd1c1c2961A82Bc842209D4E2b08F13e04943",
+                    "0xEf285b2119c14a8416F83211aBB540328600a56F"
+                ],
+                "multicaller_role": [
+                    "0x56Acd1c1c2961A82Bc842209D4E2b08F13e04943"
+                ],
+                "rebalancer_role": [
+                    "0x489f4E4c67a024f2f06b7E674fff328dcb809A92"
+                ],
+                "restricter_role": [
+                    "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+                ],
+                "revenue_keeper_role": [
+                    "0x489f4E4c67a024f2f06b7E674fff328dcb809A92"
+                ],
+                "rewarder_role": [
+                    "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
+                    "0x6963Cb1e1129cCEFff56DBf73bC15a31620b79E7"
+                ],
+                "signer_manager_role": [
+                    "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+                ]
+            },
+            "vault": {
+                "adapters": [
+                    {
+                        "adapter_type": "MARKET",
+                        "address": "0x76539b102d793dDa870D8Ea8BE4893FaaE31E7b1",
+                        "id": "0x7401c9644e051404e59bb7500ca6c226a90a95d71747f842cc9431863a579a8b",
+                        "name": "stPYR/USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xA43aB8b55886fBdA890b195903084e1aD408e353",
+                        "id": "0x3e4d2daa46f0f46012194a0a3c34f8b5e55035f3915567abaa5de90a86a8b1c5",
+                        "name": "Static Aave Ethereum USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xc73E1e0B5F530C8FA9fB1C4c8DcC66D70Bfb9854",
+                        "id": "0xf2528f64093f3cdd8dcbb01cd74fe2403e4fa29e878078073005c4e904f4dd29",
+                        "name": "Steakhouse Prime USDC"
+                    },
+                    {
+                        "adapter_type": "GENERIC",
+                        "address": "0xC2A95423125f2071d995068656A80fc55F55f5Cf",
+                        "id": "0xcd9de175e51b5b7cd5ecc75fb043f8765b28ebba63ca343a6d7614b87f3b9550",
+                        "name": "Spark USDC Vault"
+                    }
+                ],
+                "config": {
+                    "asset": "usdc",
+                    "deployment_block": 11929707
+                },
+                "contracts": {
+                    "gate": "0x0F7d3Aac48F9F7767D75f8125D1E717673187bcf",
+                    "vault": "0xa82f9fc451965Cd2BfFd20Fe61BBeCd2c4D7Ad38"
+                },
+                "roles": {
+                    "allocator": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
+                    "curator": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
+                    "owner": "0x794eBfe3B3C92409f72F569ADb3e44913a056a54",
+                    "sentinel": "0xd1fb442aE62f0C829aa7f0946A173c39F9515213"
+                },
+                "markets": [
+                    {
+                        "cap_id": "0x055074014231a145387412e3fab50f5853e84fcf47cae4040b425fc1899a9020",
+                        "collateral_cap_id": "0x6f5612a6c54759b5b7768db5bb789d4c0bf21e993f6cf6f223ac9814dd135883",
+                        "collateral_token": "0xD2B8074ED22e2A49533c96458b2ACB1adCAa2de1",
+                        "id": "0xe63797343ecb994331b78f783dde8eb2d5fd856c6ab8a1c9e3bd3d662a1add1e",
+                        "irm": "0x8C5dDCD3F601c91D1BF51c8ec26066010ACAbA7c",
+                        "lltv": "0xbef55718ad60000",
+                        "loan_token": "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A",
+                        "name": "stPYR/USDC",
+                        "oracle": "0x045a9c4927D8fE0A86bB21A0b732410764A68546"
+                    }
+                ]
             }
         }
     }

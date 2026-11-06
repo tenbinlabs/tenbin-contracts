@@ -1,0 +1,45 @@
+# mainnet
+[mainnet]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[mainnet.string]
+asset_name = "Tenbin Pyrite"
+asset_symbol = "tPYR"
+custodian_name = "custodian1"
+staked_asset_name = "Staked Tenbin Pyrite"
+staked_asset_symbol = "stPYR"
+mint_limit = "3000000000000000000000"           # 3000 asset tokens
+redeem_limit = "3000000000000000000000"         # 3000 asset tokens
+instant_unstake_cap = "3000000000000000000000"  # 3000 asset tokens
+
+[mainnet.uint]
+staking_dead_deposit = 1_000000000000000    # 0.001 tPYR locked as stPYR for 0xdead
+oracle_staleness_threshold = 86_400         # seconds
+cooldown_period = 259_200                   # 3 days
+oracle_tolerance = 50_000000000000000       # 5%
+ratio = 170_000000000000000                 # 17%
+rebalance_cap = 100_000_000_000000          # 100m
+vesting_period = 259_200                    # 3 days
+
+[mainnet.address]
+admin_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"               # admin multisig
+cap_adjuster_role = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"        # dev multisig
+collateral = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"               # usdc
+curator_role = "0x68E22EE43cE9e3115086C90Ac9113d7519C17129"
+custodian = "0x1f766513abc0DD46b26590Ea83A6b20377460a18"                # custodian1 deposit address
+custodian_keeper_role = "0x68E22EE43cE9e3115086C90Ac9113d7519C17129"
+default_admin_role = "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"       # owner multisig
+gatekeeper_role = "0xe2DbAE2C3ae3B9d62c59676FCb76eFb358cA1e40"
+minter_role = "0x1Be36734873CaF55ce01a254a30a75b8cAcFCa84"
+multicaller_role = "0x1Be36734873CaF55ce01a254a30a75b8cAcFCa84"
+multisig = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"                 # tenbin multisig
+one_inch_router = "0x111111125421cA6dc452d289314280a0f8842A65"          # 1inch router v6
+oracle = "0x369C67E8b026CC4Ef98350f332D7Dd52b85b7674"                   # chainlink gold/USD oracle
+rebalancer_role = "0x68E22EE43cE9e3115086C90Ac9113d7519C17129"
+restricter_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"          # admin multisig
+revenue_keeper_role = "0x68E22EE43cE9e3115086C90Ac9113d7519C17129"
+rewarder_role = "0x9cC553d9F9e9690C0bc97bC2E1d10696d3862aC8"            # tenbin multisig
+signer_manager_role = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"      # dev multisig
+vault = "0x50b12e54Db5d0B9801966Ca3C3C799BAd90fAAA4" # Deployed tPYR USDC vault
+yield_signer = "0xa24250395f048933Db981c04c7856317B4B4d99f" # protocol-delta
+leverage_signer = "0x6418055600d6D5a66d51daA92a2eE990A085f3F7" # protocol-echo

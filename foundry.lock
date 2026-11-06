@@ -13,8 +13,8 @@
   },
   "lib/forge-std": {
     "tag": {
-      "name": "v1.15.0",
-      "rev": "0844d7e1fc5e60d77b68e469bff60265f236c398"
+      "name": "v1.17.0",
+      "rev": "f3dae6e6ee381f25eb6a246f7da9b85c91a68219"
     }
   },
   "lib/openzeppelin-contracts": {
@@ -33,6 +33,12 @@
     "tag": {
       "name": "2025-12-04",
       "rev": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017"
+    }
+  },
+  "lib/morpho-blue-oracles": {
+    "tag": {
+      "name": "v2.0.0",
+      "rev": "07a9a6988b0e1b316ac2fa97ec62ad485fbd0041"
     }
   }
 }

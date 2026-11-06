@@ -14,7 +14,7 @@ redeem_limit = "300000000000000000000000000"         # 300 million asset tokens
 instant_unstake_cap = "300000000000000000000000000"  # 300 million asset tokens
 
 [mainnet.uint]
-cooldown_period = 604_800                   # 7 days
+cooldown_period = 259_200                   # 3 days
 oracle_tolerance = 80_000000000000000       # 8%
 ratio = 170_000000000000000                 # 17%
 rebalance_cap = 100_000_000_000000          # 100m

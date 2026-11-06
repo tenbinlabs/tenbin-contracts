@@ -68,6 +68,7 @@ optimizer = true
 optimizer_runs = 1000
 
 [lint]
+lint_on_build = false
 ignore = ["test/external/**/*", "test/echidna/**/*"]
 exclude_lints = [
   "mixed-case-variable",
@@ -92,7 +93,7 @@ skip = [
 ]
 
 [rpc_endpoints]
-mainnet = "${MAINNET_RPC_URL}"
+mainnet = { endpoint = "${MAINNET_RPC_URL}", retries = 3 }
 sepolia = "${SEPOLIA_RPC_URL}"
 dstSepolia = "${RPC_URL_ARBITRUM_SEPOLIA}"
 

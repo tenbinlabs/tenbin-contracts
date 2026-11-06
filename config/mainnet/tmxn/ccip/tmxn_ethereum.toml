@@ -1,0 +1,30 @@
+# mainnet ccip values
+[1]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[1.string]
+remote_chain_selector = "4051577828743386545"
+ccip_chain_selector = "5009297550715157269"
+inbound_capacity = "993492623317271869256370"
+outbound_capacity = "903175112106610790233064"
+inbound_rate = "11498757214320275000"
+outbound_rate = "10453415649382070000"
+
+[1.address]
+# Local token/pools
+asset_token = "0x8d015aFcb6F437010653352EB1E58152c4e23734"
+staked_asset_token = "0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba"
+asset_pool = "0x2003cB30389b40fF0078FfE56f07890829003Cf4"
+staked_asset_pool = "0xF2a4855Cd0b9F4c32a129ce9Ed7628D789d65699"
+
+# CCIP components
+ccip_router = "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D"
+ccip_rmn_proxy = "0x411dE17f12D1A34ecC7F45f49844626267c75e81"
+ccip_token_admin_registry = "0xb22764f98dD05c789929716D677382Df22C05Cb6"
+ccip_registry_module_owner = "0x4855174E9479E211337832E109E7721d43A4CA64"
+
+# remote data
+remote_asset_token = "0x0F8277bDbAA5e9D4B0b2DEDd85b67a84D93c5870"
+remote_staked_asset_token = "0xA135254156b59c38c64Bb2a7E27961f4F9440c96"
+remote_asset_pool = "0x2003cB30389b40fF0078FfE56f07890829003Cf4"
+remote_staked_asset_pool = "0xf6b66985CDC5C8EcBaFF552d39F4f283867dDbA3"

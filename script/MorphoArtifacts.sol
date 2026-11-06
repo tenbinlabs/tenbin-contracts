@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import {MorphoMarketV1AdapterV2Factory} from "vault-v2/src/adapters/MorphoMarketV1AdapterV2Factory.sol";
 import {MorphoVaultV1AdapterFactory} from "vault-v2/src/adapters/MorphoVaultV1AdapterFactory.sol";
 import {VaultV2Factory} from "vault-v2/src/VaultV2Factory.sol";
 
@@ -9,5 +10,6 @@ import {VaultV2Factory} from "vault-v2/src/VaultV2Factory.sol";
 // can deploy them on local chains via deployCode (vm.getCode).
 contract MorphoArtifacts {
     MorphoVaultV1AdapterFactory internal adapterFactory;
+    MorphoMarketV1AdapterV2Factory internal marketAdapterFactory;
     VaultV2Factory internal vaultFactory;
 }

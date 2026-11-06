@@ -1,0 +1,36 @@
+[chainId]
+endpoint_url = "${SPOKE_CHAIN_MAINNET_RPC_URL}"
+
+[chainId.string]
+asset_name = ""
+asset_symbol = ""
+staked_asset_name = ""
+staked_asset_symbol = ""
+ccip_chain_selector = ""
+remote_chain_selector = ""
+inbound_capacity = ""
+outbound_capacity = ""
+inbound_rate = ""
+outbound_rate = ""
+
+[chainId.address]
+# Existing protocol config
+restricter_role = "0x0000000000000000000000000000000000000000"
+
+# Local CCIP infrastructure
+ccip_router = "0x0000000000000000000000000000000000000000"
+ccip_rmn_proxy = "0x0000000000000000000000000000000000000000"
+ccip_token_admin_registry = "0x0000000000000000000000000000000000000000"
+ccip_registry_module_owner = "0x0000000000000000000000000000000000000000"
+
+# Local token/pools
+asset_token = "0x0000000000000000000000000000000000000000"
+staked_asset_token = "0x0000000000000000000000000000000000000000"
+asset_pool = "0x0000000000000000000000000000000000000000"
+staked_asset_pool = "0x0000000000000000000000000000000000000000"
+
+# Remote side
+remote_asset_token = "0x0000000000000000000000000000000000000000"
+remote_staked_asset_token = "0x0000000000000000000000000000000000000000"
+remote_asset_pool = "0x0000000000000000000000000000000000000000"
+remote_staked_asset_pool = "0x0000000000000000000000000000000000000000"

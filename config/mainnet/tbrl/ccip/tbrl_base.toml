@@ -1,0 +1,36 @@
+[8453]
+endpoint_url = "${BASE_MAINNET_RPC_URL}"
+
+[8453.string]
+asset_name = "Tenbin Brazilian Real"
+asset_symbol = "tBRL"
+staked_asset_name = "Staked Tenbin Brazilian Real"
+staked_asset_symbol = "stBRL"
+ccip_chain_selector = "15971525489660198786"
+remote_chain_selector = "5009297550715157269"
+inbound_capacity = "279405870000000000000000"
+outbound_capacity = "254005330000000000000000"
+inbound_rate = "3233864236111111000"
+outbound_rate = "2939876504629630000"
+
+[8453.address]
+# Existing protocol config
+restricter_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+
+# Local CCIP infrastructure
+ccip_router = "0x881e3A65B4d4a04dD529061dd0071cf975F58bCD"
+ccip_rmn_proxy = "0xC842c69d54F83170C42C4d556B4F6B2ca53Dd3E8"
+ccip_token_admin_registry = "0x6f6C373d09C07425BaAE72317863d7F6bb731e37"
+ccip_registry_module_owner = "0xAFEd606Bd2CAb6983fC6F10167c98aaC2173D77f"
+
+# Local token/pools
+asset_token = "0x3963B723Cca0AfaB7A44Be9dF790cDEb0c2b55d6"
+staked_asset_token = "0x1c1e88977EA87684337d8d64e3931C3Ca791eBec"
+asset_pool = "0x382cc1c652271d98447fa1a3202AB53B3c67c937"
+staked_asset_pool = "0x2603BeB4A1632Ac237638368685E973167169deB"
+
+# Remote side
+remote_asset_token = "0x4C1b46adb8877E389171EC6Ef67b385094C0afaD"
+remote_staked_asset_token = "0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f"
+remote_asset_pool = "0x4B6522e6C6E169e3f95903756eB3C3Ea43272698"
+remote_staked_asset_pool = "0x76ea7aA064D0bf3529c1e6b4e920aC50d1a0d72c"

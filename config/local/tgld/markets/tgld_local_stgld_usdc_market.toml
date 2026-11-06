@@ -1,0 +1,16 @@
+# local
+[31337]
+endpoint_url = "wss://localhost:8545"
+
+[31337.string]
+name = "stGLD/USDC"                                             # market display name
+
+[31337.address]
+collateral_token = "0x0000000000000000000000000000000000000000" # staked asset; mock deployed by the script
+oracle = "0x0000000000000000000000000000000000000000"           # morpho oracle; mock deployed by the script
+irm = "0x0000000000000000000000000000000000000000"              # interest rate model; local adaptive curve irm
+
+[31337.uint]
+lltv = 860000000000000000                       # 86% liquidation ltv
+absolute_cap = 100_000_000_000000               # 100m usdc, on the collateralToken and marketParams ids
+relative_cap = 1_000000000000000000             # 100%

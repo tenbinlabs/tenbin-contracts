@@ -1,0 +1,31 @@
+# mainnet
+[mainnet]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[mainnet.string]
+name = "tPYR USDC Vault"
+symbol = "tPYRv-USDC"
+adapters = [                                                    # adapter config names, deployed in order
+    "tpyr_usdc_market_adapter",
+    "tpyr_usdc_aave_adapter",
+    "tpyr_usdc_steakhousev2_adapter",
+    "tpyr_usdc_spark_adapter",
+]
+liquidity_adapter = "tpyr_usdc_steakhousev2_adapter"              # must be a member of adapters
+markets = ["tpyr_stpyr_usdc_market"]           # market config names the MARKET adapter allocates to
+
+[mainnet.address]
+allocator = "0x48Fa008bD2660974d55Ee9b7A9ECA1cE61347614"        # dev multisig
+asset = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"            # usdc
+curator = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"          # admin multisig
+owner = "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"            # owner multisig
+sentinel = "0xe2DbAE2C3ae3B9d62c59676FCb76eFb358cA1e40"
+manager = "0xc29A4Ba70A0820D1c4c220b5E9Af8aC0761670F7" # Deployed collateral manager
+
+[mainnet.uint]
+dead_deposit = 1_000000                         # 1 usdc
+max_rate = 63419583967                          # 2000% APR
+timelock_duration = 172800                      # 2 days
+
+[mainnet.bool]
+is_new_asset_vault = false

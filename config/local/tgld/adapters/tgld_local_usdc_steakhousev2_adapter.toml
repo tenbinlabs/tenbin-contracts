@@ -1,0 +1,20 @@
+# local
+[31337]
+endpoint_url = "wss://localhost:8545"
+
+[31337.string]
+adapter_type = "GENERIC"                                        # adapter type options: [GENERIC, MARKET, VAULT]
+name = "Steakhouse Prime USDC"                                  # adapter display name
+
+[31337.address]
+asset = "0x0000000000000000000000000000000000000000"            # usdc
+vault = "0x0000000000000000000000000000000000000000"            # steakhouse usdc v2
+owner = "0x635ECB1700d52a1FbC395c5C92b845A00AF56a38"            # owner multisig
+parent = "0x0000000000000000000000000000000000000000"           # parent vault
+
+[31337.uint]
+absolute_cap = 100_000_000_000000               # 100m usdc
+relative_cap = 1_000000000000000000             # 100%
+
+[31337.bool]
+is_new_adapter = true                      # Whether this is a new adapter

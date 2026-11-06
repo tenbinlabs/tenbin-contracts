@@ -5,3 +5,4 @@ openzeppelin-contracts/=lib/openzeppelin-contracts
 openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable
 tenbin-contracts/=./
 vault-v2/=lib/vault-v2
+morpho-blue-oracles/=lib/morpho-blue-oracles/
