@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 import {console2} from "forge-std/console2.sol";
 import {IMorphoMarketV1AdapterV2} from "vault-v2/src/adapters/interfaces/IMorphoMarketV1AdapterV2.sol";
+import {MarketParams} from "vault-v2/lib/morpho-blue/src/interfaces/IMorpho.sol";
 import {IVaultV2} from "vault-v2/src/interfaces/IVaultV2.sol";
 import {MorphoAdapterDeployer} from "./MorphoAdapterDeployer.s.sol";
 
@@ -10,6 +11,7 @@ import {MorphoAdapterDeployer} from "./MorphoAdapterDeployer.s.sol";
 /// (config/{chain}/{asset}/adapters/{adapter}.toml). See MorphoAdapterDeployer for the adapter_type
 /// dispatch and per-chain factory resolution.
 /// Supported chains: mainnet (1), sepolia (11155111), local dev (31337).
+/// MARKET deployments require `run(string,string)` with adapter and vault config paths.
 /// Configs with is_new_adapter = false are skipped without deploying anything.
 ///
 /// FOUNDRY_PROFILE=production forge script script/DeployMorphoAdapter.s.sol --sig "run(string)" $ADAPTER_CONFIG --rpc-url $MAINNET_RPC_URL --account "$BROADCASTER_ACCOUNT" --sender "$BROADCASTER_ADDRESS" --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow
@@ -42,13 +44,22 @@ contract DeployMorphoAdapter is MorphoAdapterDeployer {
 
     /// @notice Adapter parameters loaded from the adapter config file
     AdapterParameters internal adapterParams;
+    MarketParameters internal configuredMarket;
 
     /// @dev The version for this deployment
     function getVersion() internal pure override returns (string memory) {
         return TARGET_VERSION;
     }
 
-    function run(string memory configDir) public returns (DeploymentResult memory deployment) {
+    function run(string memory configDir) public returns (DeploymentResult memory) {
+        return run(configDir, "");
+    }
+
+    /// @notice Deploy an adapter; MARKET adapters also require the vault's declared market configuration.
+    function run(string memory configDir, string memory vaultConfigDir)
+        public
+        returns (DeploymentResult memory deployment)
+    {
         require(block.chainid == 1 || block.chainid == 11155111 || block.chainid == 31337, "chain not supported");
 
         adapterParams = loadAdapterParams(configDir);
@@ -57,6 +68,18 @@ contract DeployMorphoAdapter is MorphoAdapterDeployer {
             console2.log("is_new_adapter = false, skipping deployment");
             deployment.broadcaster = broadcaster;
             return deployment;
+        }
+
+        if (stringMatches(adapterParams.adapter_type, "MARKET")) {
+            require(
+                bytes(vaultConfigDir).length != 0, "MARKET deployment requires run(string,string) with vault config"
+            );
+            loadVaultConfig(vaultConfigDir);
+            require(vaultParams.asset == adapterParams.asset, "vault asset does not match adapter config");
+            require(vaultContainsAdapterConfig(configDir, vaultConfigDir), "adapter config not declared by vault");
+            string[] memory markets = vaultConfig.get("markets").toStringArray();
+            require(markets.length == 1, "exactly one market required for the MARKET adapter");
+            configuredMarket = loadMarketParams(marketConfigPath(vaultConfigDir, markets[0]));
         }
 
         deployment = deploy();
@@ -114,13 +137,28 @@ contract DeployMorphoAdapter is MorphoAdapterDeployer {
 
         console2.log("\n================== Curator submit payloads ==================\n");
         bytes memory adapterId = abi.encode("this", deployment.adapter);
-        console2.log("addAdapter:");
-        console2.logBytes(abi.encodeCall(IVaultV2.addAdapter, (deployment.adapter)));
-
-        // TODO ENG-2553: Log curator submit payloads when running individual adapter deploy scripts
         if (stringMatches(adapterParams.adapter_type, "MARKET")) {
-            console2.log("Individual curator submit payloads required for setting market caps");
+            MarketParams memory market = toMarketParams(configuredMarket);
+            if (block.chainid == 31337 && market.irm == address(0)) {
+                market.irm = IMorphoMarketV1AdapterV2(deployment.adapter).adaptiveCurveIrm();
+            }
+            printVaultOperation("add adapter", abi.encodeCall(IVaultV2.addAdapter, (deployment.adapter)));
+            printCapOperations("adapter", adapterId, adapterParams.absolute_cap, adapterParams.relative_cap);
+            printCapOperations(
+                "collateral",
+                abi.encode("collateralToken", market.collateralToken),
+                configuredMarket.absolute_cap,
+                configuredMarket.relative_cap
+            );
+            printCapOperations(
+                "market",
+                abi.encode("this/marketParams", deployment.adapter, market),
+                configuredMarket.absolute_cap,
+                configuredMarket.relative_cap
+            );
         } else {
+            console2.log("addAdapter:");
+            console2.logBytes(abi.encodeCall(IVaultV2.addAdapter, (deployment.adapter)));
             console2.log("increaseRelativeCap:");
             console2.logBytes(abi.encodeCall(IVaultV2.increaseRelativeCap, (adapterId, adapterParams.relative_cap)));
             console2.log("\n=============================================================\n");
@@ -170,6 +208,8 @@ contract DeployMorphoAdapter is MorphoAdapterDeployer {
         internal
         view
     {
+        console2.log(string.concat("\n", scope, " cap id:"));
+        console2.logBytes32(keccak256(id));
         console2.log(string.concat("\n", scope, " absolute cap:"), absoluteCap);
         printVaultOperation(
             string.concat(scope, " absolute cap"), abi.encodeCall(IVaultV2.increaseAbsoluteCap, (id, absoluteCap))
@@ -181,7 +221,7 @@ contract DeployMorphoAdapter is MorphoAdapterDeployer {
     }
 
     /// @notice Print the parent-vault target plus submit and execution calldata for one operation.
-    function printVaultOperation(string memory label, bytes memory executionPayload) internal view {
+    function printVaultOperation(string memory label, bytes memory executionPayload) internal view virtual {
         console2.log(string.concat("\n", label));
         console2.log("target:", adapterParams.parent);
         console2.log("submit calldata:");

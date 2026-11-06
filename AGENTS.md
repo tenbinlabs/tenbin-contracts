@@ -28,7 +28,7 @@ Fuzzland). See `README.md` for mainnet addresses and audit history.
 - `test/echidna/**` holds Echidna fork-mode harnesses (live mainnet addresses, hevm cheatcodes). `[profile.default] skip` excludes them so `forge test` never collects their `invariant_*`; they are compiled and fuzzed only under `FOUNDRY_PROFILE=echidna`.
 - Deploy development contracts with `FOUNDRY_PROFILE=development`; deploy production contracts with `FOUNDRY_PROFILE=production`. Both use `script/Deploy.s.sol` and resolve `deploy-target/` to this repository. Vault configs declare `adapters`, `liquidity_adapter`, and `markets`; sibling adapter/market TOMLs supply their parameters.
 - `script/DeployNewAsset.s.sol` creates and seeds a new asset and vault; see `docs/new-asset-deployment.md`. It requires explicit asset/vault configs.
-- `script/DeployMorphoAdapter.s.sol` deploys or validates individual adapters.
+- `script/DeployMorphoAdapter.s.sol` deploys or validates individual adapters. New MARKET adapters require `run(string,string)` with explicit adapter and vault configs to print registration and cap payloads.
 - Fork regressions pin blocks; live monitoring trails head by ten blocks.
 - CCIP records/configs are published; additional scripts and tests are tracked by ENG-3658.
 - Restore dependencies: `git submodule update --init --recursive`.

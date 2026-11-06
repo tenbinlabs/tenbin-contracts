@@ -34,8 +34,8 @@ contract DeployMorphoAdapterForkTest is ForkBaseTest {
     /// the real tGLD adapter existed. Pinned explicitly rather than inherited from `forkBlock`.
     uint256 internal constant PRE_ADAPTER_FORK_BLOCK = 25383000;
 
-    string internal constant FIXTURE_DIR = "cache/test/adapters/";
-    string internal constant SKIP_CONFIG = "cache/test/adapters/existing_vault.toml";
+    string internal constant FIXTURE_DIR = "cache/test/adapters/adapters/";
+    string internal constant SKIP_CONFIG = "cache/test/adapters/adapters/existing_vault.toml";
 
     function setUp() public override {
         super.setUp();
@@ -106,7 +106,8 @@ contract DeployMorphoAdapterForkTest is ForkBaseTest {
         string memory config = writeFixture(
             "market_mainnet", "mainnet", "MARKET", address(usdc), address(0), OWNER_MULTISIG, TGLD_PARENT_VAULT
         );
-        DeployMorphoAdapter.DeploymentResult memory result = new DeployMorphoAdapter().run(config);
+        DeployMorphoAdapter.DeploymentResult memory result =
+            new DeployMorphoAdapter().run(config, writeMarketVaultFixture("mainnet"));
         IMorphoMarketV1AdapterV2 adapter = IMorphoMarketV1AdapterV2(result.adapter);
 
         assertEq(result.factory, MARKET_ADAPTER_FACTORY, "wrong market factory");
@@ -173,7 +174,8 @@ contract DeployMorphoAdapterForkTest is ForkBaseTest {
         );
         vm.chainId(31337);
 
-        DeployMorphoAdapter.DeploymentResult memory result = new DeployMorphoAdapter().run(config);
+        DeployMorphoAdapter.DeploymentResult memory result =
+            new DeployMorphoAdapter().run(config, writeMarketVaultFixture("31337"));
         IMorphoMarketV1AdapterV2 adapter = IMorphoMarketV1AdapterV2(result.adapter);
         IMorphoMarketV1AdapterV2Factory factory = IMorphoMarketV1AdapterV2Factory(result.factory);
 
@@ -281,6 +283,26 @@ contract DeployMorphoAdapterForkTest is ForkBaseTest {
 
         vm.expectRevert("chain not supported");
         script.run("");
+    }
+
+    function writeMarketVaultFixture(string memory chainKey) internal returns (string memory path) {
+        vm.createDir("cache/test/adapters/vaults", true);
+        vm.createDir("cache/test/adapters/markets", true);
+        path = string.concat("cache/test/adapters/vaults/", chainKey, ".toml");
+        string memory vault = vm.readFile("config/mainnet/tgld/vaults/tgld_usdc_vault.toml");
+        string memory market = vm.readFile("config/mainnet/tgld/markets/tgld_stgld_usdc_market.toml");
+        bool local = keccak256(bytes(chainKey)) == keccak256("31337");
+        vault = vm.replace(vault, "tgld_usdc_market_adapter", local ? "market_local" : "market_mainnet");
+        if (local) {
+            vault = vm.replace(vault, "mainnet", "31337");
+            market = vm.replace(market, "mainnet", "31337");
+            market = vm.replace(
+                market, "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC", "0x0000000000000000000000000000000000000000"
+            );
+        }
+        vault = vm.replace(vault, "tgld_stgld_usdc_market", string.concat(chainKey, "_market"));
+        vm.writeFile(path, vault);
+        vm.writeFile(string.concat("cache/test/adapters/markets/", chainKey, "_market.toml"), market);
     }
 
     /// @notice Write a temp adapter config fixture and return its path.

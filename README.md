@@ -183,7 +183,7 @@ Choose the entrypoint for the operation:
 | Core and vault using configured integrations | `Deploy.s.sol`, `run(string,string,bool)` |
 | Core against the asset config's existing nonzero `vault` | `Deploy.s.sol`, `runCoreOnly(string,bool)` |
 | Vault for an asset | `Deploy.s.sol`, `runVaultOnly(string,string)` |
-| Individual adapter deployment or existing-adapter validation | `DeployMorphoAdapter.s.sol`, `run(string)` or `runExisting(string,string,address)` |
+| Individual adapter deployment or existing-adapter validation | `DeployMorphoAdapter.s.sol`, `run(string)` (VAULT/GENERIC), `run(string,string)` (MARKET: adapter and vault configs), or `runExisting(string,string,address)` |
 
 For a fresh asset such as tPYR, follow [the new-asset deployment runbook](docs/new-asset-deployment.md). It covers input preparation, pricing, the backed staking seed, permission restoration, simulation, broadcasting, verification, and recovery. Recorded deployment configs must be copied and prepared before reuse as fresh deployment inputs.
 
