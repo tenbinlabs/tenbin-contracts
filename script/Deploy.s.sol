@@ -343,6 +343,10 @@ contract Deploy is MorphoAdapterDeployer {
         for (uint256 i = 0; i < marketConfigList.length; i++) {
             MarketParameters memory params = marketConfigList[i];
             MarketParams memory marketParams = toMarketParams(params);
+            require(
+                marketParams.irm == IMorphoMarketV1AdapterV2(marketAdapter).adaptiveCurveIrm(),
+                "market irm does not match adapter"
+            );
             requireMarketExists(morpho, marketParams);
             bytes memory collateralId = abi.encode("collateralToken", params.collateral_token);
             bytes memory marketId = abi.encode("this/marketParams", marketAdapter, marketParams);
