@@ -1,0 +1,20 @@
+# mainnet
+[mainnet]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[mainnet.string]
+adapter_type = "GENERIC"                                        # adapter type options: [GENERIC, MARKET, VAULT]
+name = "Spark USDC Vault"                                       # adapter display name
+
+[mainnet.address]
+asset = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"            # usdc
+vault = "0xBc65ad17c5C0a2A4D159fa5a503f4992c7B545FE"            # spark usdc
+owner = "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"            # owner multisig
+parent = "0x7290245b3e564f0Ae2dA5af0690eF4842CF13c75"           # parent vault
+
+[mainnet.uint]
+absolute_cap = 20_000_000_000000                                # 20m usdc
+relative_cap = 500000000000000000                               # 50%
+
+[mainnet.bool]
+is_new_adapter = false                                          # Whether this is a new adapter

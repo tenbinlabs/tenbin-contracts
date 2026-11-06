@@ -1,0 +1,36 @@
+[137]
+endpoint_url = "${POLYGON_RPC_URL}"
+
+[137.string]
+asset_name = "Tenbin Gold"
+asset_symbol = "tGLD"
+staked_asset_name = "Staked Tenbin Gold"
+staked_asset_symbol = "stGLD"
+ccip_chain_selector = "4051577828743386545"
+remote_chain_selector = "5009297550715157269"
+inbound_capacity = "13116355427476332132"
+outbound_capacity = "11923959479523938302"
+inbound_rate = "151809669299494"
+outbound_rate = "138008790272267"
+
+[137.address]
+# Existing protocol config
+restricter_role = "0xE6Eb534f33A635e8d867414Af32F766D221F30d1"
+
+# Local CCIP infrastructure
+ccip_router = "0x849c5ED5a80F5B408Dd4969b78c2C8fdf0565Bfe"
+ccip_rmn_proxy = "0xf1ceAa46D8d13Cac9fC38aaEF3d3d14754C5A9c2"
+ccip_token_admin_registry = "0x00F027eA6D0fb03256A15E9182B2B9227A4931d8"
+ccip_registry_module_owner = "0xc751E86208F0F8aF2d5CD0e29716cA7AD98B5eF5"
+
+# Local token/pools
+asset_token = "0x600fE75cDd5Bb9f86e719eBAb3ec38F977e5a0c1"
+staked_asset_token = "0x45A1b008294C832f5cA3937184F1ba7DDF7b7807"
+asset_pool = "0x12f13ab3f5f7F6eF1b0A7E99b5F863BECA0D7603"
+staked_asset_pool = "0x28031e509A216411912507bE932468710D6C7E80"
+
+# Remote side
+remote_asset_token = "0x6a547b25534234bb79CE6961a23Db13DE154b6F4"
+remote_staked_asset_token = "0x8d301801d899dC81fEabBDE69407A53b82bdBF19"
+remote_asset_pool = "0x9564594A96740251bA59d28E968C60D616d49d70"
+remote_staked_asset_pool = "0xD6A2AFEc1485c70a6E145F79bDb1A69F93078986"

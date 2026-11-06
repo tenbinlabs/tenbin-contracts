@@ -1,0 +1,20 @@
+# mainnet
+[mainnet]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[mainnet.string]
+adapter_type = "MARKET"                                         # adapter type options: [GENERIC, MARKET, VAULT]
+name = "stBRL/USDC"                                             # adapter display name
+
+[mainnet.address]
+asset = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"            # usdc
+vault = "0x0000000000000000000000000000000000000000"            # unused: market adapters have no target vault
+owner = "0x698c6d3726846C4AD4Dc9331862b92Cd80D2fb99"            # owner multisig
+parent = "0xE275a69B93A5745e1560ee82D033205D323BfAd9"           # parent vault
+
+[mainnet.uint]
+absolute_cap = 1_000_000_000000                 # 1m usdc
+relative_cap = 200000000000000000               # 20%
+
+[mainnet.bool]
+is_new_adapter = false                          # Whether this is a new adapter

@@ -5,21 +5,23 @@ endpoint_url = "${SEPOLIA_RPC_URL}"
 [sepolia.string]
 name = "tMXN USDC Vault"
 symbol = "tMXNv-USDC"
+adapters = ["tmxn_sepolia_usdc_market_adapter", "tmxn_sepolia_usdc_aave_adapter", "tmxn_sepolia_usdc_steakhousev2_adapter", "tmxn_sepolia_usdc_spark_adapter"]
+liquidity_adapter = "tmxn_sepolia_usdc_steakhousev2_adapter"      # must be a member of adapters
+
+markets = ["tmxn_sepolia_stmxn_usdc_market"]
 
 [sepolia.address]
 allocator = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"        # owner key
 asset = "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A"            # set in deployment script
 curator = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"          # owner key
-initial_vault = "0x0000000000000000000000000000000000000000"    # set in testnet deployment script
 owner = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"            # owner key
 sentinel = "0x2cfa1b9F9ce868B8CeB78D7E53ee0eEd0aB858b8"         # sepolia gatekeeper
+manager = "0xb224a9CD1c1830FBC2adB748480889c035c0bc43" # existing collateral manager
 
 [sepolia.uint]
 dead_deposit = 1_000000                         # 1 usdc
-initial_absolute_cap = 100_000_000_000000       # 100m usdc
-initial_relative_cap = 1_000000000000000000     # 100%
 max_rate = 63419583967                          # 2000% APR
-timelock_duration = 172800                      # 2 days
+timelock_duration = 0                           # no timelock on sepolia
 
 [sepolia.bool]
-is_new_asset_vault = false                      # Wether this is a new asset vault
+is_new_asset_vault = false                      # Whether this is a new asset vault

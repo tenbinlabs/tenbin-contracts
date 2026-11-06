@@ -1,0 +1,17 @@
+[sepolia]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[sepolia.string]
+name = "stPYR/USDC"
+
+[sepolia.address]
+base_feed = "0xf28C2A3AF50173F4d708CbDcEf31C55dCaA0AEb8"
+quote_feed = "0x3B5f62e03Ae068c95Ec6b6Ce00c6AAE8D707E84a"
+collateral_token = "0xD2B8074ED22e2A49533c96458b2ACB1adCAa2de1" # Deployed stPYR
+oracle = "0x045a9c4927D8fE0A86bB21A0b732410764A68546" # Deployed staking-aware oracle
+irm = "0x8C5dDCD3F601c91D1BF51c8ec26066010ACAbA7c"
+
+[sepolia.uint]
+lltv = 860000000000000000
+absolute_cap = 1_000_000_000000
+relative_cap = 200000000000000000

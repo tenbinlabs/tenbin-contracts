@@ -1,0 +1,32 @@
+# mainnet ccip values
+[1]
+endpoint_url = "${MAINNET_RPC_URL}"
+
+[1.string]
+remote_chain_selector = "15971525489660198786"
+ccip_chain_selector = "5009297550715157269"
+inbound_capacity = "279405870000000000000000"
+outbound_capacity = "254005330000000000000000"
+inbound_rate = "3233864236111111000"
+outbound_rate = "2939876504629630000"
+
+
+[1.address]
+# Local Ethereum token/pools
+asset_token = "0x4C1b46adb8877E389171EC6Ef67b385094C0afaD"
+staked_asset_token = "0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f"
+
+asset_pool = "0x4B6522e6C6E169e3f95903756eB3C3Ea43272698"
+staked_asset_pool = "0x76ea7aA064D0bf3529c1e6b4e920aC50d1a0d72c"
+
+# CCIP components
+ccip_router = "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D"
+ccip_rmn_proxy = "0x411dE17f12D1A34ecC7F45f49844626267c75e81"
+ccip_token_admin_registry = "0xb22764f98dD05c789929716D677382Df22C05Cb6"
+ccip_registry_module_owner = "0x4855174E9479E211337832E109E7721d43A4CA64"
+
+# Remote Base data
+remote_asset_token = "0x3963B723Cca0AfaB7A44Be9dF790cDEb0c2b55d6"
+remote_staked_asset_token = "0x1c1e88977EA87684337d8d64e3931C3Ca791eBec"
+remote_asset_pool = "0x382cc1c652271d98447fa1a3202AB53B3c67c937"
+remote_staked_asset_pool = "0x2603BeB4A1632Ac237638368685E973167169deB"

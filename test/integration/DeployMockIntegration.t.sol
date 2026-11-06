@@ -4,6 +4,10 @@ pragma solidity 0.8.30;
 import {Config} from "forge-std/Config.sol";
 import {Deploy} from "../../script/Deploy.s.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IMorphoMarketV1AdapterV2} from "vault-v2/src/adapters/interfaces/IMorphoMarketV1AdapterV2.sol";
+import {IMorphoStaticTyping, Id, MarketParams} from "vault-v2/lib/morpho-blue/src/interfaces/IMorpho.sol";
+import {MarketParamsLib} from "vault-v2/lib/morpho-blue/src/libraries/MarketParamsLib.sol";
+import {IMorphoVaultV1Adapter} from "vault-v2/src/adapters/interfaces/IMorphoVaultV1Adapter.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Test} from "forge-std/Test.sol";
 
@@ -38,7 +42,7 @@ contract DeployMockTest is Test, Config {
     }
 
     function test_DeployMockIntegration() public {
-        _loadConfig("./config/local/local.toml", false);
+        _loadConfig("./config/local/tgld/tgld_local.toml", false);
         // check default admin roles
         assertEq(deployment.controller.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
         assertEq(deployment.manager.hasRole(DEFAULT_ADMIN_ROLE, config.get("default_admin_role").toAddress()), true);
@@ -158,5 +162,197 @@ contract DeployMockTest is Test, Config {
 
         vm.expectRevert("invalid collateral");
         deployer.runCoreOnly(dir, true);
+    }
+}
+
+/// @notice The local config's three adapters, two GENERIC and one MARKET, run through
+/// Deploy.s.sol on every integration run. Assert each landed at its configured index.
+contract DeployVaultAdapterSetTest is Test {
+    function test_DeployVault_AdapterSet() public {
+        (, Deploy.VaultDeploymentResult memory result) = new Deploy().run("", "", true);
+
+        assertEq(result.adapters.length, 3, "expected three adapters");
+        assertAdapter(result, 0, "Steakhouse Prime USDC", "GENERIC");
+        assertAdapter(result, 1, "Static Aave Ethereum USDC", "GENERIC");
+        assertAdapter(result, 2, "stGLD/USDC", "MARKET");
+
+        assertEq(address(result.liquidity_adapter), address(result.adapters[0].adapter), "wrong liquidity adapter");
+        assertEq(result.vault.liquidityAdapter(), address(result.liquidity_adapter), "liquidity adapter not set");
+        assertEq(result.vault.liquidityData(), abi.encode(uint256(0)), "Prime liquidity data");
+    }
+
+    function assertAdapter(
+        Deploy.VaultDeploymentResult memory result,
+        uint256 index,
+        string memory name,
+        string memory adapterType
+    ) internal view {
+        Deploy.DeployedAdapter memory adapter = result.adapters[index];
+        assertEq(adapter.name, name, "wrong adapter name");
+        assertEq(adapter.adapter_type, adapterType, "wrong adapter type");
+        assertTrue(result.vault.isAdapter(address(adapter.adapter)), "adapter not registered");
+    }
+}
+
+/// @notice Vault deploy with a MARKET adapter and a configured market, driven by temp TOML
+/// fixtures: morpho blue and its IRM are deployed locally, the market is created, seeded, and
+/// capped on all three ids, and a live allocate lands supply in it.
+contract DeployMarketAdapterMockTest is Test {
+    address internal constant LOCAL_ROLE = 0x635ECB1700d52a1FbC395c5C92b845A00AF56a38;
+    /// @dev Distinct from LOCAL_ROLE: the deploy revokes the broadcaster's allocator role at the end.
+    address internal constant ALLOCATOR = address(0xA110);
+    string internal constant FIXTURE_BASE = "cache/test/market_vault/";
+
+    function test_DeployVault_WithMarketAdapter() public {
+        writeFixtures();
+        Deploy deployer = new Deploy();
+        (, Deploy.VaultDeploymentResult memory vault) =
+            deployer.run("", string.concat(FIXTURE_BASE, "vaults/market_vault.toml"), true);
+
+        assertEq(vault.adapters.length, 2, "expected two adapters");
+        assertEq(vault.adapters[1].adapter_type, "MARKET", "expected a market adapter");
+        address marketAdapter = address(vault.adapters[1].adapter);
+
+        // registered and capped like any other adapter, at its own config's caps rather than index 0's
+        assertTrue(vault.vault.isAdapter(marketAdapter), "market adapter not registered");
+        bytes32 id = keccak256(abi.encode("this", marketAdapter));
+        assertEq(vault.vault.absoluteCap(id), 70_000_000_000000, "wrong absolute cap");
+        assertEq(vault.vault.relativeCap(id), 700000000000000000, "wrong relative cap");
+
+        bytes32 liquidityId = keccak256(abi.encode("this", address(vault.adapters[0].adapter)));
+        assertEq(vault.vault.absoluteCap(liquidityId), 100_000_000_000000, "wrong liquidity absolute cap");
+        assertEq(vault.vault.relativeCap(liquidityId), 1_000000000000000000, "wrong liquidity relative cap");
+
+        // deployed against a live local morpho blue + IRM and starts with no allocations
+        IMorphoMarketV1AdapterV2 adapter = IMorphoMarketV1AdapterV2(marketAdapter);
+        assertEq(adapter.parentVault(), address(vault.vault), "wrong parent vault");
+        assertGt(adapter.morpho().code.length, 0, "morpho blue not deployed");
+        assertGt(adapter.adaptiveCurveIrm().code.length, 0, "irm not deployed");
+        assertEq(adapter.marketIdsLength(), 0, "market adapter should start empty");
+
+        // the configured market was created, seeded, and capped on both market-derived ids
+        assertEq(vault.markets.length, 1, "expected one market");
+        MarketParams memory marketParams = vault.markets[0].params;
+        assertEq(marketParams.loanToken, vault.vault.asset(), "wrong loan token");
+        assertEq(marketParams.irm, adapter.adaptiveCurveIrm(), "wrong irm");
+        bytes32 collateralId = keccak256(abi.encode("collateralToken", marketParams.collateralToken));
+        bytes32 marketCapId = keccak256(abi.encode("this/marketParams", marketAdapter, marketParams));
+        assertEq(vault.vault.absoluteCap(collateralId), 500_000_000000, "wrong collateral absolute cap");
+        assertEq(vault.vault.relativeCap(collateralId), 900000000000000000, "wrong collateral relative cap");
+        assertEq(vault.vault.absoluteCap(marketCapId), 500_000_000000, "wrong market absolute cap");
+        assertEq(vault.vault.relativeCap(marketCapId), 900000000000000000, "wrong market relative cap");
+        bytes32 marketId = Id.unwrap(MarketParamsLib.id(marketParams));
+        (uint128 totalSupplyAssets,,,,,) = IMorphoStaticTyping(adapter.morpho()).market(Id.wrap(marketId));
+        assertEq(totalSupplyAssets, 1e6, "market not seeded");
+
+        // a live allocate from the liquidity adapter's dead deposit lands supply in the market
+        vm.startPrank(ALLOCATOR);
+        vault.vault.deallocate(address(vault.liquidity_adapter), hex"", 500000);
+        vault.vault.allocate(marketAdapter, abi.encode(marketParams), 500000);
+        vm.stopPrank();
+        assertEq(adapter.marketIdsLength(), 1, "market not tracked after allocate");
+        assertGe(adapter.expectedSupplyAssets(marketId), 500000, "supply not landed in market");
+        assertEq(vault.vault.allocation(marketCapId), 500000, "market allocation not accounted");
+
+        // the VAULT-type entry is the liquidity adapter and got a seeded mock target
+        assertEq(address(vault.liquidity_adapter), address(vault.adapters[0].adapter), "wrong liquidity adapter");
+        assertEq(vault.vault.liquidityAdapter(), address(vault.liquidity_adapter), "liquidity adapter not set");
+        address mockTarget = IMorphoVaultV1Adapter(address(vault.adapters[0].adapter)).morphoVaultV1();
+        assertGt(mockTarget.code.length, 0, "mock target not deployed");
+    }
+
+    /// @notice Write the fixture config tree: <base>/vaults/<vault>.toml + <base>/adapters/<name>.toml
+    /// + <base>/markets/<name>.toml, matching the layout the config path helpers expect.
+    function writeFixtures() internal {
+        vm.createDir(string.concat(FIXTURE_BASE, "vaults"), true);
+        vm.createDir(string.concat(FIXTURE_BASE, "adapters"), true);
+        vm.createDir(string.concat(FIXTURE_BASE, "markets"), true);
+        vm.writeFile(string.concat(FIXTURE_BASE, "vaults/market_vault.toml"), vaultToml());
+        // distinct caps per adapter: identical ones would hide an index mix-up in the caps loop
+        vm.writeFile(
+            string.concat(FIXTURE_BASE, "adapters/fixture_steakhouse_adapter.toml"),
+            adapterToml("VAULT", "Fixture Steakhouse", 100_000_000_000000, 1_000000000000000000)
+        );
+        vm.writeFile(
+            string.concat(FIXTURE_BASE, "adapters/fixture_market_adapter.toml"),
+            adapterToml("MARKET", "Fixture Market", 70_000_000_000000, 700000000000000000)
+        );
+        vm.writeFile(string.concat(FIXTURE_BASE, "markets/fixture_market.toml"), marketToml());
+    }
+
+    function marketToml() internal pure returns (string memory) {
+        return string.concat(
+            "[31337]\n",
+            "endpoint_url = \"http://localhost:8545\"\n\n",
+            "[31337.string]\n",
+            "name = \"Fixture stAsset/USDC\"\n\n",
+            "[31337.address]\n",
+            addressLine("collateral_token", address(0)),
+            addressLine("oracle", address(0)),
+            addressLine("irm", address(0)),
+            "\n[31337.uint]\n",
+            "lltv = 860000000000000000\n",
+            "absolute_cap = 500_000_000000\n",
+            "relative_cap = 900000000000000000\n"
+        );
+    }
+
+    function vaultToml() internal pure returns (string memory) {
+        return string.concat(
+            "[31337]\n",
+            "endpoint_url = \"http://localhost:8545\"\n\n",
+            "[31337.string]\n",
+            "name = \"Market Fixture Vault\"\n",
+            "symbol = \"tMKTv-USDC\"\n",
+            "adapters = [\"fixture_steakhouse_adapter\", \"fixture_market_adapter\"]\n",
+            "liquidity_adapter = \"fixture_steakhouse_adapter\"\n",
+            "markets = [\"fixture_market\"]\n\n",
+            "[31337.address]\n",
+            addressLine("allocator", ALLOCATOR),
+            addressLine("asset", address(0)),
+            addressLine("curator", LOCAL_ROLE),
+            addressLine("owner", LOCAL_ROLE),
+            addressLine("sentinel", LOCAL_ROLE),
+            "\n[31337.uint]\n",
+            "dead_deposit = 1_000000\n",
+            "max_rate = 63419583967\n",
+            "timelock_duration = 0\n"
+        );
+    }
+
+    function adapterToml(string memory adapterType, string memory name, uint256 absoluteCap, uint256 relativeCap)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string.concat(
+            "[31337]\n",
+            "endpoint_url = \"http://localhost:8545\"\n\n",
+            "[31337.string]\n",
+            "adapter_type = \"",
+            adapterType,
+            "\"\n",
+            "name = \"",
+            name,
+            "\"\n\n",
+            "[31337.address]\n",
+            addressLine("asset", address(0)),
+            addressLine("vault", address(0)),
+            addressLine("owner", LOCAL_ROLE),
+            addressLine("parent", address(0)),
+            "\n[31337.uint]\n",
+            "absolute_cap = ",
+            vm.toString(absoluteCap),
+            "\n",
+            "relative_cap = ",
+            vm.toString(relativeCap),
+            "\n\n",
+            "[31337.bool]\n",
+            "is_new_adapter = true\n"
+        );
+    }
+
+    function addressLine(string memory key, address value) internal pure returns (string memory) {
+        return string.concat(key, " = \"", vm.toString(value), "\"\n");
     }
 }

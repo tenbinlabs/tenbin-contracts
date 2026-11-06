@@ -6,18 +6,25 @@ import {Deploy} from "../../script/Deploy.s.sol";
 import {DeployBase} from "../../script/DeployBase.s.sol";
 import {DeployHarness} from "../harness/DeployHarness.sol";
 import {ForkBaseTest} from "./ForkBaseTest.sol";
+import {Gate} from "deploy-target/src/external/morpho/Gate.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {MarketParams} from "vault-v2/lib/morpho-blue/src/interfaces/IMorpho.sol";
+import {IMorphoMarketV1AdapterV2} from "vault-v2/src/adapters/interfaces/IMorphoMarketV1AdapterV2.sol";
 import {IVaultV2} from "vault-v2/src/interfaces/IVaultV2.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StdConfig} from "forge-std/StdConfig.sol";
 
 // test deployment script
 // this requires .env is set up correctly
+/// @dev The full deployment spans multiple transactions and exceeds one fork block's gas budget.
+/// forge-config: default.isolate = false
 contract DeployProductionForkTest is ForkBaseTest, Config {
     using SafeERC20 for IERC20;
 
     Deploy.CoreDeploymentResult core;
-    Deploy.VaultDeploymentResult vaultResult;
+    // VaultDeploymentResult stays in memory: its nested adapters array cannot be copied to storage
+    IVaultV2 vaultV2;
+    address vaultGate;
     DeployBase.CoreParameters params;
     DeployBase.RolesParameters roles;
     DeployBase.VaultParameters vaultParams;
@@ -26,45 +33,62 @@ contract DeployProductionForkTest is ForkBaseTest, Config {
     string constant VAULT_CONFIG_DIR = "./config/mainnet/tgld/vaults/tgld_usdc_vault.toml";
 
     function setUp() public override {
-        // set a fork block where collateral vault exists
-        forkBlock = 25383000;
+        // set a fork block where all configured Morpho markets and adapters exist
+        forkBlock = 26049813;
         super.setUp();
 
         // the deploy script now deploys the morpho vault and performs a dead deposit from the
         // broadcaster (derived from TEST_MNEMONIC by BaseTest), so fund it with enough
         // collateral (usdc) to cover the deposit
         deal(address(usdc), broadcaster, 1_000_000e6);
+        assertEq(usdc.balanceOf(broadcaster), 1_000_000e6, "deployment broadcaster funding");
     }
 
     function test_fork_Deploy_Prod() public {
         Deploy deployer = new Deploy();
+        Deploy.VaultDeploymentResult memory vaultResult;
         (core, vaultResult) = deployer.run(CONFIG_DIR, VAULT_CONFIG_DIR, false);
-        sanityChecks(CONFIG_DIR, VAULT_CONFIG_DIR);
+        vaultV2 = vaultResult.vault;
+        vaultGate = address(vaultResult.gate);
+        sanityChecks(CONFIG_DIR, VAULT_CONFIG_DIR, vaultResult);
     }
 
     function test_fork_Default_Deploy() public {
         Deploy deployer = new Deploy();
+        Deploy.VaultDeploymentResult memory vaultResult;
         (core, vaultResult) = deployer.run("", "", false);
-        sanityChecks(CONFIG_DIR, VAULT_CONFIG_DIR);
+        vaultV2 = vaultResult.vault;
+        vaultGate = address(vaultResult.gate);
+        sanityChecks(CONFIG_DIR, VAULT_CONFIG_DIR, vaultResult);
     }
 
     function test_fork_tBRL_Deploy() public {
         string memory dir = "./config/mainnet/tbrl/tbrl.toml";
         string memory vaultDir = "./config/mainnet/tbrl/vaults/tbrl_usdc_vault.toml";
         Deploy deployer = new Deploy();
+        Deploy.VaultDeploymentResult memory vaultResult;
         (core, vaultResult) = deployer.run(dir, vaultDir, false);
-        sanityChecks(dir, vaultDir);
+        vaultV2 = vaultResult.vault;
+        vaultGate = address(vaultResult.gate);
+        sanityChecks(dir, vaultDir, vaultResult);
     }
 
     function test_fork_tMXN_Deploy() public {
         string memory dir = "./config/mainnet/tmxn/tmxn.toml";
         string memory vaultDir = "./config/mainnet/tmxn/vaults/tmxn_usdc_vault.toml";
         Deploy deployer = new Deploy();
+        Deploy.VaultDeploymentResult memory vaultResult;
         (core, vaultResult) = deployer.run(dir, vaultDir, false);
-        sanityChecks(dir, vaultDir);
+        vaultV2 = vaultResult.vault;
+        vaultGate = address(vaultResult.gate);
+        sanityChecks(dir, vaultDir, vaultResult);
     }
 
-    function sanityChecks(string memory configDir, string memory vaultConfigDir) internal {
+    function sanityChecks(
+        string memory configDir,
+        string memory vaultConfigDir,
+        Deploy.VaultDeploymentResult memory vaultResult
+    ) internal {
         _loadConfig(configDir, false);
         StdConfig vaultConfig = new StdConfig(vaultConfigDir, false);
         vm.makePersistent(address(vaultConfig));
@@ -105,6 +129,7 @@ contract DeployProductionForkTest is ForkBaseTest, Config {
         vaultParams.curator = vaultConfig.get("curator").toAddress();
         vaultParams.owner = vaultConfig.get("owner").toAddress();
         vaultParams.sentinel = vaultConfig.get("sentinel").toAddress();
+        vaultParams.timelock_duration = vaultConfig.get("timelock_duration").toUint256();
 
         // check default admin roles
         assertEq(core.controller.hasRole(DEFAULT_ADMIN_ROLE, roles.default_admin_role), true);
@@ -144,7 +169,7 @@ contract DeployProductionForkTest is ForkBaseTest, Config {
         assertEq(core.manager.swapModule(), address(core.swap_module));
         assertEq(core.manager.revenueModule(), address(core.revenue_module));
         // the manager is wired to the vault deployed by this run
-        assertEq(address(core.manager.vaults(params.collateral)), address(vaultResult.vault));
+        assertEq(address(core.manager.vaults(params.collateral)), address(vaultV2));
         assertEq(core.manager.rebalanceCap(params.collateral), params.rebalance_cap);
         // swap cap is no longer sourced from config, so it must default to 0
         assertEq(core.manager.swapCap(params.collateral), 0);
@@ -200,14 +225,16 @@ contract DeployProductionForkTest is ForkBaseTest, Config {
         assertEq(core.revenue_module.multisig(), address(params.multisig));
 
         // check the morpho vault deployed by this run is handed over to its final roles
-        IVaultV2 vault = vaultResult.vault;
+        IVaultV2 vault = vaultV2;
         assertEq(vault.owner(), vaultParams.owner);
         assertEq(vault.curator(), vaultParams.curator);
         assertEq(vault.isSentinel(vaultParams.sentinel), true);
         assertEq(vault.isAllocator(vaultParams.allocator), true);
         assertEq(vault.isAllocator(broadcaster), false);
         // the gate is owned by the curator after being wired to the collateral manager
-        assertEq(vaultResult.gate.owner(), vaultParams.curator);
+        assertEq(Gate(vaultGate).owner(), vaultParams.curator);
+
+        checkMarketVault(vaultResult, vault, vaultParams.timelock_duration);
 
         // ensure roles are renounced by deployer
         assertEq(core.asset.pendingOwner(), roles.default_admin_role);
@@ -228,6 +255,49 @@ contract DeployProductionForkTest is ForkBaseTest, Config {
         assertFalse(core.revenue_module.hasRole(REVENUE_KEEPER_ROLE, broadcaster));
         assertFalse(core.custodian_module.hasRole(DEFAULT_ADMIN_ROLE, broadcaster));
         assertFalse(core.custodian_module.hasRole(CUSTODIAN_KEEPER_ROLE, broadcaster));
+    }
+
+    function checkMarketVault(Deploy.VaultDeploymentResult memory vaultResult, IVaultV2 vault, uint256 timelockDuration)
+        internal
+        view
+    {
+        assertEq(vaultResult.adapters.length, 4, "adapter count");
+        assertEq(vault.adaptersLength(), 4, "registered adapter count");
+        for (uint256 i = 0; i < vaultResult.adapters.length; i++) {
+            assertTrue(vault.isAdapter(address(vaultResult.adapters[i].adapter)), "adapter registered");
+            if (i >= 1) assertEq(vaultResult.adapters[i].adapter_type, "GENERIC", "generic adapter type");
+        }
+        assertEq(vaultResult.adapters[0].adapter_type, "MARKET", "market adapter type");
+        assertEq(address(vaultResult.liquidity_adapter), address(vaultResult.adapters[2].adapter));
+        assertEq(vault.liquidityAdapter(), address(vaultResult.liquidity_adapter));
+        assertEq(vault.liquidityData(), abi.encode(uint256(0)));
+        assertGt(vault.allocation(keccak256(abi.encode("this", vaultResult.liquidity_adapter))), 0);
+        assertEq(vaultResult.markets.length, 1, "market count");
+
+        address marketAdapter = address(vaultResult.adapters[0].adapter);
+        MarketParams memory market = vaultResult.markets[0].params;
+        IMorphoMarketV1AdapterV2 adapter = IMorphoMarketV1AdapterV2(marketAdapter);
+        assertEq(adapter.parentVault(), address(vault), "market adapter parent");
+        assertEq(adapter.asset(), vault.asset(), "market adapter asset");
+        assertEq(adapter.adaptiveCurveIrm(), market.irm, "market irm");
+        bytes32 adapterId = keccak256(abi.encode("this", marketAdapter));
+        bytes32 collateralCapId = keccak256(abi.encode("collateralToken", market.collateralToken));
+        bytes32 marketCapId = keccak256(abi.encode("this/marketParams", marketAdapter, market));
+        assertEq(vault.absoluteCap(adapterId), 1_000_000_000000, "market adapter absolute cap");
+        assertEq(vault.relativeCap(adapterId), 200000000000000000, "market adapter relative cap");
+        assertEq(vault.absoluteCap(collateralCapId), 1_000_000_000000, "collateral absolute cap");
+        assertEq(vault.relativeCap(collateralCapId), 200000000000000000, "collateral relative cap");
+        assertEq(vault.absoluteCap(marketCapId), 1_000_000_000000, "market absolute cap");
+        assertEq(vault.relativeCap(marketCapId), 200000000000000000, "market relative cap");
+
+        bytes4[] memory selectors = new bytes4[](4);
+        selectors[0] = IMorphoMarketV1AdapterV2.abdicate.selector;
+        selectors[1] = IMorphoMarketV1AdapterV2.setSkimRecipient.selector;
+        selectors[2] = IMorphoMarketV1AdapterV2.burnShares.selector;
+        selectors[3] = IMorphoMarketV1AdapterV2.increaseTimelock.selector;
+        for (uint256 i = 0; i < selectors.length; i++) {
+            assertEq(adapter.timelock(selectors[i]), timelockDuration, "market adapter timelock");
+        }
     }
 
     function test_fork_Revert_Controller_DeployProduction() public {

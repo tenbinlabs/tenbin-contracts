@@ -39,4 +39,4 @@ revenue_keeper_role = "0x15dEaF6a8dDc05B68e3a1774629Fbcd1AB1b70aa"      # sepoli
 rewarder_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
 signer = "0x274e783e3c49C13C2035097AfD83106D6d47356c"                   # sepolia signer
 signer_manager_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
-vault = "0x69e19bF76bf01EC84059F48C7E0Ee2f5C11e5692"                    # tGLD sepolia morpho vault
+vault = "0x69e19bF76bf01EC84059F48C7E0Ee2f5C11e5692" # existing vault for runCoreOnly

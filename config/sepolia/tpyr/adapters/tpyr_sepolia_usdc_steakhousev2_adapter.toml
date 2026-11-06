@@ -1,0 +1,20 @@
+# sepolia
+[sepolia]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[sepolia.string]
+adapter_type = "GENERIC"
+name = "Steakhouse Prime USDC"
+
+[sepolia.address]
+asset = "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A"            # sepolia usdc
+vault = "0x53a703008190e12E8eaB94F149926118656cC220" # Deployed mock vault
+owner = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"            # owner key
+parent = "0xa82f9fc451965Cd2BfFd20Fe61BBeCd2c4D7Ad38" # Deployed tPYR USDC vault
+
+[sepolia.uint]
+absolute_cap = 100_000_000_000000
+relative_cap = 1_000000000000000000
+
+[sepolia.bool]
+is_new_adapter = false

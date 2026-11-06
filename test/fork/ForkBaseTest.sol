@@ -31,6 +31,9 @@ contract ForkBaseTest is BaseTest {
     // default fork block
     uint256 forkBlock = 25383000;
 
+    // live forks trail the head so every RPC node has the block
+    uint256 internal constant LIVE_FORK_LAG = 10;
+
     function setUp() public virtual override {
         setUpFork();
         super.setUp();
@@ -38,8 +41,7 @@ contract ForkBaseTest is BaseTest {
 
     function setUpFork() internal {
         // fork mainnet
-        string memory rpc = vm.rpcUrl("mainnet");
-        vm.createSelectFork(rpc, forkBlock);
+        vm.createSelectFork("mainnet", forkBlock);
 
         // deploy scripts under test must broadcast as the funded test account,
         // regardless of any BROADCASTER_ADDRESS/MNEMONIC in the local .env
@@ -53,6 +55,11 @@ contract ForkBaseTest is BaseTest {
         label(address(usdc), "usdc");
         label(address(usdt), "usdt");
         label(dealer, "dealer");
+    }
+
+    function createSelectLiveFork(string memory rpcAlias) internal {
+        uint256 head = vm.parseUint(vm.toString(vm.rpc(rpcAlias, "eth_blockNumber", "[]")));
+        vm.createSelectFork(rpcAlias, head - LIVE_FORK_LAG);
     }
 
     function setUpMockVaults() internal {

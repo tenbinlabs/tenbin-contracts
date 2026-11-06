@@ -33,7 +33,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           cache: true
-          version: v1.7.1
+          version: v1.8.3
 
       - name: Run Forge build
         run: forge build
@@ -68,7 +68,11 @@ jobs:
         uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           cache: true
-          version: v1.7.1
+          version: v1.8.3
+
+      - name: Warn when monitoring is skipped
+        if: env.MAINNET_RPC_URL == ''
+        run: echo "::warning::Live deployment checks skipped because the mainnet RPC secret is unavailable."
 
       - name: Run monitoring tests
         if: env.MAINNET_RPC_URL != ''
@@ -90,7 +94,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           cache: true
-          version: v1.7.1
+          version: v1.8.3
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0

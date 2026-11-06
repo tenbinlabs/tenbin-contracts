@@ -1,0 +1,29 @@
+# sepolia ccip values
+[11155111]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[11155111.string]
+remote_chain_selector = "13264668187771770619"
+inbound_capacity = "279405870000000000000000"
+outbound_capacity = "254005330000000000000000"
+inbound_rate = "3233864236111111000"
+outbound_rate = "2939876504629630000"
+
+[11155111.address]
+# Local token/pools
+asset_token = "0x78C3F0126E074Cd424b6115db8A5518Fb9DF0f3C"
+staked_asset_token = "0x00e4532bc7725D9Cb184B987d43252D8530060dE"
+asset_pool = "0x80e11561eB8d7AC7c4D8F253c6dFC320D311f01b"
+staked_asset_pool = "0x4C0adc442c195937A491b5E059D30d86b38d9FaB"
+
+# CCIP components
+ccip_router = "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59"
+ccip_rmn_proxy = "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991"
+ccip_token_admin_registry = "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"
+ccip_registry_module_owner = "0xa3c796d480638d7476792230da1E2ADa86e031b0"
+
+# remote data
+remote_asset_token = "0xb1524FDb845E1F562D2b360afA0043fed7aB8402"
+remote_staked_asset_token = "0x75cC4BbAb902daDdfd1C9F147D91345B64d4A82d"
+remote_asset_pool = "0x78e81Cd56d3A5A8cc8912c243216D3299DB45cA7"
+remote_staked_asset_pool = "0xE48B4147215164C2358F0f3B0DDE0cAEDB4602B4"

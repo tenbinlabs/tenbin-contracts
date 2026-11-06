@@ -1,0 +1,36 @@
+[84532]
+endpoint_url = "${BASE_SEPOLIA_RPC_URL}"
+
+[84532.string]
+asset_name = "Tenbin Mexican Peso"
+asset_symbol = "tMXN"
+staked_asset_name = "Staked Tenbin Mexican Peso"
+staked_asset_symbol = "stMXN"
+ccip_chain_selector = "10344971235874465080"
+remote_chain_selector = "16015286601757825753"
+inbound_capacity = "993492623317271869256370"
+outbound_capacity = "903175112106610790233064"
+inbound_rate = "11498757214320275000"
+outbound_rate = "10453415649382070000"
+
+[84532.address]
+# Existing protocol config
+restricter_role = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"
+
+# Local CCIP infrastructure
+ccip_router = "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93"
+ccip_rmn_proxy = "0x99360767a4705f68CcCb9533195B761648d6d807"
+ccip_token_admin_registry = "0x736D0bBb318c1B27Ff686cd19804094E66250e17"
+ccip_registry_module_owner = "0x176ae8C6C11DD2c031B924CE1A0A43188035f3f6"
+
+# Local token/pools
+asset_token = "0x156AA411cA883fC7257Bc16E41f1BE6f4C77b9D9"
+staked_asset_token = "0xE2330F860C63135873bE5915b117A756162ac33D"
+asset_pool = "0xB62515AAEB846B655BC91Ab4d43E45f9d59EB390"
+staked_asset_pool = "0x2603BeB4A1632Ac237638368685E973167169deB"
+
+# Remote side
+remote_asset_token = "0xf637ECb45A3217CD84df1562178Cca90A2eAc463"
+remote_staked_asset_token = "0x9c2Da5F28381e2b9f8E3031D6BC90AF2C437Ca88"
+remote_asset_pool = "0xbe199C4e71d98bB1333A199cE8A6D299D74Ab628"
+remote_staked_asset_pool = "0x5bEE62Ac949B80F9Ad5F5c61163668Ae405a9bad"

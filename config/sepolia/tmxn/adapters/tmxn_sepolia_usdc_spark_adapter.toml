@@ -1,0 +1,20 @@
+# sepolia
+[sepolia]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[sepolia.string]
+adapter_type = "GENERIC"                                        # adapter type options: [GENERIC, MARKET, VAULT]
+name = "Spark USDC Vault"                                       # adapter display name
+
+[sepolia.address]
+asset = "0x847DB2D7c07dbA2bE28E9F236B74134d6897BB0A"            # usdc
+vault = "0x0000000000000000000000000000000000000000"            # mock Spark vault
+owner = "0x794eBfe3B3C92409f72F569ADb3e44913a056a54"            # sepolia owner
+parent = "0xec95F37af2ff03b4c06585D766d6c42A0a5042b7"           # parent vault
+
+[sepolia.uint]
+absolute_cap = 20_000_000_000000                                # 20m usdc
+relative_cap = 500000000000000000                               # 50%
+
+[sepolia.bool]
+is_new_adapter = true                                           # Whether this is a new adapter

@@ -14,6 +14,10 @@ Tenbin is an asset tokenization protocol which uses futures contracts to enable 
 | stBRL | [0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f](https://etherscan.io/address/0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f) |
 | tMXN | [0x8d015aFcb6F437010653352EB1E58152c4e23734](https://etherscan.io/address/0x8d015aFcb6F437010653352EB1E58152c4e23734) |
 | stMXN | [0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba](https://etherscan.io/address/0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba) |
+| tPYR | [0x6dBe635c3AA75EA4C75595177EDC97B135dEd5Df](https://etherscan.io/address/0x6dBe635c3AA75EA4C75595177EDC97B135dEd5Df) |
+| stPYR | [0xa29D6c1f453D1bc709C829C29c5956B1C5de2BBF](https://etherscan.io/address/0xa29D6c1f453D1bc709C829C29c5956B1C5de2BBF) |
+
+See [deployments.json](deployments.json) for the complete core address registry and [cross-chain-deployments.json](cross-chain-deployments.json) for hub/spoke deployments.
 
 # Audit
 
@@ -62,89 +66,76 @@ Four smart contract audits were performed on the solidity codebase. An initial i
 
 # Setup
 
-### Installations
+Run commands from the repository root. Install [Foundry](https://getfoundry.sh/introduction/installation/), then select the version used by CI:
 
-Ensure rust is installed: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
- 
-Ensure rust is up-to-date: `rustup update`
- 
-Ensure foundry is installed: `curl -L https://foundry.paradigm.xyz | bash`
- 
-Ensure foundry is up-to-date: `foundryup`
- 
-Install dependencies: `forge install`
- 
-Build contracts: `forge build`
+```sh
+foundryup --install v1.8.3
+forge --version
+git submodule update --init --recursive
+```
 
 ### Set up .env
 
-Create .env file and fill in variables: `cp .env.example .env`
- 
-Set permissions for .env: `chmod 600 .env`
+```sh
+cp .env.example .env
+chmod 600 .env
+```
+
+Set `MAINNET_RPC_URL` and `SEPOLIA_RPC_URL` for deployment forks. Existing CCIP forks also require `RPC_URL_ARBITRUM_SEPOLIA`. Forge reads `.env` automatically; variables expanded by your shell in the commands below must also be exported in that shell. `ETHERSCAN_API_KEY` is needed for explorer verification. The example includes legacy mint-script variables; deployment commands below use an encrypted keystore.
 
 ### Build
 
-Build production contracts:
- 
-`FOUNDRY_PROFILE=production forge build`
+```sh
+forge build
+FOUNDRY_PROFILE=production forge build
+```
+
+Both production and development profiles resolve `deploy-target/` to this repository's contracts and use via-IR with 18,888 optimizer runs. They exclude tests. The default profile builds the test suite; `production-test` uses production compiler settings with tests included. The network comes from the RPC endpoint, and mock integrations are selected by the script argument, not the profile.
 
 ### Testing
 
-#### Run all tests:
- 
-`forge test`
+These commands match the CI test lanes:
 
-Note: `test/echidna/**` holds Echidna fork-mode harnesses that bind to live mainnet addresses
-and rely on hevm cheatcodes. `[profile.default] skip` in `foundry.toml` excludes them, so they
-are compiled and fuzzed only under `FOUNDRY_PROFILE=echidna`.
+```sh
+# Local unit, integration, fuzz, and invariant tests
+forge test --no-match-path 'test/fork/**'
 
-#### Run tests and skip fork tests:
- 
-`forge test --skip test/fork/*`
+# Fork regressions (requires the RPC variables above)
+forge test --match-path 'test/fork/**' --no-match-path 'test/fork/monitoring/**'
 
-#### Run invariant tests:
+# Live deployment checks (requires MAINNET_RPC_URL)
+forge test --match-path 'test/fork/monitoring/**'
+```
 
-`forge test --match-path "test/invariant/*"`
- 
-#### View coverage:
- 
-`FOUNDRY_PROFILE=coverage forge coverage`
+`forge test` runs all three groups. Live monitoring reads head minus ten blocks; deployment regressions use pinned blocks except the explicitly live mock-deployment checks. CI warns when RPC credentials are absent and skips the corresponding fork or monitoring step; a skipped step is not validation of that group.
 
-View coverage with uncovered branches and lines:
+Additional commands:
 
-`FOUNDRY_PROFILE=coverage forge coverage --report debug`
+```sh
+forge test --match-path 'test/invariant/**'
+FOUNDRY_PROFILE=coverage forge coverage
+FOUNDRY_PROFILE=coverage forge coverage --report debug
+forge test --gas-report
+forge doc
+```
 
-#### Generate gas report:
-
-`forge test --gas-report`
-
-#### Generate documentation:
-
-`forge doc`
+`test/echidna/**` contains separate mainnet fork-mode harnesses excluded from the default profile. Use `FOUNDRY_PROFILE=echidna` for those harnesses.
 
 ### Pinning
 
 The `pinning` job in `.github/workflows/contracts.yaml`, part of `ci-success`, fails on an action not pinned by commit SHA, a container image without a digest, a Dockerfile `FROM` without `@sha256`, a `*-latest` runner label, a release download without a `sha256sum -c` check, a download piped into a shell, or an inline `zizmor: ignore`. It runs zizmor, installed by hash from `.github/zizmor/requirements.txt`, and `scripts/check-pinning.sh`, whose fixture test is `scripts/check-pinning-test.sh`. A zizmor exception is an entry in `.github/zizmor.yml`, and a script exception is a line in `.github/pinning-exceptions.txt`. Each carries `expires YYYY-MM-DD`, which the same job checks.
 
-### Updating and Fixing Dependencies
+### Updating dependencies
 
-#### Sync foundry dependencies with git submodules
- 
-`./sync_foundry_deps.sh`
-
-#### Nuke and reinstall dependencies from scratch
- 
-`repair_foundry_deps.sh`
- 
-When updating dependencies, ensure to add/update tag names in `foundry.lock` and `repair_foundry_deps.sh`.
+Restore the committed dependency revisions with `git submodule update --init --recursive`. When intentionally updating a dependency, commit its gitlink and matching `foundry.lock` entry together. `repair_foundry_deps.sh` is a legacy destructive recovery script with a hard-coded dependency list that does not cover the current pins; use the submodule command for this checkout.
 
 ### Fuzzing
 
 Install echidna: https://github.com/crytic/echidna?tab=readme-ov-file#installation
 
-Run all echidna tests: `./echidna.sh`
+Run the five local invariant harnesses listed in `echidna.sh`: `bash echidna.sh`
 
-`echidna test/echidna/<contract-file-name>.sol --contract <contract-name> --config echidna.yaml"`
+For one local harness: `echidna test/invariant/AssetTokenInvariant.t.sol --contract AssetTokenInvariantTest --config echidna.yaml`. The separate fork harnesses under `test/echidna/` require their mainnet RPC/fork configuration and are not run by `echidna.sh`.
 
 ### Formal Verification
 
@@ -180,65 +171,117 @@ Configuration: https://getfoundry.sh/config/static-analyzers/#mythril
 
 # Deploy
 
-Use `config/` to configure roles and parameters. `Deploy.s.sol` is the single protocol deployment entrypoint. `FOUNDRY_PROFILE=production` deploys production contracts; `FOUNDRY_PROFILE=development` deploys development contracts. Output is written under `broadcast/Deploy.s.sol/{chainid}/`.
+[deployments.json](deployments.json) records core deployments; [cross-chain-deployments.json](cross-chain-deployments.json) records cross-chain deployments. The records and config snapshot originate from monorepo commit `c3bd9d6b646104e1704e590d85c26f839c26bb1e`.
+
+Asset configs live under `config/<network>/<asset>/`. Vault TOMLs in `vaults/` declare `adapters`, a member named by `liquidity_adapter`, and `markets` for MARKET adapters. Parameter files live in sibling `adapters/` and `markets/` directories. Local fixtures use `config/local/tgld/`.
+
+Choose the entrypoint for the operation:
+
+| Operation | Entrypoint |
+| --- | --- |
+| Fresh asset, backed staking seed, vault, and new Morpho market | `DeployNewAsset.s.sol`, `run(string,string,bool)` |
+| Core and vault using configured integrations | `Deploy.s.sol`, `run(string,string,bool)` |
+| Core against the asset config's existing nonzero `vault` | `Deploy.s.sol`, `runCoreOnly(string,bool)` |
+| Vault for an asset | `Deploy.s.sol`, `runVaultOnly(string,string)` |
+| Individual adapter deployment or existing-adapter validation | `DeployMorphoAdapter.s.sol`, `run(string)` (VAULT/GENERIC), `run(string,string)` (MARKET: adapter and vault configs), or `runExisting(string,string,address)` |
+
+For a fresh asset such as tPYR, follow [the new-asset deployment runbook](docs/new-asset-deployment.md). It covers input preparation, pricing, the backed staking seed, permission restoration, simulation, broadcasting, verification, and recovery. Recorded deployment configs must be copied and prepared before reuse as fresh deployment inputs.
+
+`Deploy.s.sol` writes `contracts.json` or `vault.json` under `broadcast/Deploy.s.sol/<chain-id>/`. `DeployNewAsset.s.sol` writes artifacts under `broadcast/DeployNewAsset.s.sol/<chain-id>/<asset-address>/artifacts/`. Keep confirmed execution records under `operations/<operation-name>/execution/`; leave simulations and intermediate files in `broadcast/`.
+
+Cross-chain configs are published alongside their deployment records.
+
+The tGLD testnet configs cover both directions of the Ethereum Sepolia lanes to Base Sepolia, BNB testnet, and Polygon Amoy; `tgld_ethereum.toml` selects Base, with separate `tgld_ethereum_binance.toml` and `tgld_ethereum_polygon.toml` files for the other destinations. Their headers identify the verification blocks.
+
+Both token pools have rate limiting disabled: consumers must honor `inbound_rate_limit_enabled` and `outbound_rate_limit_enabled`, with zero capacities/rates, rather than assume limits are enabled. Spoke token names and symbols reflect the existing deployments; these lane snapshots omit token-deployment roles.
+
+Additional CCIP deployment/configuration scripts and tests are tracked in [ENG-3658](https://linear.app/tenbin/issue/ENG-3658).
+
+## Set up a keystore for running scripts
+
+Import the deployer interactively and export the account name and its matching address:
+
+```sh
+cast wallet import deployer --interactive
+export BROADCASTER_ACCOUNT=deployer
+export BROADCASTER_ADDRESS=0xYourDeployerAddress
+```
+
+`BaseScript` reads `BROADCASTER_ADDRESS` to choose its broadcaster. Pass both `--account "$BROADCASTER_ACCOUNT"` and `--sender "$BROADCASTER_ADDRESS"` so the loaded signer matches it. The new-asset flow needs that account even during simulation to sign its staking-seed order. Never use the public test mnemonic on a live network.
 
 ## Deploy locally
 
-1) Ensure BROADCASTER_KEY and BROADCASTER_ADDRESS is NOT set in .env
+Use a local test mnemonic in both Anvil and the script. In a dedicated local terminal:
 
-2) Run anvil: `anvil --mnemonic $TEST_MNEMONIC`
+```sh
+export MNEMONIC='ten ten ten ten ten ten ten ten ten ten ten test'
+export BROADCASTER_ADDRESS=0x0000000000000000000000000000000000000000
+anvil --mnemonic "$MNEMONIC"
+```
 
-3) Run `FOUNDRY_PROFILE=development forge script script/Deploy.s.sol --sig "run(string,string,bool)" "" "" true --rpc-url ws://localhost:8545 --broadcast`
+In another terminal with those same exports, deploy using the local fixtures:
 
-## Deploy to sepolia testnet:
+```sh
+FOUNDRY_PROFILE=development forge script script/Deploy.s.sol:Deploy \
+  --sig 'run(string,string,bool)' \
+  config/local/tgld/tgld_local.toml \
+  config/local/tgld/vaults/tgld_local_vault.toml true \
+  --rpc-url http://127.0.0.1:8545 --broadcast
+```
 
-1) Ensure `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and `ETHERSCAN_API_KEY` are correctly set up.
+A zero broadcaster selects the script's mnemonic-derived test account. Keep these exports confined to local testing.
 
-Run `FOUNDRY_PROFILE=development forge script script/Deploy.s.sol --sig "run(string,string,bool)" $ASSET_CONFIG $VAULT_CONFIG true --rpc-url $SEPOLIA_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+## Simulate on Sepolia or mainnet
 
-Use `--broadcast` to broadcast
+Export `ASSET_CONFIG` and `VAULT_CONFIG` as the explicit paths to the reviewed asset and vault TOMLs. The following examples use the keystore setup above and simulate without broadcasting.
 
-### Deploy morpho v2 vault onto sepolia testnet
-1) Ensure BROADCASTER_KEY and BROADCASTER_ADDRESS is set in .env
+For a Sepolia core and vault using mock integrations:
 
-2) Run `FOUNDRY_PROFILE=development forge script script/Deploy.s.sol --sig "runVaultOnly(string)" $VAULT_CONFIG --rpc-url $SEPOLIA_RPC_URL --broadcast`
+```sh
+FOUNDRY_PROFILE=development forge script script/Deploy.s.sol:Deploy \
+  --sig 'run(string,string,bool)' "$ASSET_CONFIG" "$VAULT_CONFIG" true \
+  --rpc-url "$SEPOLIA_RPC_URL" --account "$BROADCASTER_ACCOUNT" \
+  --sender "$BROADCASTER_ADDRESS" --slow
+```
 
-## Deploy production contracts
+For a Sepolia vault only, supply both config paths:
 
-1) Ensure `CONFIG_DIR`, `BROADCASTER_KEY`, `BROADCASTER_ADDRESS` and `ETHERSCAN_API_KEY` are correctly set up.
+```sh
+FOUNDRY_PROFILE=development forge script script/Deploy.s.sol:Deploy \
+  --sig 'runVaultOnly(string,string)' "$ASSET_CONFIG" "$VAULT_CONFIG" \
+  --rpc-url "$SEPOLIA_RPC_URL" --account "$BROADCASTER_ACCOUNT" \
+  --sender "$BROADCASTER_ADDRESS" --slow
+```
 
-2) Run `FOUNDRY_PROFILE=production forge script script/Deploy.s.sol --sig "runCoreOnly(string,bool)" $CONFIG_DIR false --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verify --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+For mainnet core contracts against an existing vault:
 
-Use `--broadcast` to broadcast.
+```sh
+FOUNDRY_PROFILE=production forge script script/Deploy.s.sol:Deploy \
+  --sig 'runCoreOnly(string,bool)' "$ASSET_CONFIG" false \
+  --rpc-url "$MAINNET_RPC_URL" --account "$BROADCASTER_ACCOUNT" \
+  --sender "$BROADCASTER_ADDRESS" --slow
+```
 
-Note: To create a mock version use the following command instead:
+Mainnet rejects mock mode. After reviewing the simulation and approving the specific operation, add `--broadcast`; explorer verification uses `--verify --verifier etherscan --etherscan-api-key "$ETHERSCAN_API_KEY"`. Fresh-asset deployments use `DeployNewAsset.s.sol` with the production profile on both networks; follow its runbook for the Sepolia `--skip-simulation` broadcast procedure and interrupted-run recovery.
 
-`FOUNDRY_PROFILE=development forge script script/Deploy.s.sol --sig "runCoreOnly(string,bool)" $CONFIG_DIR true --rpc-url $MAINNET_RPC_URL --private-key $BROADCASTER_KEY --verifier etherscan --verifier-api-key $ETHERSCAN_API_KEY --slow`
+## Minting tokens on testnet
 
-#### Minting tokens on testnet
+`script/MintTestnet.s.sol` is a legacy fixture tied to hard-coded controller, asset, collateral, payer, recipient, and amount values. Environment variables named after those addresses do not override the constants. Before using it, reconcile those constants with the intended Sepolia deployment, ensure the payer has collateral and has approved the controller, and check the signer's permissions.
 
-1) Ensure `COLLATERAL_ADDRESS`, `CONTROLLER_ADDRESS`, `MINTER_ADDRESS`, `MINTER_KEY`, and `SIGNER_KEY` are set in `.env`
-2) Ensure scripts/MintTestnet.s.sol has the correct addresses set as constants
-3) Run `source .env`
-4) Ensure approval is granted from payer key
-```cast send $COLLATERAL_ADDRESS "approve(address,uint256)" $CONTROLLER_ADDRESS 1000000000000000000000000000000 --rpc-url $SEPOLIA_RPC_URL --private-key $SIGNER_KEY```
-5) Run the mint script
-```forge script script/MintTestnet.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $MINTER_KEY --broadcast```
-THIS SCRIPT IS NOT SAFE TO RUN ON MAINNET!!
+This script reads `MINTER_ADDRESS` for its broadcaster and `SIGNER_KEY` to sign the order; the signer must match the hard-coded payer. It has not been migrated to the deployment scripts' keystore flow and is not a generic mint command. Do not use it on mainnet.
 
-### Creating batch Safe Transaction to restrict addresses
+## Creating a Safe batch to restrict addresses
 
-Certain contracts support a restricted addresses registry to prevent sanctioned accounts from interacting with them. Only an account with the `RESTRICTER_ROLE` can call their respective `setIsRestricted` method to restrict a specific account, but for cases when we need to create a batch of addresses to restrict, or remove restricted accounts, in a single transaction we can use the `BuildSafeBatch` script as follows:
+Set `TARGET_CONTRACT`, `RESTRICTED_STATUS` (`true` or `false`), `CSV_ADDRESSES` (comma-separated addresses), and `CONTEXT` in the shell, then generate the batch:
 
-1) Ensure `CSV_ADDRESSES` is set in .env, or the execution environment, with the addresses to update in a comma separated strings format.
+```sh
+forge script script/BuildSafeBatch.s.sol:BuildSafeBatch \
+  --sig 'run(address,bool,string,string)' \
+  "$TARGET_CONTRACT" "$RESTRICTED_STATUS" "$CSV_ADDRESSES" "$CONTEXT"
+```
 
-2) Run the following command:
+The script prints Transaction Builder JSON for Ethereum mainnet (`chainId: "1"`) without broadcasting. Save the JSON under `operations/<operation-name>/`, review it, and import it into Safe Transaction Builder. The executing Safe must hold `RESTRICTER_ROLE` on the target contract.
 
-```forge script script/BuildSafeBatch.s.sol:BuildSafeBatch --sig "run(address,bool,string,string)" <target_contract_address> <bool_status> $CSV_ADDRESSES <context_string>```
-
-3) Execute the resulting script using Safe UI Transaction Builder by copying the printed json into a file and uploading to Safe Transaction Builder.
-
-Note: If needed due to Safe UI changes, must sign the proposal and send via API call to `https://safe-transaction-mainnet.safe.global/api/v1/safes/${SAFE_RESTRICTER_ROLE_ADDRESS}/multisig-transactions/` sending the data as payload.
 
 # Architecture
 
@@ -399,7 +442,7 @@ Vesting spreads out rewards over a longer period of time in order to reduce rewa
 
 A cooldown period is present in the staking contract to encourage assets to remain staked and allow response time for liquidity management. When a staker calls the `cooldownShares()` or `cooldownAssets()` function, staked tokens are burned and transferred to the AssetSilo contract. An account can have multiple cooldowns at once as determined by a unique set of IDs per account. After the cooldown end time has passed, a user can call `unstake(id)` to withdraw the underlying asset tokens.
 
-In order to withdraw tokens, a staker needs to call `cooldown()` and wait until the cooldown period has passed to withdraw their stake. A cooldown can be cancelled by calling `cancelCooldown(id)`. When cancelling a cooldown, new shares are minted via the AssetSilo contract and transferred to the account which cancelled the cooldown.
+In order to withdraw tokens, a staker needs to call `cooldownShares()` or `cooldownAssets()` and wait until the cooldown period has passed to withdraw their stake. A cooldown can be cancelled by calling `cancelCooldown(id)`. When cancelling a cooldown, new shares are minted via the AssetSilo contract and transferred to the account which cancelled the cooldown.
 
 ### Instant Unstaking
 
@@ -411,7 +454,7 @@ Due to legal restrictions, yield cannot be paid to stakers without regulatory co
 
 ### Upgradeability 
 
-The manager is a UUPS upgradeable smart contract. The intention of upgradeability is to support new staking models in the future. In the case the design is considered stable and immutability is desired, the upgrade feature can be permanently disabled.
+The staking contract is a UUPS upgradeable smart contract. The intention of upgradeability is to support new staking models in the future. In the case the design is considered stable and immutability is desired, the upgrade feature can be permanently disabled.
 
 ## Security
 

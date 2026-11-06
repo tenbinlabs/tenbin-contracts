@@ -15,12 +15,24 @@ contract DeployMockForkTest is ForkBaseTest, Config {
     // variables
     Deploy.CoreDeploymentResult deployment;
 
-    function setUp() public override {
+    // Full deployment spans multiple transactions and exceeds a single fork block's gas limit.
+    function setUp() public override noGasMetering {
         super.setUp();
-        string memory rpc = vm.rpcUrl("sepolia"); // eth sepolia
-        vm.createSelectFork(rpc);
+        createSelectLiveFork("sepolia");
         Deploy deployer = new Deploy();
-        deployment = deployer.runCoreOnly("", true);
+        (deployment,) = deployer.run("", "", true);
+    }
+
+    function test_CoreOnlyReusesSepoliaVaults() public noGasMetering {
+        string[3] memory assets = [string("tbrl"), "tgld", "tmxn"];
+        for (uint256 i = 0; i < assets.length; i++) {
+            createSelectLiveFork("sepolia");
+            string memory path = string.concat("./config/sepolia/", assets[i], "/", assets[i], "_sepolia.toml");
+            _loadConfig(path, false);
+            address vault = config.get("vault").toAddress();
+            Deploy.CoreDeploymentResult memory core = (new Deploy()).runCoreOnly(path, true);
+            assertEq(address(core.manager.vaults(address(core.collateral))), vault);
+        }
     }
 
     function test_DeployMockFork() public {
@@ -144,6 +156,10 @@ contract DeployMockForkTest is ForkBaseTest, Config {
         Deploy deployer = new Deploy();
         vm.chainId(5);
         vm.expectRevert(bytes("chain not supported"));
+        deployer.runCoreOnly("", true);
+
+        vm.chainId(1);
+        vm.expectRevert(bytes("mocks not allowed on mainnet"));
         deployer.runCoreOnly("", true);
     }
 }

@@ -39,10 +39,10 @@ contract BaseScript is Script {
     /// @notice Account which will broadcast the transaction
     address internal broadcaster;
 
-    /// @dev Used to derive the broadcaster's address if $EOA is not defined.
+    /// @dev Used to derive the broadcaster's address if BROADCASTER_ADDRESS is not defined.
     string internal mnemonic;
 
-    /// @notice Set broadcaster. Can be specified via $EOA or $MNEMONIC, otherwise uses test mnemonic
+    /// @notice Set broadcaster from BROADCASTER_ADDRESS, or derive it from MNEMONIC or the test mnemonic.
     constructor() {
         console2.log("running script...");
         address from = vm.envOr({name: "BROADCASTER_ADDRESS", defaultValue: address(0)});
@@ -127,6 +127,11 @@ contract BaseScript is Script {
         res = new address[](2);
         res[0] = addr1;
         res[1] = addr2;
+    }
+
+    // helper function to compare 2 string values
+    function stringMatches(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(abi.encode(a)) == keccak256(abi.encode(b));
     }
 
     // mark this as a test contract

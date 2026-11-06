@@ -1,0 +1,329 @@
+{
+  "mainnet": {
+    "base": {
+      "global": {
+        "chain_selector": "15971525489660198786",
+        "router": "0x881e3A65B4d4a04dD529061dd0071cf975F58bCD",
+        "token_admin_registry": "0x6f6C373d09C07425BaAE72317863d7F6bb731e37",
+        "rmn_proxy": "0xC842c69d54F83170C42C4d556B4F6B2ca53Dd3E8",
+        "registry_module_owner": "0xAFEd606Bd2CAb6983fC6F10167c98aaC2173D77f",
+        "deployer": "0xF0c9f5259eE78961a50Be1F86a465C9928c38262"
+      },
+      "tBRL": {
+        "contracts": {
+          "asset_token": "0x3963B723Cca0AfaB7A44Be9dF790cDEb0c2b55d6",
+          "staked_asset_token": "0x1c1e88977EA87684337d8d64e3931C3Ca791eBec",
+          "asset_pool": "0x382cc1c652271d98447fa1a3202AB53B3c67c937",
+          "staked_asset_pool": "0x2603BeB4A1632Ac237638368685E973167169deB",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tGLD": {
+        "contracts": {
+          "asset_token": "0xcC7480b53520C154d46d491e3D3f035C97e8226a",
+          "staked_asset_token": "0xb4Ea7588B3E6A3acff346ce8D640311DcCeD29BC",
+          "asset_pool": "0xbd922C6aF26faDD1aCFe4E2D3Fd712C77BF5E3f2",
+          "staked_asset_pool": "0xdE5891d073B515256C68f1cfEC8B08368cCe49e8",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tMXN": {
+        "contracts": {
+          "asset_token": "0x2F70e1fF1e2F5f20885b524cC88713b76f084d85",
+          "staked_asset_token": "0xC85628F9AEaD37314a9D6Cb26e66128F500Db031",
+          "asset_pool": "0x1F792B35cf32858C19Ea169165ADC8099f8E5470",
+          "staked_asset_pool": "0xcB4Bbb3d98A71D274F8b5FA71dd51045517f5843",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      }
+    },
+    "binance": {
+      "global": {
+        "chain_selector": "11344663589394136015",
+        "router": "0x34B03Cb9086d7D758AC55af71584F81A598759FE",
+        "token_admin_registry": "0x736Fd8660c443547a85e4Eaf70A49C1b7Bb008fc",
+        "rmn_proxy": "0x9e09697842194f77d315E0907F1Bda77922e8f84",
+        "registry_module_owner": "0x47Db76c9c97F4bcFd54D8872FDb848Cab696092d",
+        "deployer": "0xF0c9f5259eE78961a50Be1F86a465C9928c38262"
+      },
+      "tBRL": {
+        "contracts": {
+          "asset_token": "0x301B9bc22540F494D575E241b20547Bf442f922F",
+          "staked_asset_token": "0x1CD2a56aeb4C0d6C3c4a6b6707cB5C58235b7720",
+          "asset_pool": "0x31C958c27865c5E371CdD36D921ca23097f56839",
+          "staked_asset_pool": "0x3677d485C8e7Ce0D7cd8672eEadB79d813b319eB",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tGLD": {
+        "contracts": {
+          "asset_token": "0xb981F1162aBc79E24216e8d31744a83ACCE401ea",
+          "staked_asset_token": "0x2f92B0eAFD54D5cEE9af07Eef37CFF7C13C83Fd3",
+          "asset_pool": "0x3371a5159EC3aad774BBc60818C3e58Ba187551c",
+          "staked_asset_pool": "0x8e01741a808a7d9bBd9c2cD27B97A160F6FdD765",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tMXN": {
+        "contracts": {
+          "asset_token": "0xeB137EaB101eeB9e885853A095078657e3E95655",
+          "staked_asset_token": "0x6EbD27b85B1487FaB3254074F1d51a18A37f9b59",
+          "asset_pool": "0xe3934aD5E2B336Ea5d937d186b4eC438D1d563eC",
+          "staked_asset_pool": "0x747DD60024c28d50cD163E54000b19257056A674",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      }
+    },
+    "ethereum": {
+      "global": {
+        "chain_selector": "5009297550715157269",
+        "router": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
+        "token_admin_registry": "0xb22764f98dD05c789929716D677382Df22C05Cb6",
+        "rmn_proxy": "0x411dE17f12D1A34ecC7F45f49844626267c75e81",
+        "registry_module_owner": "0x4855174E9479E211337832E109E7721d43A4CA64",
+        "deployer": "0xF0c9f5259eE78961a50Be1F86a465C9928c38262"
+      },
+      "tBRL": {
+        "contracts": {
+          "asset_token": "0x4C1b46adb8877E389171EC6Ef67b385094C0afaD",
+          "staked_asset_token": "0xDaB276F6E19CCC54cA5aaA2645A94087ca776a3f",
+          "asset_pool": "0x4B6522e6C6E169e3f95903756eB3C3Ea43272698",
+          "staked_asset_pool": "0x76ea7aA064D0bf3529c1e6b4e920aC50d1a0d72c",
+          "asset_lock_box": "0xA313323e6279e5572387F1Abfb42AaFE4a8e26BB",
+          "staked_asset_lock_box": "0xddc44715E04782A18968ca09DCf7057BE4AF6445",
+          "staking-adapter": "0xC96BeeFb03458B3358462f03C1CFf00Ff0F46E47"
+        }
+      },
+      "tGLD": {
+        "contracts": {
+          "asset_token": "0x6a547b25534234bb79CE6961a23Db13DE154b6F4",
+          "staked_asset_token": "0x8d301801d899dC81fEabBDE69407A53b82bdBF19",
+          "asset_pool": "0x9564594A96740251bA59d28E968C60D616d49d70",
+          "staked_asset_pool": "0xD6A2AFEc1485c70a6E145F79bDb1A69F93078986",
+          "asset_lock_box": "0x31C958c27865c5E371CdD36D921ca23097f56839",
+          "staked_asset_lock_box": "0x3677d485C8e7Ce0D7cd8672eEadB79d813b319eB",
+          "staking-adapter": "0x03007f5A53E9387B30721753165D2f6eEE5201f5"
+        }
+      },
+      "tMXN": {
+        "contracts": {
+          "asset_token": "0x8d015aFcb6F437010653352EB1E58152c4e23734",
+          "staked_asset_token": "0x8BDf6A2DFda084bD242Cd285CF75E80de3eB00ba",
+          "asset_pool": "0x2003cB30389b40fF0078FfE56f07890829003Cf4",
+          "staked_asset_pool": "0xF2a4855Cd0b9F4c32a129ce9Ed7628D789d65699",
+          "asset_lock_box": "0x99f89f91690e77AEfA04D6573b06563B96BE9A80",
+          "staked_asset_lock_box": "0xf6b66985CDC5C8EcBaFF552d39F4f283867dDbA3",
+          "staking-adapter": "0xb5743b994EC0f211DfCc8214a4d529661bF35356"
+        }
+      }
+    },
+    "polygon": {
+      "global": {
+        "chain_selector": "4051577828743386545",
+        "router": "0x849c5ED5a80F5B408Dd4969b78c2C8fdf0565Bfe",
+        "token_admin_registry": "0x00F027eA6D0fb03256A15E9182B2B9227A4931d8",
+        "rmn_proxy": "0xf1ceAa46D8d13Cac9fC38aaEF3d3d14754C5A9c2",
+        "registry_module_owner": "0xc751E86208F0F8aF2d5CD0e29716cA7AD98B5eF5",
+        "deployer": "0xF0c9f5259eE78961a50Be1F86a465C9928c38262"
+      },
+      "tBRL": {
+        "contracts": {
+          "asset_token": "0xF2A3A6E962A4eCE1113E67dC696EC6dD6333b852",
+          "staked_asset_token": "0x5bEE62Ac949B80F9Ad5F5c61163668Ae405a9bad",
+          "asset_pool": "0x75743bF4D12C07b018A6F0D07D305b80BBC1eac5",
+          "staked_asset_pool": "0xeCff2f469664FB36647cC892188Ab70744b3364a",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tGLD": {
+        "contracts": {
+          "asset_token": "0x600fE75cDd5Bb9f86e719eBAb3ec38F977e5a0c1",
+          "staked_asset_token": "0x45A1b008294C832f5cA3937184F1ba7DDF7b7807",
+          "asset_pool": "0x12f13ab3f5f7F6eF1b0A7E99b5F863BECA0D7603",
+          "staked_asset_pool": "0x28031e509A216411912507bE932468710D6C7E80",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tMXN": {
+        "contracts": {
+          "asset_token": "0x0F8277bDbAA5e9D4B0b2DEDd85b67a84D93c5870",
+          "staked_asset_token": "0xA135254156b59c38c64Bb2a7E27961f4F9440c96",
+          "asset_pool": "0x2003cB30389b40fF0078FfE56f07890829003Cf4",
+          "staked_asset_pool": "0xf6b66985CDC5C8EcBaFF552d39F4f283867dDbA3",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      }
+    }
+  },
+  "testnet": {
+    "base-sepolia": {
+      "global": {
+        "chain_selector": "10344971235874465080",
+        "router": "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
+        "token_admin_registry": "0x736D0bBb318c1B27Ff686cd19804094E66250e17",
+        "rmn_proxy": "0x99360767a4705f68CcCb9533195B761648d6d807",
+        "registry_module_owner": "0x176ae8C6C11DD2c031B924CE1A0A43188035f3f6",
+        "deployer": "0xF0c9f5259eE78961a50Be1F86a465C9928c38262"
+      },
+      "tBRL": {
+        "contracts": {
+          "asset_token": "0xacc26857553C722f66a00421564ACF3F3355129E",
+          "staked_asset_token": "0x2256262f310d30CB1EeE285b35522a7859DA754c",
+          "asset_pool": "0x41A772a73Daa525e99098C6AD47284C9556eB008",
+          "staked_asset_pool": "0xf7733B9326FD5197DbEC350fa1B388E8d0DB26aC",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tGLD": {
+        "contracts": {
+          "asset_token": "0xd6d531530AA0a9b32F45AdcEfC213535b203a233",
+          "staked_asset_token": "0x62923717e8ab10949aD1fb3d9648D41c82AeA6A8",
+          "asset_pool": "0xda5A70236999dB74858D5Ebc33E303A93c0871B2",
+          "staked_asset_pool": "0xc2fe18a5b1Fa4090E445FCF43651992148c6f8bE",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tMXN": {
+        "contracts": {
+          "asset_token": "0x156AA411cA883fC7257Bc16E41f1BE6f4C77b9D9",
+          "staked_asset_token": "0xE2330F860C63135873bE5915b117A756162ac33D",
+          "asset_pool": "0xB62515AAEB846B655BC91Ab4d43E45f9d59EB390",
+          "staked_asset_pool": "0x2603BeB4A1632Ac237638368685E973167169deB",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      }
+    },
+    "binance-testchain": {
+      "global": {
+        "chain_selector": "13264668187771770619",
+        "router": "0xE1053aE1857476f36A3C62580FF9b016E8EE8F6f",
+        "token_admin_registry": "0xF8f2A4466039Ac8adf9944fD67DBb3bb13888f2B",
+        "rmn_proxy": "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
+        "registry_module_owner": "0x8Cd87FeAC14D69D770E67Bedf029e6fd3F33D0C7",
+        "deployer": "0xF0c9f5259eE78961a50Be1F86a465C9928c38262"
+      },
+      "tBRL": {
+        "contracts": {
+          "asset_token": "0xb1524FDb845E1F562D2b360afA0043fed7aB8402",
+          "staked_asset_token": "0x75cC4BbAb902daDdfd1C9F147D91345B64d4A82d",
+          "asset_pool": "0x78e81Cd56d3A5A8cc8912c243216D3299DB45cA7",
+          "staked_asset_pool": "0xE48B4147215164C2358F0f3B0DDE0cAEDB4602B4",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tGLD": {
+        "contracts": {
+          "asset_token": "0xF2A3A6E962A4eCE1113E67dC696EC6dD6333b852",
+          "staked_asset_token": "0x5bEE62Ac949B80F9Ad5F5c61163668Ae405a9bad",
+          "asset_pool": "0x382cc1c652271d98447fa1a3202AB53B3c67c937",
+          "staked_asset_pool": "0x2603BeB4A1632Ac237638368685E973167169deB",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tMXN": {
+        "contracts": {
+          "asset_token": "0x0000000000000000000000000000000000000000",
+          "staked_asset_token": "0x0000000000000000000000000000000000000000",
+          "asset_pool": "0x0000000000000000000000000000000000000000",
+          "staked_asset_pool": "0x0000000000000000000000000000000000000000",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      }
+    },
+    "eth-sepolia": {
+      "global": {
+        "chain_selector": "16015286601757825753",
+        "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+        "token_admin_registry": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82",
+        "rmn_proxy": "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991",
+        "registry_module_owner": "0xa3c796d480638d7476792230da1E2ADa86e031b0",
+        "deployer": "0xF0c9f5259eE78961a50Be1F86a465C9928c38262"
+      },
+      "tBRL": {
+        "contracts": {
+          "asset_token": "0x78C3F0126E074Cd424b6115db8A5518Fb9DF0f3C",
+          "staked_asset_token": "0x00e4532bc7725D9Cb184B987d43252D8530060dE",
+          "asset_pool": "0x80e11561eB8d7AC7c4D8F253c6dFC320D311f01b",
+          "staked_asset_pool": "0x4C0adc442c195937A491b5E059D30d86b38d9FaB",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tGLD": {
+        "contracts": {
+          "asset_token": "0x94Ea044BDBb5165D6a37A9A3405b71e7078ceaaB",
+          "staked_asset_token": "0x66EE25a9749521907765FfDf44B64Bc7350f4e8a",
+          "asset_pool": "0x044ef34AACe35c76d6f8da8F75a952abC6fb2bBD",
+          "staked_asset_pool": "0xC2Cd7287CcaC6df7ed5F2A944bDBbA26869094FF",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tMXN": {
+        "contracts": {
+          "asset_token": "0xf637ECb45A3217CD84df1562178Cca90A2eAc463",
+          "staked_asset_token": "0x9c2Da5F28381e2b9f8E3031D6BC90AF2C437Ca88",
+          "asset_pool": "0xbe199C4e71d98bB1333A199cE8A6D299D74Ab628",
+          "staked_asset_pool": "0x5bEE62Ac949B80F9Ad5F5c61163668Ae405a9bad",
+          "asset_lock_box": "0xa1d56975Cc14FB1474f298e21bE718A812Fa53C8",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      }
+    },
+    "polygon-amoy": {
+      "global": {
+        "chain_selector": "16281711391670634445",
+        "router": "0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2",
+        "token_admin_registry": "0x1e73f6842d7afDD78957ac143d1f315404Dd9e5B",
+        "rmn_proxy": "0x7c1e545A40750Ee8761282382D51E017BAC68CBB",
+        "registry_module_owner": "0xAF2356327c6BBd644A273271B6cA301B49787970",
+        "deployer": "0xF0c9f5259eE78961a50Be1F86a465C9928c38262"
+      },
+      "tBRL": {
+        "contracts": {
+          "asset_token": "0x0000000000000000000000000000000000000000",
+          "staked_asset_token": "0x0000000000000000000000000000000000000000",
+          "asset_pool": "0x0000000000000000000000000000000000000000",
+          "staked_asset_pool": "0x0000000000000000000000000000000000000000",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tGLD": {
+        "contracts": {
+          "asset_token": "0x723EDf9c8De871219B8424D880b898D45f88e669",
+          "staked_asset_token": "0x854AF16dC309A34b22199c5d9d6B00a8144A0927",
+          "asset_pool": "0x2A2e0C79115A6518735fcd8d97290D3F6858dAD6",
+          "staked_asset_pool": "0x3503ac81326ee296CF3bDfB273D7a4235c9629D8",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      },
+      "tMXN": {
+        "contracts": {
+          "asset_token": "0x0000000000000000000000000000000000000000",
+          "staked_asset_token": "0x0000000000000000000000000000000000000000",
+          "asset_pool": "0x0000000000000000000000000000000000000000",
+          "staked_asset_pool": "0x0000000000000000000000000000000000000000",
+          "asset_lock_box": "0x0000000000000000000000000000000000000000",
+          "staked_asset_lock_box": "0x0000000000000000000000000000000000000000"
+        }
+      }
+    }
+  }
+}

@@ -52,14 +52,13 @@ contract DeployBase is BaseScript {
         address allocator;
         address asset;
         address curator;
-        address initial_vault;
         address owner;
         address sentinel;
         string name;
         string symbol;
+        string liquidity_adapter;
+        string[] adapters;
         uint256 dead_deposit;
-        uint256 initial_absolute_cap;
-        uint256 initial_relative_cap;
         uint256 max_rate;
         uint256 timelock_duration;
     }
@@ -137,20 +136,30 @@ contract DeployBase is BaseScript {
         vaultParams.allocator = vaultConfig.get("allocator").toAddress();
         vaultParams.asset = vaultConfig.get("asset").toAddress();
         vaultParams.curator = vaultConfig.get("curator").toAddress();
-        vaultParams.initial_vault = vaultConfig.get("initial_vault").toAddress();
         vaultParams.owner = vaultConfig.get("owner").toAddress();
         vaultParams.sentinel = vaultConfig.get("sentinel").toAddress();
 
         // load strings
         vaultParams.name = vaultConfig.get("name").toString();
         vaultParams.symbol = vaultConfig.get("symbol").toString();
+        vaultParams.liquidity_adapter = vaultConfig.get("liquidity_adapter").toString();
+        vaultParams.adapters = vaultConfig.get("adapters").toStringArray();
 
         // load uints
         vaultParams.dead_deposit = vaultConfig.get("dead_deposit").toUint256();
-        vaultParams.initial_absolute_cap = vaultConfig.get("initial_absolute_cap").toUint256();
-        vaultParams.initial_relative_cap = vaultConfig.get("initial_relative_cap").toUint256();
         vaultParams.max_rate = vaultConfig.get("max_rate").toUint256();
         vaultParams.timelock_duration = vaultConfig.get("timelock_duration").toUint256();
+
+        require(vaultParams.adapters.length > 0, "no adapters configured");
+        bool found;
+        for (uint256 i = 0; i < vaultParams.adapters.length; i++) {
+            if (stringMatches(vaultParams.adapters[i], vaultParams.liquidity_adapter)) found = true;
+            // a repeated name would deploy the same adapter twice on mainnet
+            for (uint256 j = i + 1; j < vaultParams.adapters.length; j++) {
+                require(!stringMatches(vaultParams.adapters[i], vaultParams.adapters[j]), "duplicate adapter name");
+            }
+        }
+        require(found, "liquidity_adapter not in adapters");
     }
 
     function printAccounts() internal view {
@@ -200,11 +209,6 @@ contract DeployBase is BaseScript {
         rolesObj = vm.serializeAddress(rolesKey, "revenue_keeper_role", arr(roles.revenue_keeper_role));
         rolesObj = vm.serializeAddress(rolesKey, "rewarder_role", arr(roles.rewarder_role, revenueModule));
         rolesObj = vm.serializeAddress(rolesKey, "signer_manager_role", arr(roles.signer_manager_role));
-    }
-
-    // helper function to compare 2 string values
-    function stringMatches(string memory a, string memory b) internal pure returns (bool) {
-        return keccak256(abi.encode(a)) == keccak256(abi.encode(b));
     }
 
     // mark this as a test contract
