@@ -59,18 +59,7 @@ contract Deploy is MorphoAdapterDeployer {
     /// morpho scales prices by 1e36, so $1 per unit is 1e36 * 1e6 / 1e18 = 1e24.
     uint256 constant LOCAL_ORACLE_PRICE = 1e24;
 
-    /// @notice Starting prices for the mock oracle adapter, USD at 18 decimals — the same scale
-    /// the real adapters normalise Chainlink to.
-    ///
-    /// Per asset rather than a single constant. A flat `1e18` is $1.00, which is wrong by one to
-    /// four orders of magnitude for every asset this serves, and it lands on the dashboards this
-    /// change exists to make trustworthy — swapping an obviously-fake zero for a plausible-looking
-    /// wrong number is the same failure that let the original bug survive.
-    ///
-    /// Indicative, not maintained: `oracle_price` is write-only in RE (persisted at
-    /// `db/rebalancing.rs:1015`, surfaced by the `0099` display view, never read by engine logic),
-    /// so these cannot affect behaviour. A scenario that cares about the number moves it with
-    /// `MockOracleAdapter.setPrice` rather than depending on a default (ENG-2664).
+    /// @notice Starting mock oracle prices in 18-decimal USD.
     uint256 constant MOCK_ORACLE_PRICE_GLD = 3_500e18;
     uint256 constant MOCK_ORACLE_PRICE_BRL = 18e16;
     uint256 constant MOCK_ORACLE_PRICE_MXN = 5e16;
@@ -673,16 +662,7 @@ contract Deploy is MorphoAdapterDeployer {
         // configure controller
         deployment.controller.setIsCollateral(address(deployment.collateral), true);
         deployment.controller.setManager(address(deployment.manager));
-        // Registered on the controller only for live integrations. `deployment.oracle_adapter` is
-        // still the mock's address either way — that is what reaches `contracts.json` and what the
-        // execution-engine reads for the chain-state price, which is the whole of ENG-2664.
-        //
-        // Arming the controller as well would switch on `verifyOrder`'s price-delta check
-        // (`Controller.sol:525`), dormant in mock deploys until now. Against a mock oracle whose
-        // price we choose, that check is circular: it proves the fixtures agree with a number we
-        // picked, not that the check works. Its real exercise is the fork tests against a live
-        // Chainlink feed. A scenario that wants to test the delta check calls `setOracleAdapter`
-        // and `MockOracleAdapter.setPrice` itself, deliberately.
+        // Mock deployments deliberately leave the controller oracle unset.
         if (!useMockIntegrations) {
             deployment.controller.setOracleAdapter(address(deployment.oracle_adapter));
         }
