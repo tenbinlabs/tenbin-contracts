@@ -1,0 +1,35 @@
+# polygon-amoy -> eth-sepolia; pool state verified at block 52172610.
+# Existing-token lane configuration; token deployment roles are outside this snapshot.
+# Both token pools have rate limiting disabled; consumers must honor the bool flags.
+[80002]
+endpoint_url = "${POLYGON_AMOY_RPC_URL}"
+
+[80002.string]
+asset_name = "SpokeTGLD"
+asset_symbol = "STGLD"
+staked_asset_name = "SpokeSTGLD"
+staked_asset_symbol = "SSTKT"
+ccip_chain_selector = "16281711391670634445"
+remote_chain_selector = "16015286601757825753"
+inbound_capacity = "0"
+outbound_capacity = "0"
+inbound_rate = "0"
+outbound_rate = "0"
+
+[80002.bool]
+inbound_rate_limit_enabled = false
+outbound_rate_limit_enabled = false
+
+[80002.address]
+asset_token = "0x723EDf9c8De871219B8424D880b898D45f88e669"
+staked_asset_token = "0x854AF16dC309A34b22199c5d9d6B00a8144A0927"
+asset_pool = "0x2A2e0C79115A6518735fcd8d97290D3F6858dAD6"
+staked_asset_pool = "0x3503ac81326ee296CF3bDfB273D7a4235c9629D8"
+ccip_router = "0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2"
+ccip_rmn_proxy = "0x7c1e545A40750Ee8761282382D51E017BAC68CBB"
+ccip_token_admin_registry = "0x1e73f6842d7afDD78957ac143d1f315404Dd9e5B"
+ccip_registry_module_owner = "0xAF2356327c6BBd644A273271B6cA301B49787970"
+remote_asset_token = "0x94Ea044BDBb5165D6a37A9A3405b71e7078ceaaB"
+remote_staked_asset_token = "0x66EE25a9749521907765FfDf44B64Bc7350f4e8a"
+remote_asset_pool = "0x044ef34AACe35c76d6f8da8F75a952abC6fb2bBD"
+remote_staked_asset_pool = "0xC2Cd7287CcaC6df7ed5F2A944bDBbA26869094FF"

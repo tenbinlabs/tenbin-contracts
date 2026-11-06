@@ -1,0 +1,35 @@
+# base-sepolia -> eth-sepolia; pool state verified at block 55366834.
+# Existing-token lane configuration; token deployment roles are outside this snapshot.
+# Both token pools have rate limiting disabled; consumers must honor the bool flags.
+[84532]
+endpoint_url = "${BASE_SEPOLIA_RPC_URL}"
+
+[84532.string]
+asset_name = "SpokeTGLD"
+asset_symbol = "STGLD"
+staked_asset_name = "SpokeSTGLD"
+staked_asset_symbol = "SSTKT"
+ccip_chain_selector = "10344971235874465080"
+remote_chain_selector = "16015286601757825753"
+inbound_capacity = "0"
+outbound_capacity = "0"
+inbound_rate = "0"
+outbound_rate = "0"
+
+[84532.bool]
+inbound_rate_limit_enabled = false
+outbound_rate_limit_enabled = false
+
+[84532.address]
+asset_token = "0xd6d531530AA0a9b32F45AdcEfC213535b203a233"
+staked_asset_token = "0x62923717e8ab10949aD1fb3d9648D41c82AeA6A8"
+asset_pool = "0xda5A70236999dB74858D5Ebc33E303A93c0871B2"
+staked_asset_pool = "0xc2fe18a5b1Fa4090E445FCF43651992148c6f8bE"
+ccip_router = "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93"
+ccip_rmn_proxy = "0x99360767a4705f68CcCb9533195B761648d6d807"
+ccip_token_admin_registry = "0x736D0bBb318c1B27Ff686cd19804094E66250e17"
+ccip_registry_module_owner = "0x176ae8C6C11DD2c031B924CE1A0A43188035f3f6"
+remote_asset_token = "0x94Ea044BDBb5165D6a37A9A3405b71e7078ceaaB"
+remote_staked_asset_token = "0x66EE25a9749521907765FfDf44B64Bc7350f4e8a"
+remote_asset_pool = "0x044ef34AACe35c76d6f8da8F75a952abC6fb2bBD"
+remote_staked_asset_pool = "0xC2Cd7287CcaC6df7ed5F2A944bDBbA26869094FF"

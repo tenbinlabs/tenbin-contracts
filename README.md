@@ -189,7 +189,13 @@ For a fresh asset such as tPYR, follow [the new-asset deployment runbook](docs/n
 
 `Deploy.s.sol` writes `contracts.json` or `vault.json` under `broadcast/Deploy.s.sol/<chain-id>/`. `DeployNewAsset.s.sol` writes artifacts under `broadcast/DeployNewAsset.s.sol/<chain-id>/<asset-address>/artifacts/`. Keep confirmed execution records under `operations/<operation-name>/execution/`; leave simulations and intermediate files in `broadcast/`.
 
-Cross-chain configs are published alongside their deployment records. Additional CCIP deployment/configuration scripts and tests are tracked in [ENG-3658](https://linear.app/tenbin/issue/ENG-3658).
+Cross-chain configs are published alongside their deployment records.
+
+The tGLD testnet configs cover both directions of the Ethereum Sepolia lanes to Base Sepolia, BNB testnet, and Polygon Amoy; `tgld_ethereum.toml` selects Base, with separate `tgld_ethereum_binance.toml` and `tgld_ethereum_polygon.toml` files for the other destinations. Their headers identify the verification blocks.
+
+Both token pools have rate limiting disabled: consumers must honor `inbound_rate_limit_enabled` and `outbound_rate_limit_enabled`, with zero capacities/rates, rather than assume limits are enabled. Spoke token names and symbols reflect the existing deployments; these lane snapshots omit token-deployment roles.
+
+Additional CCIP deployment/configuration scripts and tests are tracked in [ENG-3658](https://linear.app/tenbin/issue/ENG-3658).
 
 ## Set up a keystore for running scripts
 

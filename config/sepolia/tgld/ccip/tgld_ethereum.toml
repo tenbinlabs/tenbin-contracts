@@ -1,0 +1,31 @@
+# eth-sepolia -> base-sepolia; pool state verified at block 12078783.
+# Existing-token lane configuration; token deployment roles are outside this snapshot.
+# Both token pools have rate limiting disabled; consumers must honor the bool flags.
+[11155111]
+endpoint_url = "${SEPOLIA_RPC_URL}"
+
+[11155111.string]
+ccip_chain_selector = "16015286601757825753"
+remote_chain_selector = "10344971235874465080"
+inbound_capacity = "0"
+outbound_capacity = "0"
+inbound_rate = "0"
+outbound_rate = "0"
+
+[11155111.bool]
+inbound_rate_limit_enabled = false
+outbound_rate_limit_enabled = false
+
+[11155111.address]
+asset_token = "0x94Ea044BDBb5165D6a37A9A3405b71e7078ceaaB"
+staked_asset_token = "0x66EE25a9749521907765FfDf44B64Bc7350f4e8a"
+asset_pool = "0x044ef34AACe35c76d6f8da8F75a952abC6fb2bBD"
+staked_asset_pool = "0xC2Cd7287CcaC6df7ed5F2A944bDBbA26869094FF"
+ccip_router = "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59"
+ccip_rmn_proxy = "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991"
+ccip_token_admin_registry = "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"
+ccip_registry_module_owner = "0xa3c796d480638d7476792230da1E2ADa86e031b0"
+remote_asset_token = "0xd6d531530AA0a9b32F45AdcEfC213535b203a233"
+remote_staked_asset_token = "0x62923717e8ab10949aD1fb3d9648D41c82AeA6A8"
+remote_asset_pool = "0xda5A70236999dB74858D5Ebc33E303A93c0871B2"
+remote_staked_asset_pool = "0xc2fe18a5b1Fa4090E445FCF43651992148c6f8bE"
